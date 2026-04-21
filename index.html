@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AccuQuote</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0D0D0D; color: #E8EDF2; font-family: 'Inter', system-ui, sans-serif; }
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: #111418; }
+  ::-webkit-scrollbar-thumb { background: #2a2e36; border-radius: 2px; }
+  .aq-logo { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; letter-spacing: 4px; color: #FFD600; }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.4; } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .fade-up { animation: fadeUp 0.2s ease forwards; }
+  .pulse { animation: pulse 1.5s ease-in-out infinite; }
+  .spinner { animation: spin 0.8s linear infinite; }
+  @media print {
+    #sidebar, #controls, .no-print { display: none !important; }
+    #proposal-content { width: 100% !important; box-shadow: none !important; }
+  }
+</style>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        surface: '#111418',
+        border: '#1e2229',
+        accent: '#FFD600',
+        orange: '#FF6B00',
+        muted: '#6B7280',
+      }
+    }
+  }
+}
+</script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useContext, createContext, useRef, useCallback } = React;
+
+// ─── SUPPLIER CATALOGUE ──────────────────────────────────────────────────────
+const CATALOGUE = [
+  // Cable
+  { id:'c1', name:'1mm² twin & earth cable (100m)', search:['1mm twin earth','1mm t&e','1mm cable'], category:'cable', unit:'drum', suppliers:[{name:'Screwfix',price:38.99,sku:'12345'},{name:'CEF',price:41.50,sku:'C-001'}] },
+  { id:'c2', name:'1.5mm² twin & earth cable (100m)', search:['1.5mm twin earth','1.5mm t&e','1.5mm cable'], category:'cable', unit:'drum', suppliers:[{name:'Screwfix',price:54.99,sku:'12346'},{name:'CEF',price:57.00,sku:'C-002'}] },
+  { id:'c3', name:'2.5mm² twin & earth cable (100m)', search:['2.5mm twin earth','2.5mm t&e','2.5mm cable'], category:'cable', unit:'drum', suppliers:[{name:'Screwfix',price:84.99,sku:'12347'},{name:'CEF',price:88.00,sku:'C-003'},{name:'Toolstation',price:82.50,sku:'T-001'}] },
+  { id:'c4', name:'4mm² twin & earth cable (50m)', search:['4mm twin earth','4mm t&e','4mm cable'], category:'cable', unit:'drum', suppliers:[{name:'Screwfix',price:64.99,sku:'12348'},{name:'CEF',price:67.00,sku:'C-004'}] },
+  { id:'c5', name:'6mm² twin & earth cable (25m)', search:['6mm twin earth','6mm t&e','6mm cable'], category:'cable', unit:'drum', suppliers:[{name:'Screwfix',price:44.99,sku:'12349'},{name:'CEF',price:47.00,sku:'C-005'}] },
+  { id:'c6', name:'10mm² twin & earth cable (25m)', search:['10mm twin earth','10mm t&e'], category:'cable', unit:'drum', suppliers:[{name:'Screwfix',price:74.99,sku:'12350'},{name:'CEF',price:78.00,sku:'C-006'}] },
+  { id:'c7', name:'6mm earth cable (10m)', search:['6mm earth cable','earth cable 6mm'], category:'cable', unit:'pack', suppliers:[{name:'Screwfix',price:12.99,sku:'12351'},{name:'Toolstation',price:11.99,sku:'T-002'}] },
+  { id:'c8', name:'SWA 2-core 2.5mm² (10m)', search:['swa cable','armoured cable','steel wire armoured'], category:'cable', unit:'m', suppliers:[{name:'CEF',price:4.50,sku:'C-007'},{name:'Screwfix',price:4.99,sku:'12352'}] },
+  { id:'c9', name:'3-core flex 1.5mm² (5m)', search:['3 core flex','flex cable','flexible cable'], category:'cable', unit:'pack', suppliers:[{name:'Screwfix',price:8.99,sku:'12353'},{name:'Toolstation',price:8.49,sku:'T-003'}] },
+  { id:'c10', name:'Coaxial cable RG6 (50m)', search:['coax cable','coaxial','aerial cable'], category:'cable', unit:'drum', suppliers:[{name:'Screwfix',price:19.99,sku:'12354'}] },
+  // Containment
+  { id:'ct1', name:'20mm white conduit (3m)', search:['20mm conduit','round conduit 20mm','plastic conduit'], category:'containment', unit:'length', suppliers:[{name:'Screwfix',price:1.99,sku:'22001'},{name:'Toolstation',price:1.79,sku:'T-010'}] },
+  { id:'ct2', name:'25mm white conduit (3m)', search:['25mm conduit','round conduit 25mm'], category:'containment', unit:'length', suppliers:[{name:'Screwfix',price:2.49,sku:'22002'},{name:'Toolstation',price:2.29,sku:'T-011'}] },
+  { id:'ct3', name:'20mm conduit bend', search:['conduit bend 20mm','20mm bend'], category:'containment', unit:'each', suppliers:[{name:'Screwfix',price:0.49,sku:'22003'}] },
+  { id:'ct4', name:'Mini trunking 16×16 (3m)', search:['mini trunking','cable trunking 16mm','trunking'], category:'containment', unit:'length', suppliers:[{name:'Screwfix',price:2.29,sku:'22010'},{name:'Toolstation',price:2.09,sku:'T-012'}] },
+  { id:'ct5', name:'Mini trunking 25×16 (3m)', search:['mini trunking 25','cable trunking 25mm'], category:'containment', unit:'length', suppliers:[{name:'Screwfix',price:2.99,sku:'22011'}] },
+  { id:'ct6', name:'Cable tray 100mm (3m)', search:['cable tray','perforated tray'], category:'containment', unit:'length', suppliers:[{name:'CEF',price:8.99,sku:'C-020'}] },
+  { id:'ct7', name:'Dado trunking 3-compartment (3m)', search:['dado trunking','3 compartment trunking'], category:'containment', unit:'length', suppliers:[{name:'Screwfix',price:14.99,sku:'22020'}] },
+  // Accessories
+  { id:'a1', name:'Single socket 13A white', search:['single socket','13a single','1 gang socket'], category:'accessories', unit:'each', suppliers:[{name:'Screwfix',price:2.49,sku:'30001'},{name:'Toolstation',price:2.29,sku:'T-020'}] },
+  { id:'a2', name:'Double socket 13A white', search:['double socket','13a double','2 gang socket','twin socket'], category:'accessories', unit:'each', suppliers:[{name:'Screwfix',price:3.99,sku:'30002'},{name:'Toolstation',price:3.69,sku:'T-021'}] },
+  { id:'a3', name:'Double socket USB-A+C white', search:['usb socket','socket with usb','double socket usb'], category:'accessories', unit:'each', suppliers:[{name:'Screwfix',price:14.99,sku:'30010'}] },
+  { id:'a4', name:'IP65 shaver socket', search:['shaver socket','ip65 shaver','bathroom shaver'], category:'accessories', unit:'each', suppliers:[{name:'Screwfix',price:22.99,sku:'30020'},{name:'CEF',price:24.50,sku:'C-030'}] },
+  { id:'a5', name:'1-gang 1-way light switch white', search:['light switch','1 gang switch','single switch'], category:'accessories', unit:'each', suppliers:[{name:'Screwfix',price:1.99,sku:'30030'},{name:'Toolstation',price:1.79,sku:'T-030'}] },
+  { id:'a6', name:'2-gang 2-way light switch white', search:['2 gang switch','double switch','2 way switch'], category:'accessories', unit:'each', suppliers:[{name:'Screwfix',price:3.49,sku:'30031'}] },
+  { id:'a7', name:'Dimmer switch 400W white', search:['dimmer switch','dimmer','dimmer 400w'], category:'accessories', unit:'each', suppliers:[{name:'Screwfix',price:12.99,sku:'30040'}] },
+  { id:'a8', name:'IP65 extractor fan with timer 100mm', search:['extractor fan','bathroom fan','ip65 fan','extractor fan timer'], category:'accessories', unit:'each', suppliers:[{name:'Screwfix',price:44.99,sku:'30050'},{name:'CEF',price:47.00,sku:'C-040'}] },
+  { id:'a9', name:'Fused spur 13A white', search:['fused spur','fused connection unit','fcu'], category:'accessories', unit:'each', suppliers:[{name:'Screwfix',price:5.99,sku:'30060'}] },
+  { id:'a10', name:'20A double pole switch white', search:['20a switch','double pole','dp switch 20a'], category:'accessories', unit:'each', suppliers:[{name:'Screwfix',price:4.99,sku:'30070'}] },
+  { id:'a11', name:'Outside socket IP44 double', search:['outside socket','outdoor socket','external socket','ip44 socket'], category:'accessories', unit:'each', suppliers:[{name:'Screwfix',price:18.99,sku:'30080'}] },
+  { id:'a12', name:'Cooker control unit 45A', search:['cooker control','cooker switch','45a cooker'], category:'accessories', unit:'each', suppliers:[{name:'Screwfix',price:15.99,sku:'30090'}] },
+  { id:'a13', name:'Shaver socket chrome', search:['shaver socket chrome','chrome shaver'], category:'accessories', unit:'each', suppliers:[{name:'Screwfix',price:29.99,sku:'30021'}] },
+  // Back boxes
+  { id:'b1', name:'Single back box 25mm', search:['single back box','1 gang back box','25mm back box'], category:'accessories', unit:'each', suppliers:[{name:'Screwfix',price:0.59,sku:'31001'},{name:'Toolstation',price:0.49,sku:'T-040'}] },
+  { id:'b2', name:'Double back box 25mm', search:['double back box','2 gang back box'], category:'accessories', unit:'each', suppliers:[{name:'Screwfix',price:0.79,sku:'31002'},{name:'Toolstation',price:0.69,sku:'T-041'}] },
+  { id:'b3', name:'Single back box 35mm', search:['single back box 35','35mm back box'], category:'accessories', unit:'each', suppliers:[{name:'Screwfix',price:0.69,sku:'31003'}] },
+  { id:'b4', name:'Dry lining box single', search:['dry lining box','plasterboard box single'], category:'accessories', unit:'each', suppliers:[{name:'Screwfix',price:0.89,sku:'31010'}] },
+  { id:'b5', name:'Dry lining box double', search:['dry lining double','plasterboard box double'], category:'accessories', unit:'each', suppliers:[{name:'Screwfix',price:1.19,sku:'31011'}] },
+  // Light fittings
+  { id:'l1', name:'LED downlight 6W warm white', search:['led downlight','downlight 6w','recessed downlight'], category:'light-fittings', unit:'each', suppliers:[{name:'Screwfix',price:7.99,sku:'40001'},{name:'Toolstation',price:7.49,sku:'T-050'}] },
+  { id:'l2', name:'IP65 LED downlight 6W warm white', search:['ip65 downlight','bathroom downlight','ip65 led downlight'], category:'light-fittings', unit:'each', suppliers:[{name:'Screwfix',price:12.99,sku:'40002'},{name:'CEF',price:13.50,sku:'C-050'}] },
+  { id:'l3', name:'LED batten 4ft 40W', search:['led batten','4ft batten','fluorescent batten replacement'], category:'light-fittings', unit:'each', suppliers:[{name:'Screwfix',price:19.99,sku:'40010'}] },
+  { id:'l4', name:'LED bulkhead IP65 18W', search:['led bulkhead','bulkhead light','outdoor bulkhead'], category:'light-fittings', unit:'each', suppliers:[{name:'Screwfix',price:22.99,sku:'40020'}] },
+  { id:'l5', name:'LED floodlight 20W PIR', search:['led floodlight','floodlight pir','security light'], category:'light-fittings', unit:'each', suppliers:[{name:'Screwfix',price:28.99,sku:'40030'}] },
+  { id:'l6', name:'LED floodlight 50W', search:['50w floodlight','led floodlight 50w'], category:'light-fittings', unit:'each', suppliers:[{name:'Screwfix',price:34.99,sku:'40031'}] },
+  { id:'l7', name:'Pendant ceiling rose', search:['ceiling rose','pendant','ceiling light rose'], category:'light-fittings', unit:'each', suppliers:[{name:'Screwfix',price:3.99,sku:'40040'}] },
+  { id:'l8', name:'Emergency exit sign LED', search:['exit sign','emergency exit light'], category:'light-fittings', unit:'each', suppliers:[{name:'Screwfix',price:29.99,sku:'40050'}] },
+  { id:'l9', name:'Emergency downlight 3W maintained', search:['emergency light','maintained emergency','emergency downlight'], category:'light-fittings', unit:'each', suppliers:[{name:'Screwfix',price:24.99,sku:'40060'},{name:'CEF',price:26.00,sku:'C-060'}] },
+  // Consumer units & protection
+  { id:'cu1', name:'Consumer unit 10-way dual RCD', search:['consumer unit','fuse board','10 way consumer unit','cu 10 way'], category:'protection', unit:'each', suppliers:[{name:'Screwfix',price:89.99,sku:'50001'},{name:'CEF',price:94.00,sku:'C-070'}] },
+  { id:'cu2', name:'Consumer unit 12-way dual RCD', search:['12 way consumer unit','cu 12 way'], category:'protection', unit:'each', suppliers:[{name:'Screwfix',price:109.99,sku:'50002'},{name:'CEF',price:114.00,sku:'C-071'}] },
+  { id:'cu3', name:'RCBO 6A 30mA type B', search:['rcbo 6a','6a rcbo','6amp rcbo'], category:'protection', unit:'each', suppliers:[{name:'Screwfix',price:14.99,sku:'50010'},{name:'CEF',price:15.50,sku:'C-080'}] },
+  { id:'cu4', name:'RCBO 16A 30mA type B', search:['rcbo 16a','16a rcbo','16amp rcbo'], category:'protection', unit:'each', suppliers:[{name:'Screwfix',price:14.99,sku:'50011'},{name:'CEF',price:15.50,sku:'C-081'}] },
+  { id:'cu5', name:'RCBO 20A 30mA type B', search:['rcbo 20a','20a rcbo','20amp rcbo'], category:'protection', unit:'each', suppliers:[{name:'Screwfix',price:14.99,sku:'50012'},{name:'CEF',price:15.50,sku:'C-082'}] },
+  { id:'cu6', name:'RCBO 32A 30mA type B', search:['rcbo 32a','32a rcbo','32amp rcbo'], category:'protection', unit:'each', suppliers:[{name:'Screwfix',price:14.99,sku:'50013'},{name:'CEF',price:15.50,sku:'C-083'}] },
+  { id:'cu7', name:'MCB 6A type B', search:['mcb 6a','6a mcb','6 amp mcb'], category:'protection', unit:'each', suppliers:[{name:'Screwfix',price:4.99,sku:'50020'}] },
+  { id:'cu8', name:'MCB 16A type B', search:['mcb 16a','16a mcb'], category:'protection', unit:'each', suppliers:[{name:'Screwfix',price:4.99,sku:'50021'}] },
+  { id:'cu9', name:'MCB 32A type B', search:['mcb 32a','32a mcb'], category:'protection', unit:'each', suppliers:[{name:'Screwfix',price:4.99,sku:'50022'}] },
+  { id:'cu10', name:'RCD 63A 30mA 2-pole', search:['rcd 63a','rcd unit','63 amp rcd'], category:'protection', unit:'each', suppliers:[{name:'CEF',price:34.99,sku:'C-090'}] },
+  // EV charging
+  { id:'ev1', name:'EV charger 7kW tethered', search:['ev charger','ev charge point','7kw ev charger','electric vehicle charger'], category:'ev', unit:'each', suppliers:[{name:'Screwfix',price:599.00,sku:'60001'},{name:'CEF',price:579.00,sku:'C-100'}] },
+  { id:'ev2', name:'EV charger 7kW untethered', search:['ev charger untethered','7kw untethered ev'], category:'ev', unit:'each', suppliers:[{name:'CEF',price:549.00,sku:'C-101'}] },
+  { id:'ev3', name:'6mm² SWA cable (per metre)', search:['ev cable','6mm armoured','swa 6mm ev'], category:'ev', unit:'m', suppliers:[{name:'CEF',price:5.50,sku:'C-102'}] },
+  // Fixings & sundries
+  { id:'f1', name:'Cable clips white 6mm (100pk)', search:['cable clips','6mm clips','cable clip 6mm'], category:'fixings', unit:'pack', suppliers:[{name:'Screwfix',price:1.99,sku:'70001'},{name:'Toolstation',price:1.79,sku:'T-060'}] },
+  { id:'f2', name:'Cable clips white 10mm (100pk)', search:['10mm cable clips','cable clip 10mm'], category:'fixings', unit:'pack', suppliers:[{name:'Screwfix',price:2.29,sku:'70002'}] },
+  { id:'f3', name:'Earth bonding clamp 15mm', search:['earth clamp 15mm','bonding clamp 15','earth bonding 15'], category:'fixings', unit:'each', suppliers:[{name:'Screwfix',price:1.49,sku:'70010'}] },
+  { id:'f4', name:'Earth bonding clamp 22mm', search:['earth clamp 22mm','bonding clamp 22','earth bonding 22'], category:'fixings', unit:'each', suppliers:[{name:'Screwfix',price:1.99,sku:'70011'}] },
+  { id:'f5', name:'Earth bonding clamp 28mm', search:['earth clamp 28mm','bonding clamp 28'], category:'fixings', unit:'each', suppliers:[{name:'Screwfix',price:2.49,sku:'70012'}] },
+  { id:'f6', name:'Wall plugs red (100pk)', search:['wall plugs red','red rawlplug','plugs red'], category:'fixings', unit:'pack', suppliers:[{name:'Screwfix',price:1.49,sku:'70020'}] },
+  { id:'f7', name:'Wall plugs brown (100pk)', search:['wall plugs brown','brown rawlplug'], category:'fixings', unit:'pack', suppliers:[{name:'Screwfix',price:1.99,sku:'70021'}] },
+  { id:'f8', name:'Wood screws 3.5×40mm (200pk)', search:['wood screws','screws 40mm'], category:'fixings', unit:'pack', suppliers:[{name:'Screwfix',price:3.49,sku:'70030'}] },
+  { id:'f9', name:'Green/yellow earth sleeving 1m', search:['earth sleeving','green yellow sleeving','earth sleeve'], category:'consumables', unit:'each', suppliers:[{name:'Screwfix',price:0.49,sku:'70040'},{name:'Toolstation',price:0.39,sku:'T-070'}] },
+  { id:'f10', name:'Warning labels (voltage/electrical) pack', search:['warning labels','electrical labels','voltage labels'], category:'consumables', unit:'pack', suppliers:[{name:'Screwfix',price:2.99,sku:'70050'}] },
+  { id:'f11', name:'Connector blocks (30A strip 12-way)', search:['connector block','choc block','connection strip'], category:'consumables', unit:'strip', suppliers:[{name:'Screwfix',price:1.49,sku:'70060'}] },
+  { id:'f12', name:'Wago 221 connectors 3-way (50pk)', search:['wago connectors','wago 3 way','lever connectors'], category:'consumables', unit:'pack', suppliers:[{name:'Screwfix',price:12.99,sku:'70070'}] },
+  { id:'f13', name:'Wago 221 connectors 5-way (25pk)', search:['wago 5 way','lever connectors 5'], category:'consumables', unit:'pack', suppliers:[{name:'Screwfix',price:11.99,sku:'70071'}] },
+  { id:'f14', name:'PVC tape black (10m)', search:['pvc tape','insulation tape','black tape'], category:'consumables', unit:'roll', suppliers:[{name:'Screwfix',price:0.99,sku:'70080'}] },
+  { id:'f15', name:'Cable ties 200mm (100pk)', search:['cable ties','zip ties'], category:'consumables', unit:'pack', suppliers:[{name:'Screwfix',price:2.49,sku:'70090'}] },
+  // Certification
+  { id:'cert1', name:'Electrical Installation Certificate (EIC)', search:['eic','electrical certificate','installation certificate'], category:'certification', unit:'each', suppliers:[{name:'Self',price:0,sku:''}] },
+  { id:'cert2', name:'Minor Works Certificate', search:['minor works','minor electrical certificate'], category:'certification', unit:'each', suppliers:[{name:'Self',price:0,sku:''}] },
+  { id:'cert3', name:'EICR (Electrical Inspection Condition Report)', search:['eicr','condition report','electrical inspection'], category:'certification', unit:'each', suppliers:[{name:'Self',price:0,sku:''}] },
+  // Outdoor / garden
+  { id:'o1', name:'IP44 outdoor junction box', search:['outdoor junction box','external junction','ip44 junction'], category:'outdoor', unit:'each', suppliers:[{name:'Screwfix',price:6.99,sku:'80001'}] },
+  { id:'o2', name:'Outdoor socket IP44 single', search:['outdoor single socket','external single socket'], category:'outdoor', unit:'each', suppliers:[{name:'Screwfix',price:14.99,sku:'80010'}] },
+  { id:'o3', name:'PIR sensor 360° white', search:['pir sensor','motion sensor','pir detector'], category:'outdoor', unit:'each', suppliers:[{name:'Screwfix',price:19.99,sku:'80020'}] },
+  // Data & comms
+  { id:'d1', name:'CAT6 cable (305m drum)', search:['cat6 cable','ethernet cable','network cable'], category:'data', unit:'drum', suppliers:[{name:'Screwfix',price:74.99,sku:'90001'}] },
+  { id:'d2', name:'RJ45 keystone jack', search:['rj45 keystone','rj45 jack','network socket'], category:'data', unit:'each', suppliers:[{name:'Screwfix',price:2.49,sku:'90010'}] },
+  { id:'d3', name:'1-gang data faceplate', search:['data faceplate','network faceplate','1 gang data'], category:'data', unit:'each', suppliers:[{name:'Screwfix',price:3.99,sku:'90020'}] },
+];
+
+function lookupMaterial(searchTerm, quantity, unit, preferredSuppliers, trade) {
+  if (!searchTerm) return null;
+  const term = searchTerm.toLowerCase();
+  let best = null;
+  let bestScore = 0;
+
+  for (const item of CATALOGUE) {
+    let score = 0;
+    const nameLower = item.name.toLowerCase();
+    if (nameLower.includes(term)) score += 10;
+    for (const s of item.search) {
+      if (s.includes(term)) score += 8;
+      if (term.includes(s)) score += 6;
+      const words = term.split(/\s+/);
+      const matchedWords = words.filter(w => s.includes(w) || nameLower.includes(w));
+      score += matchedWords.length * 2;
+    }
+    if (score > bestScore) { bestScore = score; best = item; }
+  }
+
+  if (!best || bestScore < 2) return null;
+
+  // Pick preferred supplier
+  const preferred = (preferredSuppliers || ['Screwfix']);
+  let supplier = best.suppliers.find(s => preferred.includes(s.name)) || best.suppliers[0];
+
+  const unitPrice = supplier.price;
+  const lineTotal = +(unitPrice * (quantity || 1)).toFixed(2);
+
+  return {
+    catalogueId: best.id,
+    materialName: best.name,
+    category: best.category,
+    unit: unit || best.unit,
+    supplierName: supplier.name,
+    supplierSku: supplier.sku,
+    unitPrice,
+    lineTotal,
+    allSuppliers: best.suppliers,
+  };
+}
+
+// ─── GLOBAL STATE ────────────────────────────────────────────────────────────
+const STUB_PROFILE = {
+  name: 'Dave Harris',
+  businessName: 'Harris Electrical Ltd',
+  trade: 'electrician',
+  specialisms: ['consumer units','EV chargers','full rewires','fuse board upgrades','outdoor lighting'],
+  homePostcode: 'WD23 1AA',
+  travelRadiusMiles: 20,
+  dayRatePerPerson: 350,
+  typicalOperatives: 1,
+  targetMarginPct: 30,
+  vatRegistered: true,
+  brandColour: '#FFD600',
+  preferredSuppliers: { electrical: ['Screwfix','CEF'] },
+  phone: '07700 900000',
+  email: 'dave@harriselectrical.co.uk',
+  address: '14 Oak Lane, Watford, WD23 1AA',
+  vatNumber: 'GB 123456789',
+  standardTCs: 'All work carried out to BS 7671:2018. 12-month guarantee on all workmanship. Payment due within 14 days of invoice. Retention of title on all materials until payment received in full.',
+  guaranteeText: 'All workmanship guaranteed for 12 months from date of completion. Manufacturers\' warranties apply to all fittings and materials supplied.',
+  toneOfVoice: 'professional but warm, straight-talking, no jargon',
+  sundryItems: ['earth sleeving','cable clips','warning labels','connector blocks'],
+  wasteFactors: { cable: 0.10, containment: 0.05, fixings: 0.15 },
+  onboardingComplete: true,
+};
+
+const INITIAL_STATE = {
+  profile: null,
+  currentJob: null,
+  billOfMaterials: [],
+  quote: null,
+  proposal: null,
+  acceptance: null,
+  supplierOrders: [],
+  jobs: [],
+};
+
+const AppContext = createContext(null);
+
+function useApp() { return useContext(AppContext); }
+
+function AppProvider({ children }) {
+  const [state, setStateRaw] = useState(() => {
+    try {
+      const saved = localStorage.getItem('accuquote_state');
+      if (saved) return { ...INITIAL_STATE, ...JSON.parse(saved) };
+    } catch {}
+    return INITIAL_STATE;
+  });
+
+  const setState = useCallback((updater) => {
+    setStateRaw(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : { ...prev, ...updater };
+      try { localStorage.setItem('accuquote_state', JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, []);
+
+  const loadDemo = useCallback(() => {
+    const demoJob = {
+      id: 'AQ-2025-001',
+      status: 'quoted',
+      customer: { name: 'Mr & Mrs Thompson', email: 'j.thompson@gmail.com', phone: '07891 234567', address: '42 Maple Avenue, Bushey, WD23 2BT' },
+      scan: { roomType: 'bathroom', dimensions: { length: 3.2, width: 2.1, height: 2.4 }, features: { windowCount: 1, doorCount: 1, existingSocketCount: 1, existingLightCount: 1 }, anomalies: ['no existing earth bonding to pipework', 'old round-pin sockets present'] },
+      jobDescription: 'Full bathroom electrical refurb. Strip out old round-pin sockets. Install IP65 shaver socket above mirror. Two new IP65 LED downlights replacing old pendant. Earth bonding to copper pipework. New dedicated extractor fan circuit from consumer unit. All circuits tested and certified with EIC.',
+      outOfScope: 'No general plumbing. Making good by others. No tiling.',
+      customerSupplied: [],
+      proposedStartDate: '2025-05-15',
+      estimatedDurationDays: 2,
+      createdAt: new Date().toISOString(),
+    };
+    setState(prev => ({
+      ...prev,
+      profile: STUB_PROFILE,
+      currentJob: demoJob,
+      jobs: [demoJob],
+      billOfMaterials: [],
+      quote: null,
+      proposal: null,
+      acceptance: null,
+      supplierOrders: [],
+    }));
+  }, [setState]);
+
+  const clearAll = useCallback(() => {
+    localStorage.removeItem('accuquote_state');
+    setState(INITIAL_STATE);
+  }, [setState]);
+
+  return (
+    <AppContext.Provider value={{ state, setState, loadDemo, clearAll, lookupMaterial, CATALOGUE }}>
+      {children}
+    </AppContext.Provider>
+  );
+}
+
+// ─── ROUTER (hash-based) ─────────────────────────────────────────────────────
+function useHashRoute() {
+  const [route, setRoute] = useState(location.hash || '#/');
+  useEffect(() => {
+    const handler = () => setRoute(location.hash || '#/');
+    window.addEventListener('hashchange', handler);
+    return () => window.removeEventListener('hashchange', handler);
+  }, []);
+  return route;
+}
+
+function navigate(hash) { location.hash = hash; }
+
+// ─── PROGRESS STEPS ──────────────────────────────────────────────────────────
+const JOB_STEPS = [
+  { id: 'scan',      label: 'Scan',      hash: '#/job/scan' },
+  { id: 'describe',  label: 'Describe',  hash: '#/job/describe' },
+  { id: 'materials', label: 'Materials', hash: '#/job/materials' },
+  { id: 'quote',     label: 'Quote',     hash: '#/job/quote' },
+  { id: 'proposal',  label: 'Proposal',  hash: '#/job/proposal' },
+  { id: 'accepted',  label: 'Accepted',  hash: '#/job/accepted' },
+  { id: 'ordered',   label: 'Ordered',   hash: '#/job/orders' },
+];
+
+function stepIndexFromRoute(route) {
+  if (route.includes('/job/scan')) return 0;
+  if (route.includes('/job/describe')) return 1;
+  if (route.includes('/job/materials')) return 2;
+  if (route.includes('/job/quote')) return 3;
+  if (route.includes('/job/proposal')) return 4;
+  if (route.includes('/job/accepted')) return 5;
+  if (route.includes('/job/orders')) return 6;
+  return -1;
+}
+
+// ─── SIDEBAR ─────────────────────────────────────────────────────────────────
+const NAV_ITEMS = [
+  { label: 'Dashboard',  hash: '#/',          icon: '⊞' },
+  { label: 'New Job',    hash: '#/job/scan',  icon: '+' },
+  { label: 'Active Job', hash: '#/job/describe', icon: '◈' },
+  { label: 'Settings',   hash: '#/settings',  icon: '⚙' },
+];
+
+function Sidebar({ route }) {
+  const { state } = useApp();
+  const stepIdx = stepIndexFromRoute(route);
+  const isJobRoute = stepIdx >= 0;
+  const jobId = state.currentJob?.id;
+
+  return (
+    <aside id="sidebar" className="flex flex-col bg-surface border-r border-border" style={{ width: 220, minHeight: '100vh', flexShrink: 0 }}>
+      {/* Logo */}
+      <div className="px-5 py-5 border-b border-border">
+        <div className="aq-logo text-2xl">ACCUQUOTE</div>
+        <div className="text-xs text-muted mt-1" style={{ letterSpacing: 1 }}>BY HARRIS ELECTRICAL</div>
+      </div>
+
+      {/* Nav */}
+      <nav className="flex flex-col gap-1 p-3 flex-1">
+        {NAV_ITEMS.map(item => {
+          const active = item.hash === '#/'
+            ? route === '#/' || route === '#'
+            : route.startsWith(item.hash.replace('#/job/describe','#/job'));
+          return (
+            <a key={item.hash} href={item.hash}
+               className="flex items-center gap-3 px-3 py-2 rounded text-sm transition-colors no-underline"
+               style={{ color: active ? '#FFD600' : '#9CA3AF', background: active ? 'rgba(255,214,0,0.08)' : 'transparent', fontWeight: active ? 500 : 400, textDecoration:'none' }}>
+              <span style={{ fontSize: 14, width: 16, textAlign: 'center' }}>{item.icon}</span>
+              {item.label}
+            </a>
+          );
+        })}
+      </nav>
+
+      {/* Job progress tracker */}
+      {isJobRoute && (
+        <div className="px-4 py-4 border-t border-border">
+          {jobId && <div className="text-xs text-muted mb-3" style={{ letterSpacing: 1 }}>{jobId}</div>}
+          <div className="flex flex-col gap-1">
+            {JOB_STEPS.map((step, i) => {
+              const done = i < stepIdx;
+              const active = i === stepIdx;
+              return (
+                <div key={step.id} className="flex items-center gap-2">
+                  <div className="flex flex-col items-center" style={{ width: 16 }}>
+                    <div className="rounded-full flex items-center justify-center text-xs"
+                         style={{ width: 16, height: 16, background: done ? '#FFD600' : active ? 'transparent' : '#1e2229', border: active ? '2px solid #FFD600' : done ? 'none' : '2px solid #2a2e36', color: done ? '#0D0D0D' : active ? '#FFD600' : '#4B5563', fontSize: 9, fontWeight: 700 }}>
+                      {done ? '✓' : i + 1}
+                    </div>
+                    {i < JOB_STEPS.length - 1 && (
+                      <div style={{ width: 1, height: 10, background: done ? '#FFD600' : '#1e2229', marginTop: 1 }} />
+                    )}
+                  </div>
+                  <span className="text-xs" style={{ color: active ? '#FFD600' : done ? '#9CA3AF' : '#4B5563', fontWeight: active ? 600 : 400 }}>
+                    {step.label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Profile */}
+      <div className="px-4 py-3 border-t border-border">
+        <div className="text-xs font-medium" style={{ color: '#E8EDF2' }}>{state.profile?.name || 'Dave Harris'}</div>
+        <div className="text-xs text-muted">{state.profile?.businessName || 'Harris Electrical Ltd'}</div>
+      </div>
+    </aside>
+  );
+}
+
+// ─── SCREEN WRAPPER ───────────────────────────────────────────────────────────
+function Screen({ children, title, subtitle, action }) {
+  return (
+    <div className="flex-1 flex flex-col fade-up" style={{ minHeight: 0 }}>
+      {(title || action) && (
+        <div className="flex items-center justify-between px-8 py-5 border-b border-border" style={{ background: '#111418', flexShrink: 0 }}>
+          <div>
+            {title && <h1 className="text-lg font-semibold" style={{ color: '#E8EDF2' }}>{title}</h1>}
+            {subtitle && <p className="text-xs text-muted mt-0.5">{subtitle}</p>}
+          </div>
+          {action}
+        </div>
+      )}
+      <div className="flex-1 overflow-y-auto px-8 py-6">{children}</div>
+    </div>
+  );
+}
+
+// ─── REUSABLE COMPONENTS ──────────────────────────────────────────────────────
+function Btn({ children, onClick, variant='primary', disabled, className='', type='button', small }) {
+  const base = 'font-medium rounded transition-all cursor-pointer border-0 flex items-center gap-2 justify-center';
+  const pad = small ? 'px-3 py-1.5 text-xs' : 'px-4 py-2.5 text-sm';
+  const variants = {
+    primary: { background: '#FFD600', color: '#0D0D0D', opacity: disabled ? 0.4 : 1 },
+    secondary: { background: '#1e2229', color: '#E8EDF2', border: '1px solid #2a2e36', opacity: disabled ? 0.4 : 1 },
+    danger: { background: '#7f1d1d', color: '#fca5a5', opacity: disabled ? 0.4 : 1 },
+    orange: { background: '#FF6B00', color: '#fff', opacity: disabled ? 0.4 : 1 },
+    ghost: { background: 'transparent', color: '#9CA3AF', opacity: disabled ? 0.4 : 1 },
+  };
+  return (
+    <button type={type} onClick={onClick} disabled={disabled} className={`${base} ${pad} ${className}`} style={variants[variant]}>
+      {children}
+    </button>
+  );
+}
+
+function Card({ children, className='' }) {
+  return <div className={`rounded-lg p-5 ${className}`} style={{ background: '#111418', border: '1px solid #1e2229' }}>{children}</div>;
+}
+
+function Input({ label, value, onChange, placeholder, type='text', className='' }) {
+  return (
+    <div className={className}>
+      {label && <label className="block text-xs text-muted mb-1.5">{label}</label>}
+      <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+        className="w-full rounded px-3 py-2 text-sm outline-none transition-colors"
+        style={{ background: '#0D0D0D', border: '1px solid #1e2229', color: '#E8EDF2' }}
+        onFocus={e => e.target.style.borderColor='#FFD600'}
+        onBlur={e => e.target.style.borderColor='#1e2229'} />
+    </div>
+  );
+}
+
+function Textarea({ label, value, onChange, placeholder, rows=4, className='' }) {
+  return (
+    <div className={className}>
+      {label && <label className="block text-xs text-muted mb-1.5">{label}</label>}
+      <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={rows}
+        className="w-full rounded px-3 py-2 text-sm outline-none transition-colors resize-none"
+        style={{ background: '#0D0D0D', border: '1px solid #1e2229', color: '#E8EDF2', fontFamily: 'inherit' }}
+        onFocus={e => e.target.style.borderColor='#FFD600'}
+        onBlur={e => e.target.style.borderColor='#1e2229'} />
+    </div>
+  );
+}
+
+function Spinner({ size=20 }) {
+  return (
+    <svg className="spinner" width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="10" stroke="#2a2e36" strokeWidth="3"/>
+      <path d="M12 2a10 10 0 0 1 10 10" stroke="#FFD600" strokeWidth="3" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+// ─── DASHBOARD SCREEN ────────────────────────────────────────────────────────
+function DashboardScreen() {
+  const { state, loadDemo } = useApp();
+  const { jobs, profile } = state;
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const name = profile?.name?.split(' ')[0] || 'Dave';
+
+  const statusCols = ['quoted','accepted','ordered','scheduled','complete'];
+  const colLabels = { quoted:'Quoted', accepted:'Accepted', ordered:'Ordered', scheduled:'Scheduled', complete:'Complete' };
+
+  const wonJobs = jobs.filter(j => ['accepted','ordered','scheduled','complete'].includes(j.status));
+  const winRate = jobs.length ? Math.round(wonJobs.length / jobs.length * 100) : 0;
+  const avgValue = wonJobs.length ? Math.round(wonJobs.reduce((s,j) => s + (j.quote?.grandTotal||0), 0) / wonJobs.length) : 0;
+  const pipeline = jobs.filter(j => j.status !== 'complete').reduce((s,j) => s + (j.quote?.grandTotal||0), 0);
+
+  const stats = [
+    { label: 'Quotes this month', value: jobs.length },
+    { label: 'Won', value: `${wonJobs.length} (${winRate}%)` },
+    { label: 'Avg job value', value: avgValue ? `£${avgValue.toLocaleString()}` : '—' },
+    { label: 'Revenue pipeline', value: pipeline ? `£${pipeline.toLocaleString()}` : '—' },
+  ];
+
+  return (
+    <Screen title={`${greeting}, ${name}.`} subtitle={new Date().toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' })}
+      action={<Btn onClick={() => navigate('#/job/scan')}>+ New Job</Btn>}>
+
+      {/* Stats */}
+      <div className="grid grid-cols-4 gap-4 mb-8" style={{ gridTemplateColumns: 'repeat(4,1fr)' }}>
+        {stats.map(s => (
+          <Card key={s.label}>
+            <div className="text-2xl font-bold" style={{ color: '#FFD600' }}>{s.value}</div>
+            <div className="text-xs text-muted mt-1">{s.label}</div>
+          </Card>
+        ))}
+      </div>
+
+      {jobs.length === 0 ? (
+        <div className="text-center py-20">
+          <div className="text-4xl mb-4">📋</div>
+          <div className="text-lg font-medium mb-2" style={{ color: '#E8EDF2' }}>No jobs yet</div>
+          <div className="text-muted text-sm mb-6">Tap + New Job to create your first quote</div>
+          <div className="flex gap-3 justify-center">
+            <Btn onClick={() => navigate('#/job/scan')}>+ New Job</Btn>
+            <Btn variant="secondary" onClick={loadDemo}>Load Demo Job</Btn>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Pipeline */}
+          <div className="mb-2 text-xs text-muted font-medium uppercase" style={{ letterSpacing: 1 }}>Pipeline</div>
+          <div className="flex gap-4 overflow-x-auto pb-4 mb-8">
+            {statusCols.map(col => (
+              <div key={col} style={{ minWidth: 200 }}>
+                <div className="text-xs font-medium mb-2 px-1" style={{ color: '#6B7280', letterSpacing: 1 }}>{colLabels[col]}</div>
+                <div className="flex flex-col gap-2">
+                  {jobs.filter(j => j.status === col).map(job => (
+                    <Card key={job.id} className="cursor-pointer hover:border-yellow-500" onClick={() => { navigate('#/job/describe'); }}>
+                      <div className="text-xs font-mono text-muted">{job.id}</div>
+                      <div className="text-sm font-medium mt-1" style={{ color: '#E8EDF2' }}>{job.customer?.name}</div>
+                      <div className="text-xs text-muted">{job.scan?.roomType || 'New job'}</div>
+                      {job.quote?.grandTotal && <div className="text-sm font-bold mt-2" style={{ color: '#FFD600' }}>£{job.quote.grandTotal.toLocaleString()}</div>}
+                      {job.proposedStartDate && <div className="text-xs text-muted">Start: {job.proposedStartDate}</div>}
+                    </Card>
+                  ))}
+                  {jobs.filter(j => j.status === col).length === 0 && (
+                    <div className="text-xs text-muted text-center py-4 rounded" style={{ border: '1px dashed #1e2229' }}>Empty</div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Recent activity */}
+          <div className="mb-2 text-xs text-muted font-medium uppercase" style={{ letterSpacing: 1 }}>Recent Activity</div>
+          <Card>
+            {jobs.slice(0,5).map(j => (
+              <div key={j.id} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
+                <div className="text-xs font-mono text-muted w-24">{j.id}</div>
+                <div className="text-sm flex-1" style={{ color: '#E8EDF2' }}>{j.customer?.name} — {j.scan?.roomType || 'new job'}</div>
+                <div className="text-xs text-muted">{j.status}</div>
+              </div>
+            ))}
+          </Card>
+        </>
+      )}
+    </Screen>
+  );
+}
+
+// ─── ONBOARDING SCREEN ────────────────────────────────────────────────────────
+const ONBOARDING_STEPS = [
+  { q: "What's your full name?", key: 'name', placeholder: 'Dave Harris', type: 'text' },
+  { q: "What's your business name?", key: 'businessName', placeholder: 'Harris Electrical Ltd', type: 'text' },
+  { q: "What's your trade?", key: 'trade', placeholder: 'Electrician', type: 'text' },
+  { q: "What are your main specialisms? (comma-separated)", key: 'specialisms', placeholder: 'Consumer units, EV chargers, full rewires', type: 'text' },
+  { q: "What's your home postcode?", key: 'homePostcode', placeholder: 'WD23 1AA', type: 'text' },
+  { q: "What's your day rate per person (£)?", key: 'dayRatePerPerson', placeholder: '350', type: 'number' },
+  { q: "What target profit margin % do you aim for?", key: 'targetMarginPct', placeholder: '30', type: 'number' },
+  { q: "Are you VAT registered?", key: 'vatRegistered', placeholder: '', type: 'yesno' },
+];
+
+function OnboardingScreen() {
+  const { setState } = useApp();
+  const [step, setStep] = useState(0);
+  const [answers, setAnswers] = useState({});
+  const [val, setVal] = useState('');
+
+  const cur = ONBOARDING_STEPS[step];
+  const isLast = step === ONBOARDING_STEPS.length - 1;
+
+  const next = () => {
+    const newAnswers = { ...answers, [cur.key]: cur.type === 'number' ? +val : cur.type === 'yesno' ? val === 'yes' : val };
+    setAnswers(newAnswers);
+    setVal('');
+    if (isLast) {
+      const profile = {
+        ...STUB_PROFILE,
+        ...newAnswers,
+        specialisms: typeof newAnswers.specialisms === 'string'
+          ? newAnswers.specialisms.split(',').map(s => s.trim())
+          : (newAnswers.specialisms || STUB_PROFILE.specialisms),
+        onboardingComplete: true,
+      };
+      setState(prev => ({ ...prev, profile }));
+      navigate('#/');
+    } else {
+      setStep(s => s + 1);
+    }
+  };
+
+  const useStub = () => {
+    setState(prev => ({ ...prev, profile: STUB_PROFILE }));
+    navigate('#/');
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen px-8" style={{ background: '#0D0D0D' }}>
+      <div className="aq-logo text-4xl mb-10">ACCUQUOTE</div>
+      <div className="w-full max-w-md">
+        {/* Progress dots */}
+        <div className="flex gap-2 mb-8 justify-center">
+          {ONBOARDING_STEPS.map((_, i) => (
+            <div key={i} className="rounded-full transition-all" style={{ width: i === step ? 24 : 8, height: 8, background: i <= step ? '#FFD600' : '#1e2229' }} />
+          ))}
+        </div>
+
+        <div className="fade-up" key={step}>
+          <Card>
+            <div className="text-xs text-muted mb-2">Step {step + 1} of {ONBOARDING_STEPS.length}</div>
+            <h2 className="text-xl font-semibold mb-6" style={{ color: '#E8EDF2' }}>{cur.q}</h2>
+
+            {cur.type === 'yesno' ? (
+              <div className="flex gap-3">
+                <Btn variant={val === 'yes' ? 'primary' : 'secondary'} onClick={() => setVal('yes')} className="flex-1">Yes</Btn>
+                <Btn variant={val === 'no' ? 'primary' : 'secondary'} onClick={() => setVal('no')} className="flex-1">No</Btn>
+              </div>
+            ) : (
+              <input type={cur.type} value={val} onChange={e => setVal(e.target.value)}
+                placeholder={cur.placeholder}
+                className="w-full rounded px-4 py-3 text-base outline-none"
+                style={{ background: '#0D0D0D', border: '1px solid #1e2229', color: '#E8EDF2', fontFamily: 'inherit' }}
+                onFocus={e => e.target.style.borderColor='#FFD600'}
+                onBlur={e => e.target.style.borderColor='#1e2229'}
+                onKeyDown={e => e.key === 'Enter' && val && next()} />
+            )}
+
+            <div className="flex gap-3 mt-6">
+              {step > 0 && <Btn variant="ghost" onClick={() => setStep(s => s-1)}>← Back</Btn>}
+              <Btn onClick={next} disabled={cur.type !== 'yesno' && !val} className="flex-1">
+                {isLast ? 'Finish →' : 'Next →'}
+              </Btn>
+            </div>
+          </Card>
+        </div>
+
+        <div className="text-center mt-6">
+          <button onClick={useStub} className="text-xs text-muted underline cursor-pointer bg-transparent border-0">
+            Skip — use demo profile (Dave Harris)
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── SETTINGS SCREEN ─────────────────────────────────────────────────────────
+function SettingsScreen() {
+  const { state, setState, clearAll } = useApp();
+  const [form, setForm] = useState(state.profile || STUB_PROFILE);
+  const [saved, setSaved] = useState(false);
+
+  const save = () => {
+    setState(prev => ({ ...prev, profile: form }));
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const upd = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  return (
+    <Screen title="Settings" subtitle="Manage your profile and preferences">
+      <div className="max-w-2xl flex flex-col gap-6">
+        <Card>
+          <div className="text-sm font-medium mb-4" style={{ color: '#E8EDF2' }}>Business Profile</div>
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="Your name" value={form.name} onChange={v => upd('name',v)} />
+            <Input label="Business name" value={form.businessName} onChange={v => upd('businessName',v)} />
+            <Input label="Trade" value={form.trade} onChange={v => upd('trade',v)} />
+            <Input label="Home postcode" value={form.homePostcode} onChange={v => upd('homePostcode',v)} />
+            <Input label="Phone" value={form.phone||''} onChange={v => upd('phone',v)} />
+            <Input label="Email" value={form.email||''} onChange={v => upd('email',v)} />
+          </div>
+        </Card>
+
+        <Card>
+          <div className="text-sm font-medium mb-4" style={{ color: '#E8EDF2' }}>Pricing Defaults</div>
+          <div className="grid grid-cols-3 gap-4">
+            <Input label="Day rate per person (£)" type="number" value={form.dayRatePerPerson} onChange={v => upd('dayRatePerPerson',+v)} />
+            <Input label="Typical operatives" type="number" value={form.typicalOperatives} onChange={v => upd('typicalOperatives',+v)} />
+            <Input label="Target margin %" type="number" value={form.targetMarginPct} onChange={v => upd('targetMarginPct',+v)} />
+          </div>
+          <div className="flex items-center gap-3 mt-4">
+            <div className="text-sm" style={{ color: '#E8EDF2' }}>VAT Registered</div>
+            <Btn variant={form.vatRegistered ? 'primary' : 'secondary'} small onClick={() => upd('vatRegistered', true)}>Yes</Btn>
+            <Btn variant={!form.vatRegistered ? 'primary' : 'secondary'} small onClick={() => upd('vatRegistered', false)}>No</Btn>
+          </div>
+        </Card>
+
+        <Card>
+          <div className="text-sm font-medium mb-4" style={{ color: '#E8EDF2' }}>Brand Colour</div>
+          <div className="flex items-center gap-4">
+            <input type="color" value={form.brandColour||'#FFD600'} onChange={e => upd('brandColour',e.target.value)}
+              className="rounded cursor-pointer" style={{ width: 48, height: 36, border:'none', background:'none' }} />
+            <div className="text-sm text-muted">{form.brandColour||'#FFD600'}</div>
+          </div>
+        </Card>
+
+        <Card>
+          <div className="text-sm font-medium mb-4" style={{ color: '#E8EDF2' }}>Standard Terms & Conditions</div>
+          <Textarea value={form.standardTCs||''} onChange={v => upd('standardTCs',v)} rows={4} />
+        </Card>
+
+        <div className="flex gap-3">
+          <Btn onClick={save}>{saved ? '✓ Saved' : 'Save Changes'}</Btn>
+          <Btn variant="danger" onClick={() => { if(confirm('Clear all data?')) clearAll(); }}>Clear All Data</Btn>
+        </div>
+      </div>
+    </Screen>
+  );
+}
+
+// ─── PLACEHOLDER SCREENS (filled in next passes) ─────────────────────────────
+function PlaceholderScreen({ title, next, nextLabel }) {
+  return (
+    <Screen title={title}>
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="text-5xl mb-4">🚧</div>
+        <div className="text-lg font-medium mb-2" style={{ color: '#E8EDF2' }}>Coming in next build pass</div>
+        <div className="text-muted text-sm mb-6">{title} screen</div>
+        {next && <Btn onClick={() => navigate(next)}>{nextLabel || 'Continue →'}</Btn>}
+      </div>
+    </Screen>
+  );
+}
+
+// ─── ROUTER ───────────────────────────────────────────────────────────────────
+function Router() {
+  const route = useHashRoute();
+  const { state } = useApp();
+
+  if (!state.profile) return <OnboardingScreen />;
+
+  const views = {
+    '#/': <DashboardScreen />,
+    '#/settings': <SettingsScreen />,
+    '#/job/scan': <PlaceholderScreen title="Job Scan" next="#/job/describe" nextLabel="Next: Describe →" />,
+    '#/job/describe': <PlaceholderScreen title="Job Description" next="#/job/materials" nextLabel="Next: Materials →" />,
+    '#/job/materials': <PlaceholderScreen title="Materials Agent" next="#/job/quote" nextLabel="Next: Quote →" />,
+    '#/job/quote': <PlaceholderScreen title="Quote Builder" next="#/job/proposal" nextLabel="Next: Proposal →" />,
+    '#/job/proposal': <PlaceholderScreen title="Proposal Builder" next="#/job/accepted" nextLabel="Next: Acceptance →" />,
+    '#/job/accepted': <PlaceholderScreen title="Customer Acceptance" next="#/job/orders" nextLabel="Next: Orders →" />,
+    '#/job/orders': <PlaceholderScreen title="Supplier Orders" next="#/" nextLabel="Back to Dashboard" />,
+  };
+
+  const content = views[route] || views['#/'];
+
+  return (
+    <div className="flex" style={{ minHeight: '100vh' }}>
+      <Sidebar route={route} />
+      <main className="flex-1 flex flex-col" style={{ minWidth: 0 }}>
+        {content}
+      </main>
+    </div>
+  );
+}
+
+// ─── DEMO BUTTON ──────────────────────────────────────────────────────────────
+function DemoButton() {
+  const { loadDemo } = useApp();
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="no-print" style={{ position:'fixed', bottom:24, right:24, zIndex:999 }}>
+      {open && (
+        <div className="mb-2 rounded-lg p-3 flex flex-col gap-2 fade-up" style={{ background:'#111418', border:'1px solid #1e2229', minWidth:180 }}>
+          <button onClick={() => { loadDemo(); navigate('#/'); setOpen(false); }}
+            className="text-left text-sm px-3 py-2 rounded cursor-pointer border-0"
+            style={{ background:'transparent', color:'#E8EDF2' }}>
+            📋 Load Demo Job
+          </button>
+          <button onClick={() => { loadDemo(); navigate('#/job/describe'); setOpen(false); }}
+            className="text-left text-sm px-3 py-2 rounded cursor-pointer border-0"
+            style={{ background:'transparent', color:'#E8EDF2' }}>
+            ▶ Jump to Describe
+          </button>
+          <button onClick={() => { loadDemo(); navigate('#/job/materials'); setOpen(false); }}
+            className="text-left text-sm px-3 py-2 rounded cursor-pointer border-0"
+            style={{ background:'transparent', color:'#E8EDF2' }}>
+            ▶ Jump to Materials
+          </button>
+          <button onClick={() => { loadDemo(); navigate('#/job/quote'); setOpen(false); }}
+            className="text-left text-sm px-3 py-2 rounded cursor-pointer border-0"
+            style={{ background:'transparent', color:'#E8EDF2' }}>
+            ▶ Jump to Quote
+          </button>
+        </div>
+      )}
+      <button onClick={() => setOpen(o => !o)}
+        className="rounded-full text-xs font-bold cursor-pointer border-0 shadow-lg"
+        style={{ background:'#1e2229', color:'#6B7280', width:40, height:40, display:'flex', alignItems:'center', justifyContent:'center', border:'1px solid #2a2e36' }}>
+        DEMO
+      </button>
+    </div>
+  );
+}
+
+// ─── APP ROOT ─────────────────────────────────────────────────────────────────
+function App() {
+  return (
+    <AppProvider>
+      <Router />
+      <DemoButton />
+    </AppProvider>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
