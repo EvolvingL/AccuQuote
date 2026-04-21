@@ -702,6 +702,12 @@ function SettingsScreen() {
         </Card>
 
         <Card>
+          <div className="text-sm font-medium mb-3" style={{ color: '#E8EDF2' }}>Claude API Key</div>
+          <div className="text-xs text-muted mb-3">Required for AI materials estimation and proposal generation. Never stored on a server.</div>
+          <Input label="Anthropic API Key" value={form.anthropicKey||''} onChange={v => upd('anthropicKey',v)} placeholder="sk-ant-..." />
+        </Card>
+
+        <Card>
           <div className="text-sm font-medium mb-4" style={{ color: '#E8EDF2' }}>Brand Colour</div>
           <div className="flex items-center gap-4">
             <input type="color" value={form.brandColour||'#FFD600'} onChange={e => upd('brandColour',e.target.value)}
@@ -718,6 +724,501 @@ function SettingsScreen() {
         <div className="flex gap-3">
           <Btn onClick={save}>{saved ? '✓ Saved' : 'Save Changes'}</Btn>
           <Btn variant="danger" onClick={() => { if(confirm('Clear all data?')) clearAll(); }}>Clear All Data</Btn>
+        </div>
+      </div>
+    </Screen>
+  );
+}
+
+// ─── PROPOSAL BUILDER SCREEN ─────────────────────────────────────────────────
+function ProposalScreen() {
+  const { state, setState } = useApp();
+  const profile = state.profile || STUB_PROFILE;
+  const job = state.currentJob;
+  const quote = state.quote || job?.quote;
+  const [generating, setGenerating] = useState(false);
+  const [coverLetter, setCoverLetter] = useState(state.proposal?.coverLetter || '');
+  const [scopeBullets, setScopeBullets] = useState(state.proposal?.scopeBullets || []);
+  const [newBullet, setNewBullet] = useState('');
+  const [sendVia, setSendVia] = useState('email');
+  const [sent, setSent] = useState(false);
+  const [jobRef] = useState(job?.id || `AQ-${new Date().getFullYear()}-001`);
+  const proposalDate = new Date().toLocaleDateString('en-GB');
+  const validUntil = new Date(Date.now()+30*24*60*60*1000).toLocaleDateString('en-GB');
+
+  const selectedTiers = quote?.selectedTiers || [];
+
+  const generate = async () => {
+    setGenerating(true);
+    try {
+      const prompt = `TRADESPERSON: ${profile.name}, ${profile.businessName}, ${profile.trade}\nTONE: ${profile.toneOfVoice||'professional and warm'}\nCUSTOMER: ${job?.customer?.name||'the customer'}, ${job?.customer?.address||''}\nJOB: ${job?.jobDescription||''}\nOUT OF SCOPE: ${job?.outOfScope||'none'}\nQUOTE: £${selectedTiers[0]?.grandTotal||0} inc VAT\nSTART: ${job?.proposedStartDate||'TBC'} DURATION: ${job?.estimatedDurationDays||1} days\n\nReturn JSON only: {"coverLetter":"3-4 paragraph professional letter","scopeBullets":["item1","item2"]}`;
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method:'POST',
+        headers:{ 'x-api-key': profile.anthropicKey||'', 'anthropic-version':'2023-06-01', 'content-type':'application/json', 'anthropic-dangerous-direct-browser-access':'true' },
+        body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:1000, system:'You are a professional proposal writer for UK trades businesses. Return only valid JSON.', messages:[{role:'user',content:prompt}] })
+      });
+      const data = await resp.json();
+      const raw = data.content[0].text;
+      const match = raw.match(/\{[\s\S]*\}/);
+      if (match) {
+        const parsed = JSON.parse(match[0]);
+        setCoverLetter(parsed.coverLetter||'');
+        setScopeBullets(parsed.scopeBullets||[]);
+      }
+    } catch(e) {
+      setCoverLetter(`Dear ${job?.customer?.name||'Customer'},\n\nThank you for the opportunity to quote for the electrical works at your property. Please find enclosed our proposal for the work as discussed.\n\nWe will carry out all works to the highest standard, fully compliant with BS 7671:2018 (18th Edition Wiring Regulations). All circuits will be tested and certified upon completion.\n\nWe look forward to working with you.\n\nKind regards,\n${profile.name}\n${profile.businessName}`);
+      setScopeBullets(['Strip out and dispose of existing non-compliant wiring','Install new IP65-rated accessories throughout','Install new LED lighting to ceiling','Carry out full earth bonding to all metallic services','Test and certify all works with Electrical Installation Certificate']);
+    }
+    setGenerating(false);
+  };
+
+  useEffect(() => { if (!coverLetter) generate(); }, []);
+
+  const send = () => {
+    const proposal = { coverLetter, scopeBullets, jobRef, proposalDate, validUntil, sendVia, sentAt: new Date().toISOString(), selectedTiers };
+    setState(prev => ({ ...prev, proposal, currentJob:{...prev.currentJob, proposal, status:'quoted'}, jobs:prev.jobs.map(j=>j.id===prev.currentJob?.id?{...j,proposal,status:'quoted'}:j) }));
+    setSent(true);
+  };
+
+  if (sent) {
+    return (
+      <Screen title="Proposal Sent">
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="text-6xl mb-4" style={{ color:'#22C55E' }}>✓</div>
+          <div className="text-2xl font-bold mb-2" style={{ color:'#E8EDF2' }}>Proposal sent to {job?.customer?.name}</div>
+          <div className="text-muted mb-8">via {sendVia}</div>
+          <div className="flex gap-3">
+            <Btn onClick={()=>navigate('#/job/accepted')}>View Customer Acceptance →</Btn>
+            <Btn variant="secondary" onClick={()=>navigate('#/')}>Back to Dashboard</Btn>
+          </div>
+        </div>
+      </Screen>
+    );
+  }
+
+  return (
+    <Screen title="Proposal Builder" subtitle="Review and send your proposal"
+      action={<Btn onClick={()=>window.print()}>🖨 Print / PDF</Btn>}>
+      <div className="flex gap-6" style={{ alignItems:'flex-start' }}>
+        {/* Left: editable fields */}
+        <div className="flex flex-col gap-5" style={{ width:320, flexShrink:0 }}>
+          <Card>
+            <div className="text-sm font-medium mb-3" style={{ color:'#E8EDF2' }}>Customer Details</div>
+            <div className="flex flex-col gap-2 text-sm text-muted">
+              <div>{job?.customer?.name}</div>
+              <div>{job?.customer?.address}</div>
+              <div>{job?.customer?.email}</div>
+              <div>{job?.customer?.phone}</div>
+            </div>
+          </Card>
+          <Card>
+            <div className="text-sm font-medium mb-3" style={{ color:'#E8EDF2' }}>Proposal Details</div>
+            <div className="flex flex-col gap-1 text-xs text-muted">
+              <div>Ref: <span style={{ color:'#E8EDF2' }}>{jobRef}</span></div>
+              <div>Date: <span style={{ color:'#E8EDF2' }}>{proposalDate}</span></div>
+              <div>Valid until: <span style={{ color:'#E8EDF2' }}>{validUntil}</span></div>
+              <div>Start: <span style={{ color:'#E8EDF2' }}>{job?.proposedStartDate||'TBC'}</span></div>
+              <div>Duration: <span style={{ color:'#E8EDF2' }}>{job?.estimatedDurationDays||1} day{job?.estimatedDurationDays!==1?'s':''}</span></div>
+            </div>
+          </Card>
+          <Card>
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-sm font-medium" style={{ color:'#E8EDF2' }}>Cover Letter</div>
+              <Btn small variant="secondary" onClick={generate} disabled={generating}>{generating?'Generating...':'Regenerate'}</Btn>
+            </div>
+            {generating ? (
+              <div className="flex items-center gap-2 py-4 text-sm text-muted"><Spinner size={16}/> Writing...</div>
+            ) : (
+              <textarea value={coverLetter} onChange={e=>setCoverLetter(e.target.value)} rows={8}
+                className="w-full rounded px-3 py-2 text-xs outline-none resize-none"
+                style={{ background:'#0D0D0D', border:'1px solid #1e2229', color:'#9CA3AF', fontFamily:'inherit', lineHeight:1.6 }} />
+            )}
+          </Card>
+          <Card>
+            <div className="text-sm font-medium mb-3" style={{ color:'#E8EDF2' }}>Scope of Work</div>
+            {scopeBullets.map((b,i) => (
+              <div key={i} className="flex items-start gap-2 mb-2">
+                <span style={{ color:'#FFD600', marginTop:2 }}>•</span>
+                <input value={b} onChange={e=>setScopeBullets(bs=>bs.map((x,j)=>j===i?e.target.value:x))}
+                  className="flex-1 text-xs rounded px-2 py-1 outline-none"
+                  style={{ background:'#0D0D0D', border:'1px solid #1e2229', color:'#E8EDF2' }} />
+                <button onClick={()=>setScopeBullets(bs=>bs.filter((_,j)=>j!==i))} className="cursor-pointer bg-transparent border-0 text-muted">×</button>
+              </div>
+            ))}
+            <div className="flex gap-2 mt-2">
+              <input value={newBullet} onChange={e=>setNewBullet(e.target.value)} placeholder="Add scope item..."
+                className="flex-1 text-xs rounded px-2 py-1.5 outline-none"
+                style={{ background:'#0D0D0D', border:'1px solid #1e2229', color:'#E8EDF2' }}
+                onKeyDown={e=>{ if(e.key==='Enter'&&newBullet.trim()){setScopeBullets(b=>[...b,newBullet.trim()]);setNewBullet('');} }} />
+              <Btn small onClick={()=>{ if(newBullet.trim()){setScopeBullets(b=>[...b,newBullet.trim()]);setNewBullet('');} }}>+</Btn>
+            </div>
+          </Card>
+          <Card>
+            <div className="text-sm font-medium mb-3" style={{ color:'#E8EDF2' }}>Send Via</div>
+            <div className="flex gap-2">
+              {['email','sms','whatsapp'].map(v=>(
+                <button key={v} onClick={()=>setSendVia(v)}
+                  className="flex-1 py-2 rounded text-xs cursor-pointer border-0 capitalize"
+                  style={{ background:sendVia===v?'#FFD600':'#1e2229', color:sendVia===v?'#0D0D0D':'#9CA3AF', fontWeight:sendVia===v?600:400 }}>
+                  {v}
+                </button>
+              ))}
+            </div>
+          </Card>
+          <Btn onClick={send}>Send Proposal →</Btn>
+        </div>
+
+        {/* Right: live preview */}
+        <div id="proposal-content" className="flex-1 rounded-lg overflow-hidden" style={{ border:'1px solid #1e2229', background:'#fff', color:'#111', minWidth:0 }}>
+          {/* Brand header */}
+          <div style={{ background: profile.brandColour||'#FFD600', padding:'20px 28px' }}>
+            <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:900, fontSize:22, letterSpacing:4, color:'#0D0D0D' }}>{profile.businessName?.toUpperCase()}</div>
+            <div style={{ fontSize:11, color:'rgba(0,0,0,0.6)', marginTop:4, letterSpacing:1 }}>PROPOSAL FOR ELECTRICAL WORKS</div>
+          </div>
+          <div style={{ padding:'24px 28px', fontFamily:"'Inter',system-ui,sans-serif", fontSize:13, lineHeight:1.7, color:'#111' }}>
+            <div style={{ marginBottom:20 }}>
+              <div style={{ fontWeight:600 }}>Prepared for:</div>
+              <div>{job?.customer?.name}</div>
+              <div>{job?.customer?.address}</div>
+              <div style={{ marginTop:8, fontSize:11, color:'#666' }}>Ref: {jobRef} &nbsp;|&nbsp; Date: {proposalDate} &nbsp;|&nbsp; Valid: 30 days</div>
+            </div>
+            <hr style={{ border:'none', borderTop:'1px solid #e5e7eb', margin:'16px 0' }}/>
+            {coverLetter && (
+              <div style={{ marginBottom:20, whiteSpace:'pre-wrap', fontSize:12, color:'#333' }}>{coverLetter}</div>
+            )}
+            {scopeBullets.length > 0 && (
+              <div style={{ marginBottom:20 }}>
+                <div style={{ fontWeight:700, marginBottom:8, fontSize:12, letterSpacing:1, color:'#111' }}>SCOPE OF WORK</div>
+                {scopeBullets.map((b,i)=><div key={i} style={{ marginBottom:4, fontSize:12 }}>• {b}</div>)}
+              </div>
+            )}
+            {selectedTiers.length > 0 && (
+              <div style={{ marginBottom:20 }}>
+                <div style={{ fontWeight:700, marginBottom:8, fontSize:12, letterSpacing:1 }}>INVESTMENT</div>
+                {selectedTiers.length === 1 ? (
+                  <div style={{ border:'2px solid '+profile.brandColour, borderRadius:8, padding:16 }}>
+                    <div style={{ fontSize:20, fontWeight:700 }}>£{selectedTiers[0].grandTotal?.toLocaleString()} <span style={{ fontSize:12, fontWeight:400 }}>inc VAT</span></div>
+                    <div style={{ fontSize:11, color:'#666', marginTop:4 }}>Deposit ({quote?.depositPct||50}%): £{selectedTiers[0].deposit?.toFixed(2)} on acceptance</div>
+                    <div style={{ fontSize:11, color:'#666' }}>Balance on completion: £{(selectedTiers[0].grandTotal - (selectedTiers[0].deposit||0))?.toFixed(2)}</div>
+                  </div>
+                ) : (
+                  <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12 }}>
+                    <thead><tr style={{ background:'#f9fafb' }}><th style={{ padding:'8px 12px', textAlign:'left', fontWeight:600 }}>Option</th><th style={{ padding:'8px 12px', textAlign:'right', fontWeight:600 }}>Total inc VAT</th><th style={{ padding:'8px 12px', textAlign:'right', fontWeight:600 }}>Deposit</th></tr></thead>
+                    <tbody>{selectedTiers.map(t=><tr key={t.key} style={{ borderTop:'1px solid #e5e7eb' }}><td style={{ padding:'8px 12px' }}>Option — {t.label}</td><td style={{ padding:'8px 12px', textAlign:'right', fontWeight:700 }}>£{t.grandTotal?.toLocaleString()}</td><td style={{ padding:'8px 12px', textAlign:'right' }}>£{t.deposit?.toFixed(2)}</td></tr>)}</tbody>
+                  </table>
+                )}
+              </div>
+            )}
+            <hr style={{ border:'none', borderTop:'1px solid #e5e7eb', margin:'16px 0' }}/>
+            <div style={{ fontSize:11, color:'#666' }}>{profile.standardTCs}</div>
+            <div style={{ marginTop:12, fontSize:11, color:'#666' }}>{profile.guaranteeText}</div>
+            <div style={{ marginTop:20, padding:'16px', background:profile.brandColour||'#FFD600', borderRadius:8, textAlign:'center', cursor:'pointer', fontWeight:700, fontSize:13, color:'#0D0D0D' }}>ACCEPT THIS PROPOSAL</div>
+            <div style={{ marginTop:16, fontSize:10, color:'#999', textAlign:'center' }}>
+              {profile.businessName} · {profile.address||''} · {profile.phone||''} · {profile.email||''}
+              {profile.vatRegistered && ` · VAT: ${profile.vatNumber||''}`}
+            </div>
+          </div>
+        </div>
+      </div>
+    </Screen>
+  );
+}
+
+// ─── CUSTOMER ACCEPTANCE SCREEN ───────────────────────────────────────────────
+function AcceptanceScreen() {
+  const { state, setState } = useApp();
+  const job = state.currentJob;
+  const quote = state.quote || job?.quote;
+  const profile = state.profile || STUB_PROFILE;
+  const proposal = state.proposal || job?.proposal;
+  const selectedTiers = quote?.selectedTiers || proposal?.selectedTiers || [];
+  const [selectedTierKey, setSelectedTierKey] = useState(selectedTiers[0]?.key||'standard');
+  const [phase, setPhase] = useState('proposal'); // proposal | payment | customerConfirm | tradesConfirm
+  const [payProcessing, setPayProcessing] = useState(false);
+  const [cardNum, setCardNum] = useState('4242 4242 4242 4242');
+  const [cardExp, setCardExp] = useState('12/28');
+  const [cardCvc, setCardCvc] = useState('123');
+  const [cardName, setCardName] = useState(job?.customer?.name||'');
+
+  const chosenTier = selectedTiers.find(t=>t.key===selectedTierKey) || selectedTiers[0];
+
+  const pay = () => {
+    setPayProcessing(true);
+    setTimeout(() => {
+      const paymentId = 'pi_test_' + Math.random().toString(36).slice(2,26);
+      const acceptance = { depositPaid: chosenTier?.deposit||0, acceptedAt: new Date().toISOString(), stripePaymentIntentId: paymentId, chosenTier: selectedTierKey };
+      setState(prev => ({ ...prev, acceptance, currentJob:{...prev.currentJob, acceptance, status:'accepted'}, jobs:prev.jobs.map(j=>j.id===prev.currentJob?.id?{...j,acceptance,status:'accepted'}:j) }));
+      setPayProcessing(false);
+      setPhase('customerConfirm');
+    }, 2000);
+  };
+
+  const generateICS = () => {
+    const start = job?.proposedStartDate ? new Date(job.proposedStartDate) : new Date();
+    const end = new Date(start); end.setDate(end.getDate() + (job?.estimatedDurationDays||1));
+    const fmt = d => d.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
+    const ics = `BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nDTSTART:${fmt(start)}\nDTEND:${fmt(end)}\nSUMMARY:${profile.businessName} — Electrical Works\nDESCRIPTION:${profile.name} from ${profile.businessName}. Contact: ${profile.phone||''}\nLOCATION:${job?.customer?.address||''}\nEND:VEVENT\nEND:VCALENDAR`;
+    const a = document.createElement('a'); a.href='data:text/calendar;charset=utf8,'+encodeURIComponent(ics); a.download='appointment.ics'; a.click();
+  };
+
+  if (phase === 'customerConfirm') {
+    return (
+      <Screen title="Booking Confirmed">
+        <div className="max-w-lg mx-auto text-center py-10">
+          <div className="text-6xl mb-4" style={{ color: profile.brandColour||'#FFD600' }}>✓</div>
+          <div className="text-2xl font-bold mb-2" style={{ color:'#E8EDF2' }}>Booking confirmed!</div>
+          <Card className="text-left mt-8 mb-6">
+            <div className="flex flex-col gap-2 text-sm">
+              <div className="flex justify-between"><span className="text-muted">Job</span><span style={{ color:'#E8EDF2' }}>{job?.scan?.roomType || 'Electrical Works'}</span></div>
+              <div className="flex justify-between"><span className="text-muted">Start date</span><span style={{ color:'#E8EDF2' }}>{job?.proposedStartDate||'TBC'}</span></div>
+              <div className="flex justify-between"><span className="text-muted">Contractor</span><span style={{ color:'#E8EDF2' }}>{profile.businessName}</span></div>
+              <div className="flex justify-between"><span className="text-muted">Contact</span><span style={{ color:'#E8EDF2' }}>{profile.phone||''}</span></div>
+              <div className="flex justify-between"><span className="text-muted">Balance due</span><span style={{ color:'#FFD600' }}>£{((chosenTier?.grandTotal||0)-(chosenTier?.deposit||0)).toFixed(2)} on completion</span></div>
+            </div>
+          </Card>
+          <div className="text-sm text-muted mb-8">
+            <div className="mb-1">1. {profile.name} will confirm materials and arrival time one week before</div>
+            <div className="mb-1">2. You'll get a reminder the day before</div>
+            <div>3. Remaining balance due on completion</div>
+          </div>
+          <div className="flex gap-3 justify-center">
+            <Btn onClick={generateICS}>📅 Add to Calendar</Btn>
+            <Btn variant="secondary" onClick={()=>setPhase('tradesConfirm')}>View Tradesperson View →</Btn>
+          </div>
+        </div>
+      </Screen>
+    );
+  }
+
+  if (phase === 'tradesConfirm') {
+    return (
+      <Screen title="Job Confirmed">
+        <div className="max-w-lg mx-auto text-center py-10">
+          <div className="text-5xl mb-2">🎉</div>
+          <div className="text-xs font-bold mb-4" style={{ color:'#FFD600', letterSpacing:3 }}>DEPOSIT RECEIVED</div>
+          <div className="text-3xl font-bold mb-1" style={{ color:'#E8EDF2' }}>£{(chosenTier?.deposit||0).toFixed(2)}</div>
+          <div className="text-muted mb-8">paid by {job?.customer?.name}</div>
+          <Card className="text-left mb-6">
+            <div className="flex flex-col gap-2 text-sm">
+              <div className="flex justify-between"><span className="text-muted">Job ref</span><span style={{ color:'#E8EDF2' }}>{job?.id}</span></div>
+              <div className="flex justify-between"><span className="text-muted">Start</span><span style={{ color:'#E8EDF2' }}>{job?.proposedStartDate||'TBC'}</span></div>
+              <div className="flex justify-between"><span className="text-muted">Balance due</span><span style={{ color:'#FFD600' }}>£{((chosenTier?.grandTotal||0)-(chosenTier?.deposit||0)).toFixed(2)}</span></div>
+            </div>
+          </Card>
+          <Btn onClick={()=>navigate('#/job/orders')}>Prepare Supplier Orders →</Btn>
+        </div>
+      </Screen>
+    );
+  }
+
+  if (phase === 'payment') {
+    return (
+      <Screen title="Secure Payment">
+        <div className="max-w-sm mx-auto py-10">
+          <Card>
+            <div className="text-sm font-medium mb-1" style={{ color:'#E8EDF2' }}>{profile.businessName}</div>
+            <div className="text-xs text-muted mb-4">{job?.scan?.roomType||'Electrical Works'} — Deposit</div>
+            <div className="text-3xl font-bold mb-6" style={{ color:'#FFD600' }}>£{(chosenTier?.deposit||0).toFixed(2)}</div>
+            <div className="flex flex-col gap-3">
+              <div>
+                <label className="block text-xs text-muted mb-1">Card number</label>
+                <input value={cardNum} onChange={e=>setCardNum(e.target.value)} className="w-full rounded px-3 py-2 text-sm outline-none" style={{ background:'#0D0D0D', border:'1px solid #1e2229', color:'#E8EDF2', letterSpacing:2 }} />
+              </div>
+              <div className="flex gap-3">
+                <div className="flex-1"><label className="block text-xs text-muted mb-1">Expiry</label><input value={cardExp} onChange={e=>setCardExp(e.target.value)} className="w-full rounded px-3 py-2 text-sm outline-none" style={{ background:'#0D0D0D', border:'1px solid #1e2229', color:'#E8EDF2' }} /></div>
+                <div className="w-24"><label className="block text-xs text-muted mb-1">CVC</label><input value={cardCvc} onChange={e=>setCardCvc(e.target.value)} className="w-full rounded px-3 py-2 text-sm outline-none" style={{ background:'#0D0D0D', border:'1px solid #1e2229', color:'#E8EDF2' }} /></div>
+              </div>
+              <div><label className="block text-xs text-muted mb-1">Name on card</label><input value={cardName} onChange={e=>setCardName(e.target.value)} className="w-full rounded px-3 py-2 text-sm outline-none" style={{ background:'#0D0D0D', border:'1px solid #1e2229', color:'#E8EDF2' }} /></div>
+            </div>
+            <Btn onClick={pay} disabled={payProcessing} className="w-full mt-6">
+              {payProcessing ? <><Spinner size={16}/> Processing...</> : `Pay £${(chosenTier?.deposit||0).toFixed(2)}`}
+            </Btn>
+            <div className="text-xs text-muted text-center mt-3">🔒 Secured by Stripe (demo mode)</div>
+          </Card>
+          <Btn variant="ghost" small onClick={()=>setPhase('proposal')} className="mt-3 w-full">← Back to proposal</Btn>
+        </div>
+      </Screen>
+    );
+  }
+
+  // Proposal view
+  return (
+    <Screen title="Customer View" subtitle="How the customer sees the proposal">
+      <div className="max-w-2xl mx-auto">
+        <div className="rounded-lg overflow-hidden mb-6" style={{ background:'#fff', color:'#111', border:'1px solid #e5e7eb' }}>
+          <div style={{ background:profile.brandColour||'#FFD600', padding:'20px 28px' }}>
+            <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontWeight:900, fontSize:20, letterSpacing:4, color:'#0D0D0D' }}>{profile.businessName?.toUpperCase()}</div>
+          </div>
+          <div style={{ padding:'24px 28px', fontSize:13, lineHeight:1.7 }}>
+            {proposal?.coverLetter && <div style={{ marginBottom:16, whiteSpace:'pre-wrap', fontSize:12, color:'#333' }}>{proposal.coverLetter}</div>}
+            {selectedTiers.length > 1 && (
+              <div style={{ marginBottom:20 }}>
+                <div style={{ fontWeight:700, marginBottom:12, fontSize:12, letterSpacing:1 }}>CHOOSE YOUR OPTION</div>
+                <div style={{ display:'flex', gap:12 }}>
+                  {selectedTiers.map(t=>(
+                    <div key={t.key} onClick={()=>setSelectedTierKey(t.key)}
+                      style={{ flex:1, border:`2px solid ${selectedTierKey===t.key?profile.brandColour||'#FFD600':'#e5e7eb'}`, borderRadius:8, padding:16, cursor:'pointer' }}>
+                      <div style={{ fontWeight:700, marginBottom:4 }}>{t.label} {t.icon}</div>
+                      <div style={{ fontSize:18, fontWeight:700 }}>£{t.grandTotal?.toLocaleString()}</div>
+                      <div style={{ fontSize:11, color:'#666' }}>inc VAT</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {selectedTiers.length === 1 && (
+              <div style={{ border:`2px solid ${profile.brandColour||'#FFD600'}`, borderRadius:8, padding:16, marginBottom:20 }}>
+                <div style={{ fontSize:22, fontWeight:700 }}>£{chosenTier?.grandTotal?.toLocaleString()} <span style={{ fontSize:12, fontWeight:400 }}>inc VAT</span></div>
+                <div style={{ fontSize:11, color:'#666' }}>Deposit: £{chosenTier?.deposit?.toFixed(2)}</div>
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="flex gap-3">
+          <Btn onClick={()=>setPhase('payment')} className="flex-1">Accept & Pay Deposit</Btn>
+          <Btn variant="secondary">Request a Change</Btn>
+          <Btn variant="ghost" small>Decline</Btn>
+        </div>
+      </div>
+    </Screen>
+  );
+}
+
+// ─── SUPPLIER ORDERS SCREEN ───────────────────────────────────────────────────
+function OrdersScreen() {
+  const { state, setState } = useApp();
+  const bom = state.billOfMaterials || [];
+  const job = state.currentJob;
+  const profile = state.profile || STUB_PROFILE;
+
+  const orderByDate = job?.proposedStartDate ? (() => { const d=new Date(job.proposedStartDate); d.setDate(d.getDate()-3); return d.toLocaleDateString('en-GB'); })() : 'TBC';
+
+  // Group by supplier
+  const grouped = bom.filter(i=>!i.customerSupplied && i.catalogueLookup?.supplierName !== 'Self').reduce((acc,item) => {
+    const sup = item.catalogueLookup?.supplierName || 'TBC';
+    if (!acc[sup]) acc[sup] = { lines:[], total:0, status:'draft', delivery:'yard' };
+    acc[sup].lines.push(item);
+    acc[sup].total += item.catalogueLookup?.lineTotal || 0;
+    return acc;
+  }, {});
+
+  const [orders, setOrders] = useState(() => Object.fromEntries(Object.entries(grouped).map(([k,v])=>[k,v])));
+  const [allDone, setAllDone] = useState(false);
+
+  const commit = (sup) => {
+    setOrders(o => ({ ...o, [sup]: { ...o[sup], status:'committed' } }));
+  };
+
+  const commitAll = () => {
+    setOrders(o => Object.fromEntries(Object.entries(o).map(([k,v])=>[k,{...v,status:'committed'}])));
+    setTimeout(() => {
+      const supplierOrders = Object.entries(orders).map(([name,o])=>({ supplier:name, lines:o.lines, total:o.total, delivery:o.delivery, status:'committed', committedAt:new Date().toISOString() }));
+      setState(prev => ({ ...prev, supplierOrders, currentJob:{...prev.currentJob,status:'ordered'}, jobs:prev.jobs.map(j=>j.id===prev.currentJob?.id?{...j,status:'ordered'}:j) }));
+      setAllDone(true);
+    }, 800);
+  };
+
+  const totalMat = Object.values(orders).reduce((s,o)=>s+o.total,0);
+  const allCommitted = Object.values(orders).every(o=>o.status==='committed');
+
+  const SUP_COLOURS = { Screwfix:'#FF6B00', CEF:'#1D4ED8', Toolstation:'#16A34A' };
+
+  if (allDone) {
+    return (
+      <Screen title="Materials Ordered">
+        <div className="max-w-lg py-10">
+          <div className="text-4xl mb-4">📦</div>
+          <div className="text-xl font-bold mb-6" style={{ color:'#E8EDF2' }}>Materials ordered. You're all set for {job?.proposedStartDate||'your start date'}.</div>
+          <Card className="mb-6">
+            {Object.entries(orders).map(([name,o])=>(
+              <div key={name} className="flex items-center justify-between py-2 border-b border-border last:border-0 text-sm">
+                <span style={{ color:'#E8EDF2' }}>{name}</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-muted">{o.lines.length} items · £{o.total.toFixed(2)}</span>
+                  <span style={{ color:'#22C55E' }}>✓</span>
+                </div>
+              </div>
+            ))}
+            <div className="flex justify-between pt-3 text-sm font-bold">
+              <span style={{ color:'#E8EDF2' }}>Total committed</span>
+              <span style={{ color:'#FFD600' }}>£{totalMat.toFixed(2)}</span>
+            </div>
+          </Card>
+          <div className="flex gap-3">
+            <Btn onClick={()=>navigate('#/')}>Back to Dashboard</Btn>
+            <Btn variant="secondary" onClick={()=>navigate('#/job/describe')}>View Job Details</Btn>
+          </div>
+        </div>
+      </Screen>
+    );
+  }
+
+  return (
+    <Screen title="Supplier Orders"
+      subtitle={`Order by ${orderByDate} for ${job?.proposedStartDate||'start date'}`}
+      action={
+        <div className="flex items-center gap-3">
+          <div className="text-sm text-muted">Total: <span style={{ color:'#FFD600' }}>£{totalMat.toFixed(2)}</span></div>
+          <Btn onClick={commitAll} disabled={allCommitted}>Commit All Orders</Btn>
+        </div>
+      }>
+      <div className="max-w-2xl flex flex-col gap-4">
+        {Object.keys(orders).length === 0 ? (
+          <div className="text-center py-20">
+            <div className="text-4xl mb-4">📋</div>
+            <div className="text-muted">No supplier orders — all items may be customer-supplied</div>
+            <Btn variant="secondary" onClick={()=>navigate('#/')} className="mt-4">Back to Dashboard</Btn>
+          </div>
+        ) : Object.entries(orders).map(([sup, order]) => (
+          <Card key={sup}>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-3 h-3 rounded-full" style={{ background: SUP_COLOURS[sup]||'#6B7280' }} />
+                <span className="font-bold" style={{ color:'#E8EDF2' }}>{sup}</span>
+                <span className="text-xs text-muted">{order.lines.length} items · £{order.total.toFixed(2)}</span>
+              </div>
+              <span className="text-xs px-2 py-1 rounded" style={{ background: order.status==='committed'?'rgba(34,197,94,0.15)':'rgba(255,214,0,0.1)', color:order.status==='committed'?'#22C55E':'#FFD600', border:`1px solid ${order.status==='committed'?'#22C55E':'#FFD600'}` }}>
+                {order.status.toUpperCase()}
+              </span>
+            </div>
+
+            <table className="w-full text-xs mb-4" style={{ borderCollapse:'collapse' }}>
+              <thead><tr style={{ borderBottom:'1px solid #1e2229' }}><th className="text-left py-1 text-muted font-medium">Item</th><th className="text-right py-1 text-muted font-medium pr-2">Qty</th><th className="text-left py-1 text-muted font-medium">Unit</th><th className="text-right py-1 text-muted font-medium">Total</th></tr></thead>
+              <tbody>
+                {order.lines.map(item=>(
+                  <tr key={item.id} style={{ borderBottom:'1px solid #0D0D0D' }}>
+                    <td className="py-1.5 pr-2" style={{ color:'#E8EDF2' }}>{item.material}</td>
+                    <td className="py-1.5 pr-2 text-right" style={{ color:'#FFD600' }}>{item.quantity}</td>
+                    <td className="py-1.5 pr-2 text-muted">{item.unit}</td>
+                    <td className="py-1.5 text-right" style={{ color:'#E8EDF2' }}>£{(item.catalogueLookup?.lineTotal||0).toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 text-sm">
+                <span className="text-muted">Deliver to:</span>
+                {['Site','Yard'].map(d=>(
+                  <button key={d} onClick={()=>setOrders(o=>({...o,[sup]:{...o[sup],delivery:d.toLowerCase()}}))}
+                    className="px-2.5 py-1 rounded text-xs cursor-pointer border-0"
+                    style={{ background:order.delivery===d.toLowerCase()?'#FFD600':'#1e2229', color:order.delivery===d.toLowerCase()?'#0D0D0D':'#9CA3AF' }}>
+                    {d}
+                  </button>
+                ))}
+              </div>
+              {order.status === 'draft' && (
+                <Btn small onClick={()=>commit(sup)}>Commit This Order</Btn>
+              )}
+              {order.status === 'committed' && (
+                <span className="text-xs" style={{ color:'#22C55E' }}>✓ Committed</span>
+              )}
+            </div>
+          </Card>
+        ))}
+
+        <div className="text-xs text-muted p-4 rounded" style={{ background:'#111418', border:'1px solid #1e2229' }}>
+          In production, AccuQuote will place these orders directly through your trade accounts. For now, your orders are saved — use the details above to place them manually or call your local branch.
         </div>
       </div>
     </Screen>
@@ -1605,9 +2106,9 @@ function Router() {
     '#/job/describe': <DescribeScreen />,
     '#/job/materials': <MaterialsScreen />,
     '#/job/quote': <QuoteScreen />,
-    '#/job/proposal': <PlaceholderScreen title="Proposal Builder" next="#/job/accepted" nextLabel="Next: Acceptance →" />,
-    '#/job/accepted': <PlaceholderScreen title="Customer Acceptance" next="#/job/orders" nextLabel="Next: Orders →" />,
-    '#/job/orders': <PlaceholderScreen title="Supplier Orders" next="#/" nextLabel="Back to Dashboard" />,
+    '#/job/proposal': <ProposalScreen />,
+    '#/job/accepted': <AcceptanceScreen />,
+    '#/job/orders': <OrdersScreen />,
   };
 
   const content = views[route] || views['#/'];
@@ -1649,6 +2150,21 @@ function DemoButton() {
             className="text-left text-sm px-3 py-2 rounded cursor-pointer border-0"
             style={{ background:'transparent', color:'#E8EDF2' }}>
             ▶ Jump to Quote
+          </button>
+          <button onClick={() => { loadDemo(); navigate('#/job/proposal'); setOpen(false); }}
+            className="text-left text-sm px-3 py-2 rounded cursor-pointer border-0"
+            style={{ background:'transparent', color:'#E8EDF2' }}>
+            ▶ Jump to Proposal
+          </button>
+          <button onClick={() => { loadDemo(); navigate('#/job/accepted'); setOpen(false); }}
+            className="text-left text-sm px-3 py-2 rounded cursor-pointer border-0"
+            style={{ background:'transparent', color:'#E8EDF2' }}>
+            ▶ Jump to Acceptance
+          </button>
+          <button onClick={() => { loadDemo(); navigate('#/job/orders'); setOpen(false); }}
+            className="text-left text-sm px-3 py-2 rounded cursor-pointer border-0"
+            style={{ background:'transparent', color:'#E8EDF2' }}>
+            ▶ Jump to Orders
           </button>
         </div>
       )}
