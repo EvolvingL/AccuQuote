@@ -721,6 +721,332 @@ function SettingsScreen() {
   );
 }
 
+// ─── JOB SCAN SCREEN ─────────────────────────────────────────────────────────
+function ScanScreen() {
+  const { state, setState } = useApp();
+  const [phase, setPhase] = useState('scanning'); // scanning | inputs
+  const [scanPct, setScanPct] = useState(0);
+  const [roomType, setRoomType] = useState(state.currentJob?.scan?.roomType || 'bathroom');
+  const [dims, setDims] = useState(state.currentJob?.scan?.dimensions || { length:'', width:'', height:'' });
+  const [features, setFeatures] = useState(state.currentJob?.scan?.features || { windowCount:0, doorCount:1, existingSocketCount:0, existingLightCount:0 });
+  const [anomalies, setAnomalies] = useState(state.currentJob?.scan?.anomalies || []);
+  const [anomalyInput, setAnomalyInput] = useState('');
+
+  useEffect(() => {
+    if (phase !== 'scanning') return;
+    let pct = 0;
+    const iv = setInterval(() => {
+      pct += Math.random() * 18 + 5;
+      if (pct >= 100) { pct = 100; clearInterval(iv); setTimeout(() => setPhase('inputs'), 400); }
+      setScanPct(Math.min(100, Math.round(pct)));
+    }, 300);
+    return () => clearInterval(iv);
+  }, [phase]);
+
+  const floorArea = dims.length && dims.width ? (dims.length * dims.width).toFixed(2) : null;
+  const wallArea = dims.length && dims.width && dims.height
+    ? (2 * (Number(dims.length) + Number(dims.width)) * Number(dims.height)).toFixed(2) : null;
+
+  const ROOM_TYPES = ['bathroom','kitchen','bedroom','living room','hallway','garage','office','loft','garden','utility','dining room'];
+  const ANOMALY_CHIPS = ['old wiring detected','no earth present','previous DIY work','damp/moisture present','no existing bonding','fuse wire present'];
+
+  const addAnomaly = (a) => { if (!anomalies.includes(a)) setAnomalies(x => [...x, a]); };
+  const removeAnomaly = (a) => setAnomalies(x => x.filter(i => i !== a));
+
+  const proceed = () => {
+    const scan = { roomType, dimensions: { length:+dims.length, width:+dims.width, height:+dims.height }, features, anomalies };
+    const jobId = `AQ-${new Date().getFullYear()}-${String(Math.floor(Math.random()*900)+100)}`;
+    const job = state.currentJob ? { ...state.currentJob, scan } : {
+      id: jobId, status:'scan', scan,
+      customer:{ name:'', email:'', phone:'', address:'' },
+      jobDescription:'', outOfScope:'', customerSupplied:[],
+      proposedStartDate:'', estimatedDurationDays:1,
+      createdAt: new Date().toISOString(),
+    };
+    setState(prev => ({ ...prev, currentJob: job, jobs: prev.jobs.find(j=>j.id===job.id) ? prev.jobs.map(j=>j.id===job.id?job:j) : [...prev.jobs, job] }));
+    navigate('#/job/describe');
+  };
+
+  if (phase === 'scanning') {
+    return (
+      <Screen title="Scanning Room">
+        <div className="flex flex-col items-center justify-center py-20">
+          <div className="relative mb-8" style={{ width:120, height:120 }}>
+            <svg viewBox="0 0 120 120" width="120" height="120">
+              <circle cx="60" cy="60" r="54" fill="none" stroke="#1e2229" strokeWidth="8"/>
+              <circle cx="60" cy="60" r="54" fill="none" stroke="#FFD600" strokeWidth="8"
+                strokeDasharray={`${2*Math.PI*54}`}
+                strokeDashoffset={`${2*Math.PI*54*(1-scanPct/100)}`}
+                strokeLinecap="round"
+                style={{ transformOrigin:'center', transform:'rotate(-90deg)', transition:'stroke-dashoffset 0.3s ease' }}/>
+            </svg>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-2xl font-bold" style={{ color:'#FFD600' }}>{scanPct}%</span>
+            </div>
+          </div>
+          <div className="text-sm text-muted pulse">
+            {scanPct < 30 ? 'Initialising scan...' : scanPct < 60 ? 'Measuring room dimensions...' : scanPct < 90 ? 'Detecting anomalies...' : 'Finalising...'}
+          </div>
+        </div>
+      </Screen>
+    );
+  }
+
+  return (
+    <Screen title="Room Scan" subtitle="Review and confirm room details">
+      <div className="max-w-2xl flex flex-col gap-6">
+
+        {/* Room type */}
+        <Card>
+          <div className="text-sm font-medium mb-3" style={{ color:'#E8EDF2' }}>Room Type</div>
+          <div className="flex flex-wrap gap-2">
+            {ROOM_TYPES.map(r => (
+              <button key={r} onClick={() => setRoomType(r)}
+                className="px-3 py-1.5 rounded text-sm cursor-pointer border-0 transition-colors"
+                style={{ background: roomType===r ? '#FFD600' : '#1e2229', color: roomType===r ? '#0D0D0D' : '#9CA3AF', fontWeight: roomType===r ? 600 : 400 }}>
+                {r.charAt(0).toUpperCase()+r.slice(1)}
+              </button>
+            ))}
+          </div>
+        </Card>
+
+        {/* Dimensions */}
+        <Card>
+          <div className="text-sm font-medium mb-4" style={{ color:'#E8EDF2' }}>Dimensions</div>
+          <div className="grid grid-cols-3 gap-4 mb-4">
+            {['length','width','height'].map(d => (
+              <div key={d}>
+                <label className="block text-xs text-muted mb-1.5 capitalize">{d} (m)</label>
+                <input type="number" step="0.1" value={dims[d]} onChange={e => setDims(x => ({...x,[d]:e.target.value}))}
+                  placeholder="0.0" className="w-full rounded px-3 py-2 text-sm outline-none"
+                  style={{ background:'#0D0D0D', border:'1px solid #1e2229', color:'#E8EDF2' }}
+                  onFocus={e=>e.target.style.borderColor='#FFD600'} onBlur={e=>e.target.style.borderColor='#1e2229'} />
+              </div>
+            ))}
+          </div>
+          {floorArea && (
+            <div className="flex gap-6 text-sm">
+              <span className="text-muted">Floor area: <span style={{ color:'#FFD600' }}>{floorArea}m²</span></span>
+              {wallArea && <span className="text-muted">Wall area: <span style={{ color:'#FFD600' }}>{wallArea}m²</span></span>}
+            </div>
+          )}
+        </Card>
+
+        {/* Features */}
+        <Card>
+          <div className="text-sm font-medium mb-4" style={{ color:'#E8EDF2' }}>Existing Features</div>
+          <div className="grid grid-cols-2 gap-4">
+            {[['windowCount','Windows'],['doorCount','Doors'],['existingSocketCount','Existing sockets'],['existingLightCount','Existing lights']].map(([k,label]) => (
+              <div key={k} className="flex items-center justify-between">
+                <span className="text-sm text-muted">{label}</span>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setFeatures(f=>({...f,[k]:Math.max(0,f[k]-1)}))}
+                    className="w-8 h-8 rounded cursor-pointer border-0 text-sm font-bold"
+                    style={{ background:'#1e2229', color:'#E8EDF2' }}>−</button>
+                  <span className="w-6 text-center text-sm font-medium" style={{ color:'#FFD600' }}>{features[k]}</span>
+                  <button onClick={() => setFeatures(f=>({...f,[k]:f[k]+1}))}
+                    className="w-8 h-8 rounded cursor-pointer border-0 text-sm font-bold"
+                    style={{ background:'#1e2229', color:'#E8EDF2' }}>+</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Anomalies */}
+        <Card>
+          <div className="text-sm font-medium mb-3" style={{ color:'#E8EDF2' }}>Anomalies Noted</div>
+          <div className="flex flex-wrap gap-2 mb-3">
+            {ANOMALY_CHIPS.map(a => (
+              <button key={a} onClick={() => addAnomaly(a)}
+                className="px-2.5 py-1 rounded text-xs cursor-pointer border-0"
+                style={{ background: anomalies.includes(a) ? 'rgba(255,107,0,0.2)' : '#1e2229', color: anomalies.includes(a) ? '#FF6B00' : '#6B7280', border: anomalies.includes(a) ? '1px solid #FF6B00' : '1px solid transparent' }}>
+                + {a}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input value={anomalyInput} onChange={e=>setAnomalyInput(e.target.value)}
+              placeholder="Add custom anomaly..." className="flex-1 rounded px-3 py-2 text-sm outline-none"
+              style={{ background:'#0D0D0D', border:'1px solid #1e2229', color:'#E8EDF2' }}
+              onFocus={e=>e.target.style.borderColor='#FFD600'} onBlur={e=>e.target.style.borderColor='#1e2229'}
+              onKeyDown={e=>{ if(e.key==='Enter'&&anomalyInput.trim()){addAnomaly(anomalyInput.trim());setAnomalyInput('');} }} />
+            <Btn small onClick={()=>{ if(anomalyInput.trim()){addAnomaly(anomalyInput.trim());setAnomalyInput('');} }}>Add</Btn>
+          </div>
+          {anomalies.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-3">
+              {anomalies.map(a => (
+                <span key={a} className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs"
+                  style={{ background:'rgba(255,107,0,0.15)', color:'#FF6B00', border:'1px solid #FF6B00' }}>
+                  {a}
+                  <button onClick={()=>removeAnomaly(a)} className="cursor-pointer bg-transparent border-0 text-orange-400 leading-none">×</button>
+                </span>
+              ))}
+            </div>
+          )}
+        </Card>
+
+        <Btn onClick={proceed} disabled={!dims.length || !dims.width || !dims.height}>
+          Describe the Job →
+        </Btn>
+      </div>
+    </Screen>
+  );
+}
+
+// ─── JOB DESCRIBE SCREEN ─────────────────────────────────────────────────────
+function DescribeScreen() {
+  const { state, setState } = useApp();
+  const job = state.currentJob;
+  const [customer, setCustomer] = useState(job?.customer || { name:'', email:'', phone:'', address:'' });
+  const [desc, setDesc] = useState(job?.jobDescription || '');
+  const [outOfScope, setOutOfScope] = useState(job?.outOfScope || '');
+  const [startDate, setStartDate] = useState(job?.proposedStartDate || '');
+  const [duration, setDuration] = useState(job?.estimatedDurationDays || 1);
+  const [listening, setListening] = useState(false);
+  const [checklistOpen, setChecklistOpen] = useState(false);
+  const recognitionRef = useRef(null);
+
+  const CHIPS = ['Not in scope:','Customer supplying:','Sub-contractor needed:','Potential issue:','Existing item to be removed:'];
+  const CHECKLIST = [
+    "What's being installed or replaced",
+    "What's being removed or stripped",
+    "Any making good required",
+    "Access restrictions or site conditions",
+    "Any existing work needing testing or certification",
+  ];
+
+  const upd = (k,v) => setCustomer(c => ({...c,[k]:v}));
+
+  const toggleMic = () => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { alert('Speech recognition not available in this browser.'); return; }
+    if (listening) {
+      recognitionRef.current?.stop();
+      setListening(false);
+    } else {
+      const r = new SR();
+      r.continuous = true; r.interimResults = true; r.lang = 'en-GB';
+      let interim = '';
+      r.onresult = (e) => {
+        let final = '';
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          if (e.results[i].isFinal) final += e.results[i][0].transcript + ' ';
+          else interim = e.results[i][0].transcript;
+        }
+        if (final) setDesc(d => d + final);
+      };
+      r.onend = () => setListening(false);
+      r.start();
+      recognitionRef.current = r;
+      setListening(true);
+    }
+  };
+
+  const proceed = () => {
+    const updated = { ...job, customer, jobDescription: desc, outOfScope, proposedStartDate: startDate, estimatedDurationDays: +duration, status:'describe' };
+    setState(prev => ({ ...prev, currentJob: updated, jobs: prev.jobs.map(j => j.id===updated.id ? updated : j) }));
+    navigate('#/job/materials');
+  };
+
+  const loadTest = () => {
+    setCustomer({ name:'Mr & Mrs Thompson', email:'j.thompson@gmail.com', phone:'07891 234567', address:'42 Maple Avenue, Bushey, WD23 2BT' });
+    setDesc('Full bathroom electrical refurb. Strip out the old round-pin sockets — there\'s one by the sink which isn\'t even to regs. Install a new shaver socket above the mirror, IP65 rated. Two new LED downlights in the ceiling replacing the old pendant, need to be IP65 as well, probably 6 watt warm white. Run new earth bonding to the copper pipework under the sink and to the bath — both need bonding. New dedicated extractor fan circuit from the consumer unit, the bathroom doesn\'t have mechanical ventilation at the moment. All circuits to be tested and certified, I\'ll provide an Electrical Installation Certificate. Making good to be done by the customer\'s plasterer.');
+    setOutOfScope('No general plumbing work. Making good after cable runs is by others. No tiling.');
+    setStartDate('2025-05-15');
+    setDuration(2);
+  };
+
+  return (
+    <Screen title="Describe the Job" subtitle="Tell Gloria what needs doing"
+      action={<Btn variant="ghost" small onClick={loadTest}>Load test job</Btn>}>
+      <div className="max-w-2xl flex flex-col gap-6">
+
+        {/* Customer */}
+        <Card>
+          <div className="text-sm font-medium mb-4" style={{ color:'#E8EDF2' }}>Customer Details</div>
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="Name" value={customer.name} onChange={v=>upd('name',v)} placeholder="Mr & Mrs Thompson" />
+            <Input label="Phone" value={customer.phone} onChange={v=>upd('phone',v)} placeholder="07891 234567" />
+            <Input label="Email" value={customer.email} onChange={v=>upd('email',v)} placeholder="customer@email.com" />
+            <Input label="Address" value={customer.address} onChange={v=>upd('address',v)} placeholder="42 Maple Ave, Bushey, WD23" />
+          </div>
+        </Card>
+
+        {/* Job description */}
+        <Card>
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-sm font-medium" style={{ color:'#E8EDF2' }}>Job Description</div>
+            <button onClick={toggleMic}
+              className="flex items-center gap-2 px-3 py-1.5 rounded text-xs cursor-pointer border-0 transition-all"
+              style={{ background: listening ? 'rgba(255,107,0,0.2)' : '#1e2229', color: listening ? '#FF6B00' : '#9CA3AF', border: listening ? '1px solid #FF6B00' : '1px solid transparent' }}>
+              {listening ? '⏹ Stop' : '🎤 Voice'}
+              {listening && <span className="pulse">●</span>}
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2 mb-3">
+            {CHIPS.map(c => (
+              <button key={c} onClick={() => setDesc(d => d + (d && !d.endsWith(' ') ? ' ' : '') + c + ' ')}
+                className="px-2.5 py-1 rounded text-xs cursor-pointer border-0"
+                style={{ background:'#1e2229', color:'#9CA3AF' }}>
+                {c}
+              </button>
+            ))}
+          </div>
+          <textarea value={desc} onChange={e=>setDesc(e.target.value)} rows={6}
+            placeholder="Describe what needs doing in your own words. Be as specific as possible — Gloria will use this to build the materials list..."
+            className="w-full rounded px-3 py-2 text-sm outline-none resize-none"
+            style={{ background:'#0D0D0D', border:'1px solid #1e2229', color:'#E8EDF2', fontFamily:'inherit' }}
+            onFocus={e=>e.target.style.borderColor='#FFD600'} onBlur={e=>e.target.style.borderColor='#1e2229'} />
+          <div className="text-xs text-muted mt-2 text-right">{desc.length} chars {desc.length < 50 && <span style={{ color:'#FF6B00' }}>— need at least 50 to proceed</span>}</div>
+        </Card>
+
+        {/* Out of scope */}
+        <Card>
+          <Textarea label="Out of Scope" value={outOfScope} onChange={setOutOfScope} rows={2}
+            placeholder="Anything explicitly NOT included in this quote? E.g. making good, tiling, plumbing..." />
+        </Card>
+
+        {/* Dates */}
+        <Card>
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="Proposed start date" type="date" value={startDate} onChange={setStartDate} />
+            <div>
+              <label className="block text-xs text-muted mb-1.5">Estimated duration (days)</label>
+              <div className="flex items-center gap-3">
+                <button onClick={()=>setDuration(d=>Math.max(1,d-1))} className="w-9 h-9 rounded cursor-pointer border-0 font-bold" style={{ background:'#1e2229', color:'#E8EDF2' }}>−</button>
+                <span className="text-lg font-bold" style={{ color:'#FFD600' }}>{duration}</span>
+                <button onClick={()=>setDuration(d=>d+1)} className="w-9 h-9 rounded cursor-pointer border-0 font-bold" style={{ background:'#1e2229', color:'#E8EDF2' }}>+</button>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Checklist */}
+        <Card>
+          <button onClick={()=>setChecklistOpen(o=>!o)} className="flex items-center justify-between w-full cursor-pointer bg-transparent border-0 text-left">
+            <span className="text-sm font-medium" style={{ color:'#E8EDF2' }}>Have you covered...</span>
+            <span className="text-muted">{checklistOpen ? '▲' : '▼'}</span>
+          </button>
+          {checklistOpen && (
+            <div className="mt-3 flex flex-col gap-2">
+              {CHECKLIST.map(item => (
+                <div key={item} className="flex items-center gap-2 text-sm text-muted">
+                  <span style={{ color:'#FFD600' }}>✓</span> {item}
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+
+        <Btn onClick={proceed} disabled={desc.length < 50}>
+          Calculate Materials →
+        </Btn>
+      </div>
+    </Screen>
+  );
+}
+
 // ─── PLACEHOLDER SCREENS (filled in next passes) ─────────────────────────────
 function PlaceholderScreen({ title, next, nextLabel }) {
   return (
@@ -745,8 +1071,8 @@ function Router() {
   const views = {
     '#/': <DashboardScreen />,
     '#/settings': <SettingsScreen />,
-    '#/job/scan': <PlaceholderScreen title="Job Scan" next="#/job/describe" nextLabel="Next: Describe →" />,
-    '#/job/describe': <PlaceholderScreen title="Job Description" next="#/job/materials" nextLabel="Next: Materials →" />,
+    '#/job/scan': <ScanScreen />,
+    '#/job/describe': <DescribeScreen />,
     '#/job/materials': <PlaceholderScreen title="Materials Agent" next="#/job/quote" nextLabel="Next: Quote →" />,
     '#/job/quote': <PlaceholderScreen title="Quote Builder" next="#/job/proposal" nextLabel="Next: Proposal →" />,
     '#/job/proposal': <PlaceholderScreen title="Proposal Builder" next="#/job/accepted" nextLabel="Next: Acceptance →" />,
