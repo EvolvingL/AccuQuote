@@ -275,8 +275,11 @@ function AppProvider({ children }) {
     setState(INITIAL_STATE);
   }, [setState]);
 
+  // Expose CATALOGUE via state for screens that need it
+  const stateWithCatalogue = { ...state, CATALOGUE };
+
   return (
-    <AppContext.Provider value={{ state, setState, loadDemo, clearAll, lookupMaterial, CATALOGUE }}>
+    <AppContext.Provider value={{ state: stateWithCatalogue, setState, loadDemo, clearAll, lookupMaterial, CATALOGUE }}>
       {children}
     </AppContext.Provider>
   );
@@ -721,6 +724,533 @@ function SettingsScreen() {
   );
 }
 
+// ─── MATERIALS AGENT SCREEN ──────────────────────────────────────────────────
+const CATEGORY_LABELS = { cable:'⚡ Cable & Containment', containment:'⚡ Cable & Containment', accessories:'🔌 Accessories & Fittings', 'light-fittings':'🔦 Light Fittings', fixings:'🔧 Fixings & Sundries', consumables:'🔧 Fixings & Sundries', protection:'⚡ Consumer Units & Protection', ev:'🚗 EV Charging', outdoor:'🌿 Outdoor', data:'💾 Data & Comms', certification:'📋 Certification', other:'📦 Other' };
+const CATEGORY_DISPLAY_ORDER = ['cable','containment','accessories','light-fittings','protection','ev','outdoor','data','fixings','consumables','certification','other'];
+
+function MaterialsScreen() {
+  const { state, setState, lookupMaterial } = useApp();
+  const [phase, setPhase] = useState('loading'); // loading | editor
+  const [loadStep, setLoadStep] = useState(0);
+  const [bom, setBom] = useState(state.billOfMaterials?.length ? state.billOfMaterials : []);
+  const [error, setError] = useState('');
+  const [swapModal, setSwapModal] = useState(null); // { itemId, allSuppliers }
+  const [addSearch, setAddSearch] = useState('');
+  const [addResults, setAddResults] = useState([]);
+  const [collapsedCats, setCollapsedCats] = useState({});
+
+  const LOAD_STEPS = [
+    'Reading the job description...',
+    'Identifying materials needed...',
+    'Calculating quantities from your scan...',
+    'Applying waste factors...',
+    'Checking supplier prices...',
+    'Done — reviewing your materials list',
+  ];
+
+  useEffect(() => {
+    if (bom.length > 0) { setPhase('editor'); return; }
+    let step = 0;
+    const iv = setInterval(() => {
+      step++;
+      setLoadStep(step);
+      if (step >= LOAD_STEPS.length - 1) { clearInterval(iv); callClaude(); }
+    }, 800);
+    return () => clearInterval(iv);
+  }, []);
+
+  const callClaude = async () => {
+    const job = state.currentJob;
+    const profile = state.profile;
+    if (!job) { setPhase('editor'); return; }
+
+    const scan = job.scan || {};
+    const dims = scan.dimensions || {};
+    const floorArea = dims.length && dims.width ? (dims.length * dims.width).toFixed(2) : '?';
+    const wallArea = dims.length && dims.width && dims.height ? (2*(+dims.length + +dims.width) * +dims.height).toFixed(2) : '?';
+
+    const systemPrompt = `You are a materials estimation expert for a UK electrical contractor. Return ONLY valid JSON — an array of materials. Be complete. Include all cables, accessories, fittings, fixings, and consumables. Use UK trade terminology. No labour.`;
+    const userPrompt = `TRADE: ${profile?.trade||'electrician'}\nSPECIALISMS: ${(profile?.specialisms||[]).join(', ')}\nROOM: ${scan.roomType||'room'}\nDIMENSIONS: ${dims.length}m × ${dims.width}m × ${dims.height}m\nFLOOR: ${floorArea}m² WALLS: ${wallArea}m²\nANOMALIES: ${(scan.anomalies||[]).join(', ')||'none'}\nJOB: ${job.jobDescription}\nOUT OF SCOPE: ${job.outOfScope||'none'}\nCUSTOMER SUPPLYING: ${(job.customerSupplied||[]).join(', ')||'nothing'}\n\nReturn JSON array:\n[{"material":"name","quantity":1,"unit":"each","category":"cable|accessories|light-fittings|fixings|consumables|protection|certification","wasteFactor":0.10,"quantityWithWaste":1,"rationale":"why","confidence":"high|medium|low","tradeSearchTerm":"search phrase"}]`;
+
+    try {
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method:'POST',
+        headers:{ 'x-api-key': state.profile?.anthropicKey || '', 'anthropic-version':'2023-06-01', 'content-type':'application/json', 'anthropic-dangerous-direct-browser-access':'true' },
+        body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:2000, system: systemPrompt, messages:[{ role:'user', content: userPrompt }] })
+      });
+      if (!resp.ok) throw new Error(`API ${resp.status}`);
+      const data = await resp.json();
+      const raw = data.content[0].text;
+      const match = raw.match(/\[[\s\S]*\]/);
+      if (!match) throw new Error('No JSON array in response');
+      const items = JSON.parse(match[0]);
+      const priced = items.map((item, i) => {
+        const lookup = lookupMaterial(item.tradeSearchTerm, item.quantityWithWaste || item.quantity, item.unit, profile?.preferredSuppliers?.electrical, profile?.trade);
+        return {
+          id: `bom-${Date.now()}-${i}`,
+          material: item.material, quantity: item.quantityWithWaste || item.quantity, unit: item.unit,
+          category: item.category || 'other', rationale: item.rationale, confidence: item.confidence || 'medium',
+          customerSupplied: false,
+          catalogueLookup: lookup || { supplierName:'TBC', unitPrice:0, lineTotal:0, allSuppliers:[] },
+        };
+      });
+      setBom(priced);
+      setState(prev => ({ ...prev, billOfMaterials: priced }));
+    } catch (e) {
+      setError(e.message);
+      const fallback = buildFallbackBOM(state, lookupMaterial, profile);
+      setBom(fallback);
+      setState(prev => ({ ...prev, billOfMaterials: fallback }));
+    }
+    setLoadStep(LOAD_STEPS.length - 1);
+    setPhase('editor');
+  };
+
+  const buildFallbackBOM = (state, lookup, profile) => {
+    const items = [
+      { term:'1.5mm twin earth', qty:10, unit:'m', cat:'cable', mat:'1.5mm² twin & earth cable' },
+      { term:'6mm earth cable', qty:3, unit:'m', cat:'cable', mat:'6mm earth cable' },
+      { term:'ip65 downlight', qty:2, unit:'each', cat:'light-fittings', mat:'IP65 LED downlight 6W warm white' },
+      { term:'ip65 shaver', qty:1, unit:'each', cat:'accessories', mat:'IP65 shaver socket' },
+      { term:'extractor fan', qty:1, unit:'each', cat:'accessories', mat:'IP65 extractor fan with timer 100mm' },
+      { term:'20mm conduit', qty:2, unit:'length', cat:'containment', mat:'20mm white conduit (3m)' },
+      { term:'earth clamp 22mm', qty:4, unit:'each', cat:'fixings', mat:'Earth bonding clamp 22mm' },
+      { term:'earth sleeving', qty:5, unit:'each', cat:'consumables', mat:'Green/yellow earth sleeving 1m' },
+      { term:'electrical certificate', qty:1, unit:'each', cat:'certification', mat:'Electrical Installation Certificate (EIC)' },
+      { term:'cable clips', qty:1, unit:'pack', cat:'fixings', mat:'Cable clips white 6mm (100pk)' },
+    ];
+    return items.map((it, i) => {
+      const l = lookup(it.term, it.qty, it.unit, profile?.preferredSuppliers?.electrical, profile?.trade);
+      return { id:`bom-f-${i}`, material:it.mat, quantity:it.qty, unit:it.unit, category:it.cat, confidence:'medium', customerSupplied:false, rationale:'Estimated for bathroom electrical refurb', catalogueLookup: l || { supplierName:'TBC', unitPrice:0, lineTotal:+(0).toFixed(2), allSuppliers:[] } };
+    });
+  };
+
+  const updateQty = (id, qty) => {
+    setBom(b => b.map(item => {
+      if (item.id !== id) return item;
+      const lineTotal = +(item.catalogueLookup.unitPrice * qty).toFixed(2);
+      return { ...item, quantity: qty, catalogueLookup: { ...item.catalogueLookup, lineTotal } };
+    }));
+  };
+
+  const removeItem = (id) => setBom(b => b.filter(i => i.id !== id));
+
+  const toggleCustomerSupplied = (id) => {
+    setBom(b => b.map(item => item.id !== id ? item : { ...item, customerSupplied: !item.customerSupplied }));
+  };
+
+  const swapSupplier = (itemId, supplier) => {
+    setBom(b => b.map(item => {
+      if (item.id !== itemId) return item;
+      const lineTotal = +(supplier.price * item.quantity).toFixed(2);
+      return { ...item, catalogueLookup: { ...item.catalogueLookup, supplierName: supplier.name, unitPrice: supplier.price, lineTotal } };
+    }));
+    setSwapModal(null);
+  };
+
+  const searchCatalogue = (term) => {
+    if (!term.trim()) { setAddResults([]); return; }
+    const t = term.toLowerCase();
+    const results = state.CATALOGUE ? state.CATALOGUE.filter(c => c.name.toLowerCase().includes(t) || c.search.some(s=>s.includes(t))).slice(0,6) : [];
+    setAddResults(results);
+  };
+
+  const addFromCatalogue = (catItem) => {
+    const l = lookupMaterial(catItem.search[0], 1, catItem.unit, state.profile?.preferredSuppliers?.electrical);
+    const newItem = { id:`bom-add-${Date.now()}`, material: catItem.name, quantity:1, unit:catItem.unit, category:catItem.category, confidence:'high', customerSupplied:false, rationale:'Manually added', catalogueLookup: l || { supplierName: catItem.suppliers[0]?.name||'TBC', unitPrice: catItem.suppliers[0]?.price||0, lineTotal: catItem.suppliers[0]?.price||0, allSuppliers:catItem.suppliers } };
+    setBom(b => [...b, newItem]);
+    setAddSearch(''); setAddResults([]);
+  };
+
+  const proceed = () => {
+    setState(prev => ({ ...prev, billOfMaterials: bom }));
+    navigate('#/job/quote');
+  };
+
+  const grouped = CATEGORY_DISPLAY_ORDER.reduce((acc, cat) => {
+    const displayKey = CATEGORY_LABELS[cat] || cat;
+    const items = bom.filter(i => CATEGORY_LABELS[i.category] === displayKey);
+    if (items.length) { if (!acc[displayKey]) acc[displayKey] = []; acc[displayKey].push(...items); }
+    return acc;
+  }, {});
+
+  const matTotal = bom.filter(i=>!i.customerSupplied).reduce((s,i)=>s+(i.catalogueLookup?.lineTotal||0),0);
+  const supplierCount = new Set(bom.filter(i=>!i.customerSupplied && i.catalogueLookup?.supplierName!=='TBC').map(i=>i.catalogueLookup?.supplierName)).size;
+
+  const MISSED_ITEMS = [
+    { label:'Earth sleeving', term:'earth sleeving' },
+    { label:'Cable clips', term:'cable clips' },
+    { label:'Warning labels', term:'warning labels' },
+    { label:'Connector blocks', term:'connector blocks' },
+    { label:'Cable ties', term:'cable ties' },
+    { label:'EIC certificate', term:'electrical certificate' },
+  ];
+
+  if (phase === 'loading') {
+    return (
+      <Screen title="Calculating Materials">
+        <div className="flex flex-col items-center justify-center py-16">
+          <div className="mb-8"><Spinner size={48} /></div>
+          <div className="flex flex-col gap-3 w-72">
+            {LOAD_STEPS.map((s,i) => (
+              <div key={i} className="flex items-center gap-3 text-sm transition-all"
+                style={{ color: i < loadStep ? '#22C55E' : i === loadStep ? '#FFD600' : '#374151', opacity: i > loadStep + 1 ? 0.3 : 1 }}>
+                <span>{i < loadStep ? '✓' : i === loadStep ? '→' : '○'}</span>
+                {s}
+              </div>
+            ))}
+          </div>
+          <div className="mt-12 w-80">
+            {[1,2,3,4].map(i => (
+              <div key={i} className="h-8 rounded mb-2 pulse" style={{ background:'#1e2229', width:`${70+i*5}%`, opacity:0.4+i*0.1 }} />
+            ))}
+          </div>
+        </div>
+      </Screen>
+    );
+  }
+
+  return (
+    <Screen title="Bill of Materials" subtitle={`${bom.length} items · £${matTotal.toFixed(2)} materials`}
+      action={<Btn onClick={proceed} disabled={bom.length===0}>Proceed to Quote →</Btn>}>
+
+      {error && (
+        <div className="mb-4 px-4 py-3 rounded text-sm" style={{ background:'rgba(127,29,29,0.4)', border:'1px solid #7f1d1d', color:'#fca5a5' }}>
+          ⚠ Claude API unavailable — showing estimated BOM. {error} <button onClick={callClaude} className="underline cursor-pointer bg-transparent border-0 text-red-300 ml-2">Retry</button>
+        </div>
+      )}
+
+      <div className="flex gap-6">
+        {/* Main BOM table */}
+        <div className="flex-1 flex flex-col gap-4" style={{ minWidth:0 }}>
+          {Object.entries(grouped).map(([cat, items]) => (
+            <Card key={cat}>
+              <button onClick={()=>setCollapsedCats(c=>({...c,[cat]:!c[cat]}))}
+                className="flex items-center justify-between w-full cursor-pointer bg-transparent border-0 text-left mb-3">
+                <span className="text-sm font-medium" style={{ color:'#E8EDF2' }}>{cat}</span>
+                <span className="text-xs" style={{ color:'#FFD600' }}>£{items.filter(i=>!i.customerSupplied).reduce((s,i)=>s+(i.catalogueLookup?.lineTotal||0),0).toFixed(2)}</span>
+              </button>
+              {!collapsedCats[cat] && (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm" style={{ borderCollapse:'collapse' }}>
+                    <thead>
+                      <tr style={{ borderBottom:'1px solid #1e2229' }}>
+                        <th className="text-left py-1 text-xs text-muted font-medium pb-2">Material</th>
+                        <th className="text-right py-1 text-xs text-muted font-medium pb-2 pr-2">Qty</th>
+                        <th className="text-left py-1 text-xs text-muted font-medium pb-2">Supplier</th>
+                        <th className="text-right py-1 text-xs text-muted font-medium pb-2">Unit £</th>
+                        <th className="text-right py-1 text-xs text-muted font-medium pb-2">Total</th>
+                        <th className="py-1 pb-2 w-16"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {items.map(item => (
+                        <tr key={item.id} style={{ borderBottom:'1px solid #0D0D0D', opacity: item.customerSupplied ? 0.4 : 1 }}>
+                          <td className="py-2 pr-2">
+                            <div className="flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: item.confidence==='high'?'#22C55E':item.confidence==='medium'?'#F97316':'#EF4444' }} title={`Confidence: ${item.confidence}`} />
+                              <span style={{ color:'#E8EDF2', fontSize:12 }}>{item.material}</span>
+                            </div>
+                          </td>
+                          <td className="py-2 pr-2 text-right">
+                            <input type="number" value={item.quantity} min={0} step={0.1}
+                              onChange={e=>updateQty(item.id, +e.target.value)}
+                              className="w-16 text-right rounded px-1 py-0.5 text-xs outline-none"
+                              style={{ background:'#0D0D0D', border:'1px solid #1e2229', color:'#FFD600' }} />
+                          </td>
+                          <td className="py-2 pr-2">
+                            <button onClick={()=>setSwapModal({id:item.id, allSuppliers:item.catalogueLookup?.allSuppliers||[]})}
+                              className="px-2 py-0.5 rounded text-xs cursor-pointer border-0"
+                              style={{ background:'rgba(255,107,0,0.15)', color:'#FF6B00' }}>
+                              {item.catalogueLookup?.supplierName||'TBC'}
+                            </button>
+                          </td>
+                          <td className="py-2 pr-2 text-right text-xs text-muted">£{(item.catalogueLookup?.unitPrice||0).toFixed(2)}</td>
+                          <td className="py-2 pr-2 text-right text-xs font-medium" style={{ color: item.customerSupplied ? '#6B7280' : '#E8EDF2' }}>
+                            £{(item.catalogueLookup?.lineTotal||0).toFixed(2)}
+                          </td>
+                          <td className="py-2">
+                            <div className="flex items-center gap-1">
+                              <button onClick={()=>toggleCustomerSupplied(item.id)} title="Customer supplied" className="cursor-pointer bg-transparent border-0 text-xs" style={{ color: item.customerSupplied ? '#FFD600' : '#4B5563' }}>CS</button>
+                              <button onClick={()=>removeItem(item.id)} className="cursor-pointer bg-transparent border-0 text-muted" style={{ fontSize:14 }}>×</button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </Card>
+          ))}
+
+          {/* Add material */}
+          <Card>
+            <div className="text-sm font-medium mb-3" style={{ color:'#E8EDF2' }}>+ Add Material</div>
+            <input value={addSearch} onChange={e=>{setAddSearch(e.target.value);searchCatalogue(e.target.value);}}
+              placeholder="Search catalogue..." className="w-full rounded px-3 py-2 text-sm outline-none"
+              style={{ background:'#0D0D0D', border:'1px solid #1e2229', color:'#E8EDF2' }} />
+            {addResults.length > 0 && (
+              <div className="mt-2 flex flex-col gap-1">
+                {addResults.map(r => (
+                  <button key={r.id} onClick={()=>addFromCatalogue(r)}
+                    className="flex items-center justify-between px-3 py-2 rounded text-sm cursor-pointer border-0 text-left"
+                    style={{ background:'#1e2229', color:'#E8EDF2' }}>
+                    <span>{r.name}</span>
+                    <span style={{ color:'#FFD600' }}>£{r.suppliers[0]?.price?.toFixed(2)}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </Card>
+
+          {/* Missed items checklist */}
+          <Card>
+            <div className="text-sm font-medium mb-3" style={{ color:'#E8EDF2' }}>Have you included...</div>
+            <div className="flex flex-wrap gap-2">
+              {MISSED_ITEMS.map(mi => {
+                const already = bom.some(i=>i.material.toLowerCase().includes(mi.label.toLowerCase()));
+                return (
+                  <button key={mi.label} onClick={()=>{ if(!already){ const l=lookupMaterial(mi.term,1,'each',state.profile?.preferredSuppliers?.electrical); const ni={id:`bom-mi-${Date.now()}`,material:mi.label,quantity:1,unit:'each',category:'consumables',confidence:'high',customerSupplied:false,rationale:'Commonly forgotten item',catalogueLookup:l||{supplierName:'TBC',unitPrice:0,lineTotal:0,allSuppliers:[]}}; setBom(b=>[...b,ni]); }}}
+                    className="px-3 py-1.5 rounded text-xs cursor-pointer border-0 flex items-center gap-1.5"
+                    style={{ background: already ? 'rgba(34,197,94,0.1)' : '#1e2229', color: already ? '#22C55E' : '#9CA3AF', border: already ? '1px solid #22C55E' : '1px solid transparent' }}>
+                    {already ? '✓' : '+'} {mi.label}
+                  </button>
+                );
+              })}
+            </div>
+          </Card>
+        </div>
+
+        {/* Summary panel */}
+        <div style={{ width:220, flexShrink:0 }}>
+          <div className="sticky top-0 flex flex-col gap-3">
+            <Card>
+              <div className="text-xs text-muted mb-1">Materials subtotal</div>
+              <div className="text-2xl font-bold" style={{ color:'#FFD600' }}>£{matTotal.toFixed(2)}</div>
+              <div className="text-xs text-muted mt-3">{supplierCount} supplier{supplierCount!==1?'s':''}</div>
+              <div className="text-xs text-muted">{bom.length} line items</div>
+            </Card>
+            <Btn onClick={proceed} disabled={bom.length===0}>Proceed to Quote →</Btn>
+          </div>
+        </div>
+      </div>
+
+      {/* Supplier swap modal */}
+      {swapModal && (
+        <div className="fixed inset-0 flex items-center justify-center" style={{ background:'rgba(0,0,0,0.7)', zIndex:200 }} onClick={()=>setSwapModal(null)}>
+          <div onClick={e=>e.stopPropagation()} className="rounded-lg p-5 w-80" style={{ background:'#111418', border:'1px solid #1e2229' }}>
+            <div className="text-sm font-medium mb-4" style={{ color:'#E8EDF2' }}>Swap Supplier</div>
+            {swapModal.allSuppliers.length === 0 ? (
+              <div className="text-sm text-muted">No alternative suppliers found</div>
+            ) : swapModal.allSuppliers.map(s => (
+              <button key={s.name} onClick={()=>swapSupplier(swapModal.id, s)}
+                className="flex items-center justify-between w-full px-3 py-2 rounded mb-2 cursor-pointer border-0"
+                style={{ background:'#1e2229', color:'#E8EDF2' }}>
+                <span>{s.name}</span>
+                <span style={{ color:'#FFD600' }}>£{s.price.toFixed(2)}</span>
+              </button>
+            ))}
+            <Btn variant="ghost" small onClick={()=>setSwapModal(null)} className="mt-2 w-full">Cancel</Btn>
+          </div>
+        </div>
+      )}
+    </Screen>
+  );
+}
+
+// ─── QUOTE BUILDER SCREEN ─────────────────────────────────────────────────────
+function QuoteScreen() {
+  const { state, setState } = useApp();
+  const profile = state.profile || STUB_PROFILE;
+  const bom = state.billOfMaterials || [];
+  const job = state.currentJob;
+
+  const matTotal = bom.filter(i=>!i.customerSupplied).reduce((s,i)=>s+(i.catalogueLookup?.lineTotal||0),0);
+
+  const [days, setDays] = useState(job?.estimatedDurationDays || 2);
+  const [operatives, setOperatives] = useState(profile.typicalOperatives || 1);
+  const [dayRate, setDayRate] = useState(profile.dayRatePerPerson || 350);
+  const [extras, setExtras] = useState([
+    { id:'travel', label:'Travel & parking', enabled:false, amount: days * 25 },
+    { id:'skip', label:'Skip hire', enabled:false, amount:220 },
+    { id:'sub', label:'Sub-contractor', enabled:false, amount:0, custom:true },
+    { id:'other', label:'Other', enabled:false, amount:0, custom:true },
+  ]);
+  const [margins, setMargins] = useState({ standard: profile.targetMarginPct||30, premium:(profile.targetMarginPct||30)+8, priority:(profile.targetMarginPct||30)+15 });
+  const [tiers, setTiers] = useState({ standard:true, premium:true, priority:false });
+  const [depositPct, setDepositPct] = useState(50);
+
+  const labourTotal = days * operatives * dayRate;
+  const extrasTotal = extras.filter(e=>e.enabled).reduce((s,e)=>s+e.amount,0);
+  const costBase = matTotal + labourTotal + extrasTotal;
+
+  const tierTotal = (pct) => +(costBase / (1 - pct/100)).toFixed(2);
+  const vatAmount = (total) => profile.vatRegistered ? +(total * 0.20).toFixed(2) : 0;
+  const grandTotal = (total) => +(total + vatAmount(total)).toFixed(2);
+  const depositAmount = (gt) => +(gt * depositPct/100).toFixed(2);
+
+  const TIER_DATA = [
+    { key:'standard', label:'Standard', icon:'', includes:['Standard work','12-month workmanship guarantee'] },
+    { key:'premium', label:'Premium', icon:'★', includes:['2-year guarantee','Priority communications','Detailed completion report'] },
+    { key:'priority', label:'Priority', icon:'⚡', includes:['Start within 5 days','2-year guarantee','Senior engineer assigned'] },
+  ];
+
+  const atLeastOne = Object.values(tiers).some(Boolean);
+
+  const proceed = () => {
+    const selectedTiers = TIER_DATA.filter(t=>tiers[t.key]).map(t => {
+      const net = tierTotal(margins[t.key]);
+      const vat = vatAmount(net);
+      const gt = grandTotal(net);
+      return { ...t, margin: margins[t.key], netTotal:net, vatAmount:vat, grandTotal:gt, deposit:depositAmount(gt) };
+    });
+    const quote = { matTotal, labourTotal, extrasTotal, costBase, days, operatives, dayRate, extras, margins, tiers, depositPct, selectedTiers, createdAt: new Date().toISOString() };
+    setState(prev => ({ ...prev, quote, currentJob: { ...prev.currentJob, quote, status:'quoted' }, jobs: prev.jobs.map(j=>j.id===prev.currentJob?.id?{...j,quote,status:'quoted'}:j) }));
+    navigate('#/job/proposal');
+  };
+
+  return (
+    <Screen title="Quote Builder" subtitle={`Cost base: £${costBase.toFixed(2)}`}
+      action={<Btn onClick={proceed} disabled={!atLeastOne}>Build Proposal →</Btn>}>
+      <div className="max-w-3xl flex flex-col gap-6">
+
+        {/* Materials summary */}
+        <Card>
+          <div className="flex items-center justify-between">
+            <div className="text-sm font-medium" style={{ color:'#E8EDF2' }}>Materials (from BOM)</div>
+            <button onClick={()=>navigate('#/job/materials')} className="text-xs cursor-pointer bg-transparent border-0" style={{ color:'#FF6B00' }}>View full BOM</button>
+          </div>
+          <div className="text-2xl font-bold mt-1" style={{ color:'#FFD600' }}>£{matTotal.toFixed(2)}</div>
+          <div className="text-xs text-muted">{bom.filter(i=>!i.customerSupplied).length} items</div>
+        </Card>
+
+        {/* Labour */}
+        <Card>
+          <div className="text-sm font-medium mb-4" style={{ color:'#E8EDF2' }}>Labour</div>
+          <div className="grid grid-cols-3 gap-4 mb-4">
+            {[['Days on site','days',days,setDays,1],['Operatives','operatives',operatives,setOperatives,1],['Day rate (£)','dayRate',dayRate,setDayRate,25]].map(([label,key,val,set,step])=>(
+              <div key={key}>
+                <div className="text-xs text-muted mb-2">{label}</div>
+                <div className="flex items-center gap-2">
+                  <button onClick={()=>set(v=>Math.max(step,v-step))} className="w-8 h-8 rounded cursor-pointer border-0 font-bold" style={{ background:'#1e2229', color:'#E8EDF2' }}>−</button>
+                  <span className="text-base font-bold w-12 text-center" style={{ color:'#FFD600' }}>{key==='dayRate'?`£${val}`:val}</span>
+                  <button onClick={()=>set(v=>v+step)} className="w-8 h-8 rounded cursor-pointer border-0 font-bold" style={{ background:'#1e2229', color:'#E8EDF2' }}>+</button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center justify-between pt-3 border-t border-border">
+            <span className="text-sm text-muted">Labour subtotal</span>
+            <span className="text-lg font-bold" style={{ color:'#E8EDF2' }}>£{labourTotal.toFixed(2)}</span>
+          </div>
+        </Card>
+
+        {/* Extras */}
+        <Card>
+          <div className="text-sm font-medium mb-3" style={{ color:'#E8EDF2' }}>Additional Costs</div>
+          {extras.map((e,i) => (
+            <div key={e.id} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
+              <input type="checkbox" checked={e.enabled} onChange={()=>setExtras(ex=>ex.map((x,j)=>j===i?{...x,enabled:!x.enabled}:x))} className="cursor-pointer" style={{ accentColor:'#FFD600' }} />
+              <span className="text-sm flex-1" style={{ color: e.enabled ? '#E8EDF2' : '#6B7280' }}>{e.label}</span>
+              {e.enabled && (
+                <div className="flex items-center gap-1">
+                  <span className="text-sm text-muted">£</span>
+                  <input type="number" value={e.amount} onChange={ev=>setExtras(ex=>ex.map((x,j)=>j===i?{...x,amount:+ev.target.value}:x))}
+                    className="w-20 rounded px-2 py-1 text-sm text-right outline-none"
+                    style={{ background:'#0D0D0D', border:'1px solid #1e2229', color:'#FFD600' }} />
+                </div>
+              )}
+            </div>
+          ))}
+        </Card>
+
+        {/* Cost summary */}
+        <Card>
+          <div className="text-sm font-medium mb-3" style={{ color:'#E8EDF2' }}>Cost Summary</div>
+          {[['Materials',matTotal],['Labour',labourTotal],['Expenses',extrasTotal]].map(([l,v])=>(
+            <div key={l} className="flex justify-between py-1.5 text-sm">
+              <span className="text-muted">{l}</span>
+              <span style={{ color:'#E8EDF2' }}>£{v.toFixed(2)}</span>
+            </div>
+          ))}
+          <div className="flex justify-between py-2 mt-1 border-t border-border text-base font-bold">
+            <span style={{ color:'#E8EDF2' }}>Cost base</span>
+            <span style={{ color:'#FFD600' }}>£{costBase.toFixed(2)}</span>
+          </div>
+        </Card>
+
+        {/* Pricing tiers */}
+        <div>
+          <div className="text-sm font-medium mb-3" style={{ color:'#E8EDF2' }}>Pricing Tiers</div>
+          <div className="grid grid-cols-3 gap-4">
+            {TIER_DATA.map(t => {
+              const net = tierTotal(margins[t.key]);
+              const vat = vatAmount(net);
+              const gt = grandTotal(net);
+              return (
+                <div key={t.key} className="rounded-lg p-4 flex flex-col gap-3 cursor-pointer transition-all"
+                  style={{ background: tiers[t.key] ? 'rgba(255,214,0,0.06)' : '#111418', border: tiers[t.key] ? '1px solid #FFD600' : '1px solid #1e2229' }}
+                  onClick={()=>setTiers(ts=>({ ...ts,[t.key]:!ts[t.key] }))}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium" style={{ color:'#E8EDF2' }}>{t.label} {t.icon}</span>
+                    <div className="w-4 h-4 rounded border flex items-center justify-center" style={{ border: tiers[t.key] ? '2px solid #FFD600' : '2px solid #374151', background: tiers[t.key] ? '#FFD600' : 'transparent' }}>
+                      {tiers[t.key] && <span style={{ color:'#0D0D0D', fontSize:10, fontWeight:700 }}>✓</span>}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs text-muted">Margin</span>
+                      <input type="range" min={10} max={60} value={margins[t.key]}
+                        onChange={e=>setMargins(m=>({...m,[t.key]:+e.target.value}))}
+                        onClick={e=>e.stopPropagation()} className="flex-1 cursor-pointer" style={{ accentColor:'#FFD600' }} />
+                      <span className="text-xs font-bold w-8" style={{ color:'#FFD600' }}>{margins[t.key]}%</span>
+                    </div>
+                    <div className="text-xl font-bold" style={{ color:'#FFD600' }}>£{gt.toLocaleString()}</div>
+                    {profile.vatRegistered && <div className="text-xs text-muted">+VAT £{vat.toFixed(2)}</div>}
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    {t.includes.map(inc=><div key={inc} className="text-xs text-muted">• {inc}</div>)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {!atLeastOne && <div className="text-xs mt-2" style={{ color:'#EF4444' }}>Select at least one tier</div>}
+        </div>
+
+        {/* Deposit */}
+        <Card>
+          <div className="text-sm font-medium mb-3" style={{ color:'#E8EDF2' }}>Deposit</div>
+          <div className="flex gap-2 mb-3">
+            {[25,50,100].map(p=>(
+              <button key={p} onClick={()=>setDepositPct(p)}
+                className="px-4 py-2 rounded text-sm cursor-pointer border-0"
+                style={{ background:depositPct===p?'#FFD600':'#1e2229', color:depositPct===p?'#0D0D0D':'#9CA3AF', fontWeight:depositPct===p?600:400 }}>
+                {p===100?'On completion':`${p}%`}
+              </button>
+            ))}
+            <input type="number" value={depositPct} onChange={e=>setDepositPct(+e.target.value)} min={0} max={100}
+              placeholder="Custom %" className="w-24 rounded px-3 py-2 text-sm outline-none"
+              style={{ background:'#0D0D0D', border:'1px solid #1e2229', color:'#FFD600' }} />
+          </div>
+          {TIER_DATA.filter(t=>tiers[t.key]).map(t=>{
+            const gt = grandTotal(tierTotal(margins[t.key]));
+            return (
+              <div key={t.key} className="flex justify-between text-sm py-1">
+                <span className="text-muted">{t.label} deposit ({depositPct}%)</span>
+                <span style={{ color:'#FFD600' }}>£{depositAmount(gt).toFixed(2)}</span>
+              </div>
+            );
+          })}
+        </Card>
+
+        <Btn onClick={proceed} disabled={!atLeastOne}>Build Proposal →</Btn>
+      </div>
+    </Screen>
+  );
+}
+
 // ─── JOB SCAN SCREEN ─────────────────────────────────────────────────────────
 function ScanScreen() {
   const { state, setState } = useApp();
@@ -1073,8 +1603,8 @@ function Router() {
     '#/settings': <SettingsScreen />,
     '#/job/scan': <ScanScreen />,
     '#/job/describe': <DescribeScreen />,
-    '#/job/materials': <PlaceholderScreen title="Materials Agent" next="#/job/quote" nextLabel="Next: Quote →" />,
-    '#/job/quote': <PlaceholderScreen title="Quote Builder" next="#/job/proposal" nextLabel="Next: Proposal →" />,
+    '#/job/materials': <MaterialsScreen />,
+    '#/job/quote': <QuoteScreen />,
     '#/job/proposal': <PlaceholderScreen title="Proposal Builder" next="#/job/accepted" nextLabel="Next: Acceptance →" />,
     '#/job/accepted': <PlaceholderScreen title="Customer Acceptance" next="#/job/orders" nextLabel="Next: Orders →" />,
     '#/job/orders': <PlaceholderScreen title="Supplier Orders" next="#/" nextLabel="Back to Dashboard" />,
