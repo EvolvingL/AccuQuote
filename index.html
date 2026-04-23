@@ -76,6 +76,37 @@ tailwind.config = {
   }
 }
 </script>
+<!-- Handle deep link return from iOS AccuQuote Scan app -->
+<!-- iOS app fires: accuquote-web://scan-result?length=X&width=Y&height=Z -->
+<!-- Since we can't register a custom scheme for a web page, we use a hash-based fallback: -->
+<!-- iOS app opens: https://your-domain/#scan-result?length=X&width=Y&height=Z -->
+<script>
+(function() {
+  function parseScanResult() {
+    // Check hash fragment for scan result
+    const hash = location.hash;
+    if (!hash.includes('scan-result')) return;
+    const queryStr = hash.replace(/^#scan-result\??/, '');
+    const params = new URLSearchParams(queryStr);
+    if (!params.get('length')) return;
+    window.dispatchEvent(new CustomEvent('accuquote-scan-result', {
+      detail: {
+        length: params.get('length'),
+        width:  params.get('width'),
+        height: params.get('height'),
+        doors:  params.get('doors') || '1',
+        windows: params.get('windows') || '1',
+        roomType: params.get('roomType') || '',
+      }
+    }));
+    // Clean the URL
+    history.replaceState(null, '', location.pathname);
+  }
+  // Check on load and on hashchange
+  parseScanResult();
+  window.addEventListener('hashchange', parseScanResult);
+})();
+</script>
 </head>
 <body>
 <div id="root"></div>
@@ -2046,7 +2077,52 @@ function ScanScreen() {
     [100, 'Scan complete'],
   ];
 
+  // Listen for deep link return from iOS companion app
+  // URL scheme: accuquote-web://scan-result?length=3.2&width=2.1&height=2.4&doors=1&windows=1&roomType=bathroom
+  useEffect(() => {
+    const handler = (e) => {
+      // Custom event fired by the URL handler below
+      if (e.detail) {
+        const { length, width, height, doors, windows, roomType: rt } = e.detail;
+        setDims({ length, width, height });
+        if (rt) setRoomType(rt);
+        setPhase('confirm');
+      }
+    };
+    window.addEventListener('accuquote-scan-result', handler);
+
+    // Check if we were opened via the deep link return (hash or query param fallback)
+    const params = new URLSearchParams(location.search);
+    if (params.get('scan_length')) {
+      setDims({ length: params.get('scan_length'), width: params.get('scan_width'), height: params.get('scan_height') });
+      setRoomType(params.get('roomType') || '');
+      setPhase('confirm');
+    }
+
+    return () => window.removeEventListener('accuquote-scan-result', handler);
+  }, []);
+
   const startScan = () => {
+    // Try to open the iOS companion app via deep link
+    const iosAppUrl = 'accuquote://scan';
+    window.location.href = iosAppUrl;
+
+    // Fallback: if iOS app not installed after 1.5s, run simulated scan
+    const fallbackTimer = setTimeout(() => {
+      runSimulatedScan();
+    }, 1500);
+
+    // If page regains focus quickly, iOS app opened — cancel fallback
+    const focusHandler = () => {
+      clearTimeout(fallbackTimer);
+      window.removeEventListener('focus', focusHandler);
+      // Show waiting state while iOS app is open
+      setPhase('waiting');
+    };
+    window.addEventListener('focus', focusHandler);
+  };
+
+  const runSimulatedScan = () => {
     setPhase('scanning');
     setScanPct(0);
     let i = 0;
@@ -2057,7 +2133,6 @@ function ScanScreen() {
       setScanMsg(msg);
       if (pct < 100) setTimeout(tick, 600 + Math.random() * 500);
       else {
-        // Simulate realistic dimensions
         const l = (3 + Math.random() * 2).toFixed(1);
         const w = (2 + Math.random() * 2).toFixed(1);
         const h = (2.3 + Math.random() * 0.4).toFixed(1);
@@ -2086,6 +2161,25 @@ function ScanScreen() {
     setState(prev => ({ ...prev, currentJob: job, jobs: prev.jobs.find(j=>j.id===job.id) ? prev.jobs.map(j=>j.id===job.id?job:j) : [...prev.jobs, job] }));
     navigate('#/job/describe');
   };
+
+  // ── WAITING (iOS app open, waiting for result) ──
+  if (phase === 'waiting') {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center fade-up" style={{ background: '#F8FAFC', minHeight: '100vh' }}>
+        <div className="text-center px-8" style={{ maxWidth: 400 }}>
+          <div className="mb-8"><Spinner size={48} /></div>
+          <h2 className="text-2xl font-bold mb-3" style={{ color: '#0F172A', fontFamily:"'Barlow Condensed',sans-serif", letterSpacing:2 }}>SCANNING ON IPHONE</h2>
+          <p className="text-base mb-2" style={{ color: '#64748B' }}>Scan the room in AccuQuote Scan on your iPhone, then tap "Send to AccuQuote".</p>
+          <p className="text-sm mb-10" style={{ color: '#94A3B8' }}>This page will update automatically when the scan is complete.</p>
+          <button onClick={runSimulatedScan}
+            className="w-full py-3 rounded-xl text-sm cursor-pointer border-0"
+            style={{ background: '#F1F5F9', color: '#64748B', border: '1px solid #E2E8F0' }}>
+            iOS app not installed — use simulated scan
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // ── READY ──
   if (phase === 'ready') {
