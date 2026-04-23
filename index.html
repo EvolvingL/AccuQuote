@@ -113,6 +113,34 @@ tailwind.config = {
 <script type="text/babel" data-presets="react">
 const { useState, useEffect, useContext, createContext, useRef, useCallback } = React;
 
+// ─── CATALOGUE PRICE OVERRIDES ───────────────────────────────────────────────
+// Scraped live prices are persisted here so they survive page refreshes and
+// act as up-to-date fallbacks when the live proxy is blocked.
+// Key format: "<catalogueId>|<supplierName>"  e.g. "c3|Screwfix"
+// Value: { price: 82.50, scrapedAt: "2025-04-23T10:00:00Z", productName: "..." }
+const PRICE_OVERRIDES_KEY = 'accuquote_price_overrides';
+
+function loadPriceOverrides() {
+  try { return JSON.parse(localStorage.getItem(PRICE_OVERRIDES_KEY) || '{}'); } catch { return {}; }
+}
+
+function savePriceOverride(catalogueId, supplierName, price, productName) {
+  const overrides = loadPriceOverrides();
+  overrides[`${catalogueId}|${supplierName}`] = {
+    price,
+    productName,
+    scrapedAt: new Date().toISOString(),
+  };
+  try { localStorage.setItem(PRICE_OVERRIDES_KEY, JSON.stringify(overrides)); } catch {}
+}
+
+// Returns price for a given catalogue item + supplier, preferring scraped data
+function resolvePrice(catalogueId, supplierName, fallbackPrice) {
+  const overrides = loadPriceOverrides();
+  const override = overrides[`${catalogueId}|${supplierName}`];
+  return override ? override.price : fallbackPrice;
+}
+
 // ─── SUPPLIER CATALOGUE ──────────────────────────────────────────────────────
 const CATALOGUE = [
   // Cable
@@ -235,8 +263,15 @@ function lookupMaterial(searchTerm, quantity, unit, preferredSuppliers, trade) {
   const preferred = (preferredSuppliers || ['Screwfix']);
   let supplier = best.suppliers.find(s => preferred.includes(s.name)) || best.suppliers[0];
 
-  const unitPrice = supplier.price;
+  // Use scraped price override if available, otherwise use catalogue default
+  const unitPrice = resolvePrice(best.id, supplier.name, supplier.price);
   const lineTotal = +(unitPrice * (quantity || 1)).toFixed(2);
+
+  // Build allSuppliers with overridden prices applied
+  const allSuppliers = best.suppliers.map(s => ({
+    ...s,
+    price: resolvePrice(best.id, s.name, s.price),
+  }));
 
   return {
     catalogueId: best.id,
@@ -247,7 +282,7 @@ function lookupMaterial(searchTerm, quantity, unit, preferredSuppliers, trade) {
     supplierSku: supplier.sku,
     unitPrice,
     lineTotal,
-    allSuppliers: best.suppliers,
+    allSuppliers,
   };
 }
 
@@ -1575,6 +1610,16 @@ function MaterialsScreen() {
           const data = await resp.json();
           setLivePrices(prev => ({ ...prev, [item.id]: data.results }));
 
+          // Persist each scraped price into localStorage overrides so future
+          // sessions use real prices even when live scraping is blocked.
+          const catalogueId = item.catalogueLookup?.catalogueId;
+          Object.entries(data.results || {}).forEach(([supplierKey, result]) => {
+            if (result.price != null && catalogueId) {
+              const supplierLabel = SUPPLIER_META[supplierKey]?.label || supplierKey;
+              savePriceOverride(catalogueId, supplierLabel, result.price, result.name);
+            }
+          });
+
           // Auto-apply cheapest price to BOM
           const validPrices = Object.entries(data.results || {})
             .filter(([,v]) => v.price != null)
@@ -2032,14 +2077,29 @@ function MaterialsScreen() {
             <div className="text-sm font-medium mb-4" style={{ color:'#E8EDF2' }}>Swap Supplier</div>
             {swapModal.allSuppliers.length === 0 ? (
               <div className="text-sm text-muted">No alternative suppliers found</div>
-            ) : swapModal.allSuppliers.map(s => (
-              <button key={s.name} onClick={()=>swapSupplier(swapModal.id, s)}
-                className="flex items-center justify-between w-full px-3 py-2 rounded mb-2 cursor-pointer border-0"
-                style={{ background:'#1e2229', color:'#E8EDF2' }}>
-                <span>{s.name}</span>
-                <span style={{ color:'#FFD600' }}>£{s.price.toFixed(2)}</span>
-              </button>
-            ))}
+            ) : swapModal.allSuppliers.map(s => {
+              // Check if this price came from a live scrape
+              const catalogueId = bom.find(b => b.id === swapModal.id)?.catalogueLookup?.catalogueId;
+              const override = catalogueId ? loadPriceOverrides()[`${catalogueId}|${s.name}`] : null;
+              const scrapedDate = override?.scrapedAt ? new Date(override.scrapedAt) : null;
+              return (
+                <button key={s.name} onClick={()=>swapSupplier(swapModal.id, s)}
+                  className="flex items-center justify-between w-full px-3 py-2 rounded mb-2 cursor-pointer border-0"
+                  style={{ background:'#1e2229', color:'#E8EDF2' }}>
+                  <div className="flex flex-col items-start">
+                    <span>{s.name}</span>
+                    {scrapedDate ? (
+                      <span style={{ fontSize:10, color:'#22C55E' }}>
+                        live · checked {scrapedDate.toLocaleDateString('en-GB', { day:'numeric', month:'short' })}
+                      </span>
+                    ) : (
+                      <span style={{ fontSize:10, color:'#4B5563' }}>catalogue price</span>
+                    )}
+                  </div>
+                  <span style={{ color:'#FFD600' }}>£{(s.price||0).toFixed(2)}</span>
+                </button>
+              );
+            })}
             <Btn variant="ghost" small onClick={()=>setSwapModal(null)} className="mt-2 w-full">Cancel</Btn>
           </div>
         </div>
