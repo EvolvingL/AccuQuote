@@ -1,0 +1,15 @@
+name = "accuquote-price-proxy"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[build]
+command = ""
+
+# Cloudflare Worker runs at the edge — no server needed
+# Deploy: npx wrangler deploy
+# Test locally: npx wrangler dev
+
+[[routes]]
+pattern = "price-proxy.accuquote.workers.dev/*"
+zone_name = "workers.dev"
