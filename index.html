@@ -11,11 +11,45 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; }
-  body { margin: 0; background: #0D0D0D; color: #E8EDF2; font-family: 'Inter', system-ui, sans-serif; }
+  body { margin: 0; background: #F8FAFC; color: #0F172A; font-family: 'Inter', system-ui, sans-serif; }
   ::-webkit-scrollbar { width: 4px; height: 4px; }
-  ::-webkit-scrollbar-track { background: #111418; }
-  ::-webkit-scrollbar-thumb { background: #2a2e36; border-radius: 2px; }
-  .aq-logo { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; letter-spacing: 4px; color: #FFD600; }
+  ::-webkit-scrollbar-track { background: #F1F5F9; }
+  ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 2px; }
+  .aq-logo { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; letter-spacing: 4px; color: #0F172A; }
+
+  /* ── Light theme overrides: replace all dark surface colours ── */
+  /* Dark backgrounds → white/light */
+  [style*="background: #0D0D0D"], [style*="background:#0D0D0D"],
+  [style*="background: '#0D0D0D'"], [style*="background:'#0D0D0D'"] { background: #F8FAFC !important; }
+  [style*="background: #111418"], [style*="background:#111418"] { background: #fff !important; }
+  [style*="background: #1e2229"], [style*="background:#1e2229"] { background: #F1F5F9 !important; }
+  /* Dark borders → light */
+  [style*="border: 1px solid #1e2229"], [style*="border:1px solid #1e2229"] { border-color: #E2E8F0 !important; }
+  [style*="border: 1px solid #2a2e36"] { border-color: #E2E8F0 !important; }
+  /* Light text on dark → dark text */
+  [style*="color: #E8EDF2"], [style*="color:#E8EDF2"] { color: #0F172A !important; }
+  [style*="color: #9CA3AF"], [style*="color:#9CA3AF"] { color: #475569 !important; }
+  [style*="color: #4B5563"], [style*="color:#4B5563"] { color: #64748B !important; }
+  [style*="color: #6B7280"], [style*="color:#6B7280"] { color: #64748B !important; }
+  [style*="color: #374151"] { color: #94A3B8 !important; }
+  [style*="color: #fff"] { color: #0F172A !important; }
+  [style*="color:'#fff'"] { color: #0F172A !important; }
+  /* Exception: keep white text ON coloured/dark button backgrounds */
+  [style*="background: #0F172A"] { color: #fff !important; }
+  [style*="background:#0F172A"] { color: #fff !important; }
+  [style*="background: #FF6B00"] { color: #fff !important; }
+  [style*="background:#FF6B00"] { color: #fff !important; }
+  [style*="background: #22C55E"] { color: #fff !important; }
+  /* Yellow accent buttons: keep yellow bg, force dark text */
+  [style*="background: #FFD600"] { background: #FFD600 !important; color: #0F172A !important; }
+  [style*="background:#FFD600"] { background: #FFD600 !important; color: #0F172A !important; }
+  /* Accent yellow text stays yellow */
+  [style*="color: #FFD600"], [style*="color:'#FFD600'"], [style*="color:#FFD600"] { color: #D97706 !important; }
+  /* Proposal preview (white doc on white page needs border) */
+  #proposal-content { box-shadow: 0 0 0 1px #E2E8F0 !important; }
+  /* Scrollbar */
+  ::-webkit-scrollbar-track { background: #F1F5F9 !important; }
+  ::-webkit-scrollbar-thumb { background: #CBD5E1 !important; }
   @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
   @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.4; } }
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -32,11 +66,11 @@ tailwind.config = {
   theme: {
     extend: {
       colors: {
-        surface: '#111418',
-        border: '#1e2229',
+        surface: '#fff',
+        border: '#E2E8F0',
         accent: '#FFD600',
         orange: '#FF6B00',
-        muted: '#6B7280',
+        muted: '#64748B',
       }
     }
   }
@@ -335,11 +369,11 @@ function Sidebar({ route }) {
   const jobId = state.currentJob?.id;
 
   return (
-    <aside id="sidebar" className="flex flex-col bg-surface border-r border-border" style={{ width: 220, minHeight: '100vh', flexShrink: 0 }}>
+    <aside id="sidebar" className="flex flex-col border-r" style={{ width: 220, minHeight: '100vh', flexShrink: 0, background: '#fff', borderColor: '#E2E8F0' }}>
       {/* Logo */}
-      <div className="px-5 py-5 border-b border-border">
+      <div className="px-5 py-5 border-b" style={{ borderColor: '#E2E8F0' }}>
         <div className="aq-logo text-2xl">ACCUQUOTE</div>
-        <div className="text-xs text-muted mt-1" style={{ letterSpacing: 1 }}>BY HARRIS ELECTRICAL</div>
+        <div className="text-xs mt-1" style={{ color: '#94A3B8', letterSpacing: 1 }}>BY HARRIS ELECTRICAL</div>
       </div>
 
       {/* Nav */}
@@ -350,8 +384,8 @@ function Sidebar({ route }) {
             : item.hash.startsWith('#/job') ? route.startsWith('#/job') : route === item.hash;
           return (
             <a key={item.hash} href={item.hash}
-               className="flex items-center gap-3 px-3 py-2 rounded text-sm transition-colors no-underline"
-               style={{ color: active ? '#FFD600' : '#9CA3AF', background: active ? 'rgba(255,214,0,0.08)' : 'transparent', fontWeight: active ? 500 : 400, textDecoration:'none' }}>
+               className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors no-underline"
+               style={{ color: active ? '#0F172A' : '#64748B', background: active ? '#F1F5F9' : 'transparent', fontWeight: active ? 600 : 400, textDecoration:'none' }}>
               <span style={{ fontSize: 14, width: 16, textAlign: 'center' }}>{item.icon}</span>
               {item.label}
             </a>
@@ -361,8 +395,8 @@ function Sidebar({ route }) {
 
       {/* Job progress tracker */}
       {isJobRoute && (
-        <div className="px-4 py-4 border-t border-border">
-          {jobId && <div className="text-xs text-muted mb-3" style={{ letterSpacing: 1 }}>{jobId}</div>}
+        <div className="px-4 py-4 border-t" style={{ borderColor: '#E2E8F0' }}>
+          {jobId && <div className="text-xs font-mono mb-3" style={{ color: '#94A3B8', letterSpacing: 1 }}>{jobId}</div>}
           <div className="flex flex-col gap-1">
             {JOB_STEPS.map((step, i) => {
               const done = i < stepIdx;
@@ -371,14 +405,14 @@ function Sidebar({ route }) {
                 <div key={step.id} className="flex items-center gap-2">
                   <div className="flex flex-col items-center" style={{ width: 16 }}>
                     <div className="rounded-full flex items-center justify-center text-xs"
-                         style={{ width: 16, height: 16, background: done ? '#FFD600' : active ? 'transparent' : '#1e2229', border: active ? '2px solid #FFD600' : done ? 'none' : '2px solid #2a2e36', color: done ? '#0D0D0D' : active ? '#FFD600' : '#4B5563', fontSize: 9, fontWeight: 700 }}>
+                         style={{ width: 16, height: 16, background: done ? '#0F172A' : active ? 'transparent' : '#F1F5F9', border: active ? '2px solid #0F172A' : done ? 'none' : '2px solid #E2E8F0', color: done ? '#fff' : active ? '#0F172A' : '#CBD5E1', fontSize: 9, fontWeight: 700 }}>
                       {done ? '✓' : i + 1}
                     </div>
                     {i < JOB_STEPS.length - 1 && (
-                      <div style={{ width: 1, height: 10, background: done ? '#FFD600' : '#1e2229', marginTop: 1 }} />
+                      <div style={{ width: 1, height: 10, background: done ? '#0F172A' : '#E2E8F0', marginTop: 1 }} />
                     )}
                   </div>
-                  <span className="text-xs" style={{ color: active ? '#FFD600' : done ? '#9CA3AF' : '#4B5563', fontWeight: active ? 600 : 400 }}>
+                  <span className="text-xs" style={{ color: active ? '#0F172A' : done ? '#64748B' : '#CBD5E1', fontWeight: active ? 600 : 400 }}>
                     {step.label}
                   </span>
                 </div>
@@ -389,9 +423,9 @@ function Sidebar({ route }) {
       )}
 
       {/* Profile */}
-      <div className="px-4 py-3 border-t border-border">
-        <div className="text-xs font-medium" style={{ color: '#E8EDF2' }}>{state.profile?.name || 'Dave Harris'}</div>
-        <div className="text-xs text-muted">{state.profile?.businessName || 'Harris Electrical Ltd'}</div>
+      <div className="px-4 py-3 border-t" style={{ borderColor: '#E2E8F0' }}>
+        <div className="text-xs font-semibold" style={{ color: '#0F172A' }}>{state.profile?.name || 'Dave Harris'}</div>
+        <div className="text-xs" style={{ color: '#94A3B8' }}>{state.profile?.businessName || 'Harris Electrical Ltd'}</div>
       </div>
     </aside>
   );
@@ -400,12 +434,12 @@ function Sidebar({ route }) {
 // ─── SCREEN WRAPPER ───────────────────────────────────────────────────────────
 function Screen({ children, title, subtitle, action }) {
   return (
-    <div className="flex-1 flex flex-col fade-up" style={{ minHeight: 0 }}>
+    <div className="flex-1 flex flex-col fade-up" style={{ minHeight: 0, background: '#F8FAFC' }}>
       {(title || action) && (
-        <div className="flex items-center justify-between px-8 py-5 border-b border-border" style={{ background: '#111418', flexShrink: 0 }}>
+        <div className="flex items-center justify-between px-8 py-5 border-b" style={{ background: '#fff', borderColor: '#E2E8F0', flexShrink: 0 }}>
           <div>
-            {title && <h1 className="text-lg font-semibold" style={{ color: '#E8EDF2' }}>{title}</h1>}
-            {subtitle && <p className="text-xs text-muted mt-0.5">{subtitle}</p>}
+            {title && <h1 className="text-lg font-semibold" style={{ color: '#0F172A' }}>{title}</h1>}
+            {subtitle && <p className="text-xs mt-0.5" style={{ color:'#64748B' }}>{subtitle}</p>}
           </div>
           {action}
         </div>
@@ -420,11 +454,11 @@ function Btn({ children, onClick, variant='primary', disabled, className='', typ
   const base = 'font-medium rounded transition-all cursor-pointer border-0 flex items-center gap-2 justify-center';
   const pad = small ? 'px-3 py-1.5 text-xs' : 'px-4 py-2.5 text-sm';
   const variants = {
-    primary: { background: '#FFD600', color: '#0D0D0D', opacity: disabled ? 0.4 : 1 },
-    secondary: { background: '#1e2229', color: '#E8EDF2', border: '1px solid #2a2e36', opacity: disabled ? 0.4 : 1 },
-    danger: { background: '#7f1d1d', color: '#fca5a5', opacity: disabled ? 0.4 : 1 },
+    primary: { background: '#0F172A', color: '#fff', opacity: disabled ? 0.4 : 1 },
+    secondary: { background: '#F8FAFC', color: '#0F172A', border: '1px solid #E2E8F0', opacity: disabled ? 0.4 : 1 },
+    danger: { background: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA', opacity: disabled ? 0.4 : 1 },
     orange: { background: '#FF6B00', color: '#fff', opacity: disabled ? 0.4 : 1 },
-    ghost: { background: 'transparent', color: '#9CA3AF', opacity: disabled ? 0.4 : 1 },
+    ghost: { background: 'transparent', color: '#64748B', opacity: disabled ? 0.4 : 1 },
   };
   return (
     <button type={type} onClick={onClick} disabled={disabled} className={`${base} ${pad} ${className}`} style={variants[variant]}>
@@ -434,18 +468,18 @@ function Btn({ children, onClick, variant='primary', disabled, className='', typ
 }
 
 function Card({ children, className='' }) {
-  return <div className={`rounded-lg p-5 ${className}`} style={{ background: '#111418', border: '1px solid #1e2229' }}>{children}</div>;
+  return <div className={`rounded-xl p-5 ${className}`} style={{ background: '#fff', border: '1px solid #E2E8F0' }}>{children}</div>;
 }
 
 function Input({ label, value, onChange, placeholder, type='text', className='' }) {
   return (
     <div className={className}>
-      {label && <label className="block text-xs text-muted mb-1.5">{label}</label>}
+      {label && <label className="block text-xs font-medium mb-1.5" style={{ color:'#64748B' }}>{label}</label>}
       <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-        className="w-full rounded px-3 py-2 text-sm outline-none transition-colors"
-        style={{ background: '#0D0D0D', border: '1px solid #1e2229', color: '#E8EDF2' }}
-        onFocus={e => e.target.style.borderColor='#FFD600'}
-        onBlur={e => e.target.style.borderColor='#1e2229'} />
+        className="w-full rounded-lg px-3 py-2 text-sm outline-none transition-colors"
+        style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', color: '#0F172A' }}
+        onFocus={e => e.target.style.borderColor='#0F172A'}
+        onBlur={e => e.target.style.borderColor='#E2E8F0'} />
     </div>
   );
 }
@@ -453,12 +487,12 @@ function Input({ label, value, onChange, placeholder, type='text', className='' 
 function Textarea({ label, value, onChange, placeholder, rows=4, className='' }) {
   return (
     <div className={className}>
-      {label && <label className="block text-xs text-muted mb-1.5">{label}</label>}
+      {label && <label className="block text-xs font-medium mb-1.5" style={{ color:'#64748B' }}>{label}</label>}
       <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={rows}
-        className="w-full rounded px-3 py-2 text-sm outline-none transition-colors resize-none"
-        style={{ background: '#0D0D0D', border: '1px solid #1e2229', color: '#E8EDF2', fontFamily: 'inherit' }}
-        onFocus={e => e.target.style.borderColor='#FFD600'}
-        onBlur={e => e.target.style.borderColor='#1e2229'} />
+        className="w-full rounded-lg px-3 py-2 text-sm outline-none transition-colors resize-none"
+        style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', color: '#0F172A', fontFamily: 'inherit' }}
+        onFocus={e => e.target.style.borderColor='#0F172A'}
+        onBlur={e => e.target.style.borderColor='#E2E8F0'} />
     </div>
   );
 }
@@ -466,8 +500,8 @@ function Textarea({ label, value, onChange, placeholder, rows=4, className='' })
 function Spinner({ size=20 }) {
   return (
     <svg className="spinner" width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="12" r="10" stroke="#2a2e36" strokeWidth="3"/>
-      <path d="M12 2a10 10 0 0 1 10 10" stroke="#FFD600" strokeWidth="3" strokeLinecap="round"/>
+      <circle cx="12" cy="12" r="10" stroke="#E2E8F0" strokeWidth="3"/>
+      <path d="M12 2a10 10 0 0 1 10 10" stroke="#0F172A" strokeWidth="3" strokeLinecap="round"/>
     </svg>
   );
 }
