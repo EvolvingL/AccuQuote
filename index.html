@@ -304,7 +304,7 @@ const JOB_STEPS = [
   { id: 'describe',  label: 'Describe',  hash: '#/job/describe' },
   { id: 'materials', label: 'Materials', hash: '#/job/materials' },
   { id: 'quote',     label: 'Quote',     hash: '#/job/quote' },
-  { id: 'proposal',  label: 'Proposal',  hash: '#/job/proposal' },
+  { id: 'send',      label: 'Send',      hash: '#/job/send' },
   { id: 'accepted',  label: 'Accepted',  hash: '#/job/accepted' },
   { id: 'ordered',   label: 'Ordered',   hash: '#/job/orders' },
 ];
@@ -314,7 +314,7 @@ function stepIndexFromRoute(route) {
   if (route.includes('/job/describe')) return 1;
   if (route.includes('/job/materials')) return 2;
   if (route.includes('/job/quote')) return 3;
-  if (route.includes('/job/proposal')) return 4;
+  if (route.includes('/job/send')) return 4;
   if (route.includes('/job/accepted')) return 5;
   if (route.includes('/job/orders')) return 6;
   return -1;
@@ -347,7 +347,7 @@ function Sidebar({ route }) {
         {NAV_ITEMS.map(item => {
           const active = item.hash === '#/'
             ? route === '#/' || route === '#'
-            : route.startsWith(item.hash.replace('#/job/describe','#/job'));
+            : item.hash.startsWith('#/job') ? route.startsWith('#/job') : route === item.hash;
           return (
             <a key={item.hash} href={item.hash}
                className="flex items-center gap-3 px-3 py-2 rounded text-sm transition-colors no-underline"
@@ -482,6 +482,7 @@ function DashboardScreen() {
 
   const statusCols = ['quoted','accepted','ordered','scheduled','complete'];
   const colLabels = { quoted:'Quoted', accepted:'Accepted', ordered:'Ordered', scheduled:'Scheduled', complete:'Complete' };
+  const colColors = { quoted:'#F59E0B', accepted:'#3B82F6', ordered:'#8B5CF6', scheduled:'#10B981', complete:'#6B7280' };
 
   const wonJobs = jobs.filter(j => ['accepted','ordered','scheduled','complete'].includes(j.status));
   const winRate = jobs.length ? Math.round(wonJobs.length / jobs.length * 100) : 0;
@@ -489,76 +490,112 @@ function DashboardScreen() {
   const pipeline = jobs.filter(j => j.status !== 'complete').reduce((s,j) => s + (j.quote?.grandTotal||0), 0);
 
   const stats = [
-    { label: 'Quotes this month', value: jobs.length },
-    { label: 'Won', value: `${wonJobs.length} (${winRate}%)` },
-    { label: 'Avg job value', value: avgValue ? `£${avgValue.toLocaleString()}` : '—' },
-    { label: 'Revenue pipeline', value: pipeline ? `£${pipeline.toLocaleString()}` : '—' },
+    { label: 'Quotes this month', value: jobs.length, icon: '📋', trend: null },
+    { label: 'Win rate', value: `${winRate}%`, icon: '🎯', trend: null },
+    { label: 'Avg job value', value: avgValue ? `£${avgValue.toLocaleString()}` : '—', icon: '💷', trend: null },
+    { label: 'Revenue pipeline', value: pipeline ? `£${Math.round(pipeline).toLocaleString()}` : '—', icon: '📈', trend: null },
   ];
 
   return (
-    <Screen title={`${greeting}, ${name}.`} subtitle={new Date().toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' })}
-      action={<Btn onClick={() => navigate('#/job/scan')}>+ New Job</Btn>}>
-
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-4 mb-8" style={{ gridTemplateColumns: 'repeat(4,1fr)' }}>
-        {stats.map(s => (
-          <Card key={s.label}>
-            <div className="text-2xl font-bold" style={{ color: '#FFD600' }}>{s.value}</div>
-            <div className="text-xs text-muted mt-1">{s.label}</div>
-          </Card>
-        ))}
+    <div className="flex-1 flex flex-col fade-up" style={{ background: '#F8FAFC', minHeight: 0 }}>
+      {/* Header */}
+      <div className="px-8 py-5 flex items-center justify-between" style={{ background: '#fff', borderBottom: '1px solid #E2E8F0' }}>
+        <div>
+          <h1 className="text-xl font-semibold" style={{ color: '#0F172A' }}>{greeting}, {name}.</h1>
+          <p className="text-sm mt-0.5" style={{ color: '#64748B' }}>{new Date().toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}</p>
+        </div>
+        <button onClick={() => navigate('#/job/scan')}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold cursor-pointer border-0 transition-all"
+          style={{ background: '#0F172A', color: '#fff' }}>
+          + New Job
+        </button>
       </div>
 
-      {jobs.length === 0 ? (
-        <div className="text-center py-20">
-          <div className="text-4xl mb-4">📋</div>
-          <div className="text-lg font-medium mb-2" style={{ color: '#E8EDF2' }}>No jobs yet</div>
-          <div className="text-muted text-sm mb-6">Tap + New Job to create your first quote</div>
-          <div className="flex gap-3 justify-center">
-            <Btn onClick={() => navigate('#/job/scan')}>+ New Job</Btn>
-            <Btn variant="secondary" onClick={loadDemo}>Load Demo Job</Btn>
-          </div>
+      <div className="flex-1 overflow-y-auto px-8 py-6">
+        {/* Stats row */}
+        <div className="grid gap-4 mb-8" style={{ gridTemplateColumns: 'repeat(4,1fr)' }}>
+          {stats.map(s => (
+            <div key={s.label} className="rounded-xl p-5" style={{ background: '#fff', border: '1px solid #E2E8F0' }}>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-medium uppercase" style={{ color: '#94A3B8', letterSpacing: 1 }}>{s.label}</span>
+                <span className="text-base">{s.icon}</span>
+              </div>
+              <div className="text-2xl font-bold" style={{ color: '#0F172A' }}>{s.value}</div>
+            </div>
+          ))}
         </div>
-      ) : (
-        <>
-          {/* Pipeline */}
-          <div className="mb-2 text-xs text-muted font-medium uppercase" style={{ letterSpacing: 1 }}>Pipeline</div>
-          <div className="flex gap-4 overflow-x-auto pb-4 mb-8">
-            {statusCols.map(col => (
-              <div key={col} style={{ minWidth: 200 }}>
-                <div className="text-xs font-medium mb-2 px-1" style={{ color: '#6B7280', letterSpacing: 1 }}>{colLabels[col]}</div>
-                <div className="flex flex-col gap-2">
-                  {jobs.filter(j => j.status === col).map(job => (
-                    <Card key={job.id} className="cursor-pointer hover:border-yellow-500" onClick={() => { navigate('#/job/describe'); }}>
-                      <div className="text-xs font-mono text-muted">{job.id}</div>
-                      <div className="text-sm font-medium mt-1" style={{ color: '#E8EDF2' }}>{job.customer?.name}</div>
-                      <div className="text-xs text-muted">{job.scan?.roomType || 'New job'}</div>
-                      {job.quote?.grandTotal && <div className="text-sm font-bold mt-2" style={{ color: '#FFD600' }}>£{job.quote.grandTotal.toLocaleString()}</div>}
-                      {job.proposedStartDate && <div className="text-xs text-muted">Start: {job.proposedStartDate}</div>}
-                    </Card>
-                  ))}
-                  {jobs.filter(j => j.status === col).length === 0 && (
-                    <div className="text-xs text-muted text-center py-4 rounded" style={{ border: '1px dashed #1e2229' }}>Empty</div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
 
-          {/* Recent activity */}
-          <div className="mb-2 text-xs text-muted font-medium uppercase" style={{ letterSpacing: 1 }}>Recent Activity</div>
-          <Card>
-            {jobs.slice(0,5).map(j => (
-              <div key={j.id} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
-                <div className="text-xs font-mono text-muted w-24">{j.id}</div>
-                <div className="text-sm flex-1" style={{ color: '#E8EDF2' }}>{j.customer?.name} — {j.scan?.roomType || 'new job'}</div>
-                <div className="text-xs text-muted">{j.status}</div>
-              </div>
-            ))}
-          </Card>
-        </>
-      )}
-    </Screen>
+        {jobs.length === 0 ? (
+          <div className="rounded-2xl p-16 text-center" style={{ background: '#fff', border: '1px solid #E2E8F0' }}>
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5 text-2xl" style={{ background: '#F1F5F9' }}>📋</div>
+            <div className="text-lg font-semibold mb-1" style={{ color: '#0F172A' }}>No jobs yet</div>
+            <div className="text-sm mb-6" style={{ color: '#64748B' }}>Start by scanning a room to create your first quote</div>
+            <div className="flex gap-3 justify-center">
+              <button onClick={() => navigate('#/job/scan')}
+                className="px-5 py-2.5 rounded-lg text-sm font-semibold cursor-pointer border-0"
+                style={{ background: '#0F172A', color: '#fff' }}>
+                + New Job
+              </button>
+              <button onClick={loadDemo}
+                className="px-5 py-2.5 rounded-lg text-sm font-medium cursor-pointer"
+                style={{ background: '#F8FAFC', color: '#475569', border: '1px solid #E2E8F0' }}>
+                Load Demo
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Pipeline board */}
+            <div className="mb-1 text-xs font-semibold uppercase mb-4" style={{ color: '#94A3B8', letterSpacing: 1 }}>Pipeline</div>
+            <div className="flex gap-4 overflow-x-auto pb-4 mb-8">
+              {statusCols.map(col => (
+                <div key={col} style={{ minWidth: 220, flexShrink: 0 }}>
+                  <div className="flex items-center gap-2 mb-3 px-1">
+                    <div className="w-2 h-2 rounded-full" style={{ background: colColors[col] }} />
+                    <span className="text-xs font-semibold uppercase" style={{ color: '#64748B', letterSpacing: 1 }}>{colLabels[col]}</span>
+                    <span className="text-xs ml-auto" style={{ color: '#94A3B8' }}>{jobs.filter(j=>j.status===col).length}</span>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {jobs.filter(j => j.status === col).map(job => (
+                      <div key={job.id}
+                        className="rounded-xl p-4 cursor-pointer transition-all"
+                        style={{ background: '#fff', border: '1px solid #E2E8F0' }}
+                        onClick={() => navigate('#/job/describe')}>
+                        <div className="text-xs font-mono mb-1" style={{ color: '#94A3B8' }}>{job.id}</div>
+                        <div className="text-sm font-semibold mb-0.5" style={{ color: '#0F172A' }}>{job.customer?.name || 'New job'}</div>
+                        <div className="text-xs mb-3" style={{ color: '#64748B' }}>{job.scan?.roomType ? job.scan.roomType.charAt(0).toUpperCase()+job.scan.roomType.slice(1) : 'New job'}</div>
+                        {job.quote?.grandTotal && (
+                          <div className="text-base font-bold" style={{ color: '#0F172A' }}>£{job.quote.grandTotal.toLocaleString()}</div>
+                        )}
+                        {job.proposedStartDate && (
+                          <div className="text-xs mt-1" style={{ color: '#94A3B8' }}>Start {job.proposedStartDate}</div>
+                        )}
+                      </div>
+                    ))}
+                    {jobs.filter(j => j.status === col).length === 0 && (
+                      <div className="rounded-xl py-6 text-center text-xs" style={{ color: '#CBD5E1', border: '1px dashed #E2E8F0' }}>Empty</div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Recent activity */}
+            <div className="mb-4 text-xs font-semibold uppercase" style={{ color: '#94A3B8', letterSpacing: 1 }}>Recent Activity</div>
+            <div className="rounded-xl overflow-hidden" style={{ background: '#fff', border: '1px solid #E2E8F0' }}>
+              {jobs.slice(0,5).map((j, i) => (
+                <div key={j.id} className="flex items-center gap-4 px-5 py-3.5" style={{ borderBottom: i < Math.min(jobs.length,5)-1 ? '1px solid #F1F5F9' : 'none' }}>
+                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: colColors[j.status] || '#CBD5E1' }} />
+                  <div className="text-xs font-mono w-24 flex-shrink-0" style={{ color: '#94A3B8' }}>{j.id}</div>
+                  <div className="text-sm flex-1 font-medium" style={{ color: '#0F172A' }}>{j.customer?.name || 'New job'}</div>
+                  <div className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: '#F1F5F9', color: '#475569' }}>{j.status}</div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -727,6 +764,162 @@ function SettingsScreen() {
         </div>
       </div>
     </Screen>
+  );
+}
+
+// ─── SEND PROPOSAL SCREEN ────────────────────────────────────────────────────
+function SendProposalScreen() {
+  const { state, setState } = useApp();
+  const job = state.currentJob;
+  const quote = state.quote || job?.quote;
+  const profile = state.profile || STUB_PROFILE;
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [sendVia, setSendVia] = useState('email');
+
+  const selectedTiers = quote?.selectedTiers || [];
+  const lowestPrice = selectedTiers.length ? Math.min(...selectedTiers.map(t=>t.grandTotal||0)) : 0;
+  const highestPrice = selectedTiers.length ? Math.max(...selectedTiers.map(t=>t.grandTotal||0)) : 0;
+  const matTotal = (state.billOfMaterials||[]).filter(i=>!i.customerSupplied).reduce((s,i)=>s+(i.catalogueLookup?.lineTotal||0),0);
+
+  const doSend = () => {
+    setSending(true);
+    setTimeout(() => {
+      const proposal = {
+        coverLetter: '',
+        scopeBullets: [],
+        jobRef: job?.id,
+        proposalDate: new Date().toLocaleDateString('en-GB'),
+        validUntil: new Date(Date.now()+30*24*60*60*1000).toLocaleDateString('en-GB'),
+        sendVia,
+        sentAt: new Date().toISOString(),
+        selectedTiers,
+      };
+      setState(prev => ({
+        ...prev, proposal,
+        currentJob: { ...prev.currentJob, proposal, status: 'quoted' },
+        jobs: prev.jobs.map(j => j.id === prev.currentJob?.id ? { ...j, proposal, status:'quoted' } : j),
+      }));
+      setSending(false);
+      setSent(true);
+    }, 1800);
+  };
+
+  if (sent) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center fade-up px-8" style={{ background:'#0D0D0D', minHeight:'100vh' }}>
+        <div className="text-center" style={{ maxWidth:400 }}>
+          <div className="text-6xl mb-5" style={{ color:'#22C55E' }}>✓</div>
+          <h2 className="text-3xl font-bold mb-3" style={{ color:'#fff', fontFamily:"'Barlow Condensed',sans-serif", letterSpacing:2 }}>PROPOSAL SENT</h2>
+          <p className="text-base mb-2" style={{ color:'#9CA3AF' }}>
+            Sent to {job?.customer?.name || 'the customer'} via {sendVia}
+          </p>
+          <p className="text-sm mb-10" style={{ color:'#4B5563' }}>
+            They'll receive a link to view and accept the proposal online.
+          </p>
+          <div className="flex flex-col gap-3">
+            <button onClick={() => navigate('#/job/accepted')}
+              className="w-full py-4 rounded-2xl text-base font-bold cursor-pointer border-0"
+              style={{ background:'#FFD600', color:'#0D0D0D', letterSpacing:1 }}>
+              View Customer Acceptance →
+            </button>
+            <button onClick={() => navigate('#/job/proposal')}
+              className="w-full py-3 rounded-xl text-sm cursor-pointer border-0"
+              style={{ background:'transparent', color:'#4B5563', border:'1px solid #1e2229' }}>
+              Edit proposal details
+            </button>
+            <button onClick={() => navigate('#/')}
+              className="w-full py-3 rounded-xl text-sm cursor-pointer border-0"
+              style={{ background:'transparent', color:'#4B5563', border:'1px solid #1e2229' }}>
+              Back to Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center fade-up px-8" style={{ background:'#0D0D0D', minHeight:'100vh' }}>
+      <div style={{ maxWidth:480, width:'100%' }}>
+        <div className="text-center mb-10">
+          <h1 className="text-4xl font-bold mb-3" style={{ color:'#fff', fontFamily:"'Barlow Condensed',sans-serif", letterSpacing:2 }}>SEND PROPOSAL</h1>
+          <p className="text-base" style={{ color:'#6B7280' }}>to {job?.customer?.name || 'customer'}</p>
+        </div>
+
+        {/* Quote summary card */}
+        <div className="rounded-2xl p-6 mb-5" style={{ background:'#111418', border:'1px solid #1e2229' }}>
+          <div className="text-xs uppercase mb-4" style={{ color:'#6B7280', letterSpacing:1 }}>Proposal summary</div>
+          <div className="flex items-end justify-between mb-5">
+            <div>
+              <div className="text-xs mb-1" style={{ color:'#4B5563' }}>
+                {selectedTiers.length > 1 ? `${selectedTiers.length} options` : 'Fixed price'}
+              </div>
+              <div className="text-4xl font-bold" style={{ color:'#FFD600', fontFamily:"'Barlow Condensed',sans-serif" }}>
+                {selectedTiers.length > 1 ? `£${lowestPrice.toLocaleString()} – £${highestPrice.toLocaleString()}` : `£${lowestPrice.toLocaleString()}`}
+              </div>
+              <div className="text-xs mt-1" style={{ color:'#4B5563' }}>inc VAT</div>
+            </div>
+            <div className="text-right">
+              <div className="text-xs mb-1" style={{ color:'#4B5563' }}>Ref</div>
+              <div className="text-sm font-mono" style={{ color:'#9CA3AF' }}>{job?.id}</div>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2 pt-4" style={{ borderTop:'1px solid #1e2229' }}>
+            {[
+              ['Customer', job?.customer?.name || '—'],
+              ['Property', job?.customer?.address || '—'],
+              ['Start date', job?.proposedStartDate || 'TBC'],
+              ['Duration', `${job?.estimatedDurationDays || 1} day${job?.estimatedDurationDays !== 1 ? 's' : ''}`],
+              ['Materials', `£${matTotal.toFixed(2)}`],
+              ['Deposit required', selectedTiers[0]?.deposit ? `£${selectedTiers[0].deposit.toFixed(2)}` : '—'],
+            ].map(([k,v]) => (
+              <div key={k} className="flex justify-between text-sm">
+                <span style={{ color:'#4B5563' }}>{k}</span>
+                <span style={{ color:'#9CA3AF' }}>{v}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Send via */}
+        <div className="rounded-2xl p-5 mb-6" style={{ background:'#111418', border:'1px solid #1e2229' }}>
+          <div className="text-xs uppercase mb-4" style={{ color:'#6B7280', letterSpacing:1 }}>Send via</div>
+          <div className="flex gap-3">
+            {[['email','✉ Email'],['sms','💬 SMS'],['whatsapp','📱 WhatsApp']].map(([v,label]) => (
+              <button key={v} onClick={() => setSendVia(v)}
+                className="flex-1 py-3 rounded-xl text-sm cursor-pointer border-0 font-medium transition-all"
+                style={{ background: sendVia===v ? '#FFD600' : '#1e2229', color: sendVia===v ? '#0D0D0D' : '#6B7280' }}>
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="mt-3 text-xs" style={{ color:'#4B5563' }}>
+            Sending to: {sendVia === 'email' ? (job?.customer?.email||'—') : (job?.customer?.phone||'—')}
+          </div>
+        </div>
+
+        <button onClick={doSend} disabled={sending}
+          className="w-full py-5 rounded-2xl text-lg font-bold cursor-pointer border-0 flex items-center justify-center gap-3"
+          style={{ background:'#FFD600', color:'#0D0D0D', letterSpacing:1, opacity: sending ? 0.7 : 1 }}>
+          {sending ? <><Spinner size={20}/> Sending...</> : 'Send Proposal to Customer →'}
+        </button>
+
+        <div className="flex gap-3 mt-3">
+          <button onClick={() => navigate('#/job/proposal')}
+            className="flex-1 py-3 rounded-xl text-sm cursor-pointer border-0"
+            style={{ background:'transparent', color:'#4B5563', border:'1px solid #1e2229' }}>
+            Edit proposal first
+          </button>
+          <button onClick={() => navigate('#/job/quote')}
+            className="flex-1 py-3 rounded-xl text-sm cursor-pointer border-0"
+            style={{ background:'transparent', color:'#4B5563', border:'1px solid #1e2229' }}>
+            ← Adjust quote
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -1388,26 +1581,74 @@ function MaterialsScreen() {
   ];
 
   if (phase === 'loading') {
+    const job = state.currentJob;
+    const dims = job?.scan?.dimensions || {};
+    const floorArea = dims.length && dims.width ? (dims.length * dims.width).toFixed(1) : '?';
+
+    // Live calculation messages that appear as steps complete
+    const liveCalcs = [
+      null,
+      `Room: ${dims.length||'?'}m × ${dims.width||'?'}m — floor area ${floorArea}m²`,
+      `Cable runs estimated from dimensions + 10% waste factor`,
+      `Quantities rounded to nearest stock unit`,
+      null,
+      null,
+    ];
+
     return (
-      <Screen title="Calculating Materials">
-        <div className="flex flex-col items-center justify-center py-16">
-          <div className="mb-8"><Spinner size={48} /></div>
-          <div className="flex flex-col gap-3 w-72">
+      <div className="flex-1 flex flex-col items-center justify-center fade-up px-8" style={{ background: '#0D0D0D', minHeight: '100vh' }}>
+        <div style={{ maxWidth: 480, width: '100%' }}>
+          <div className="text-center mb-10">
+            <div className="mb-5"><Spinner size={40} /></div>
+            <h2 className="text-3xl font-bold mb-2" style={{ color: '#fff', fontFamily:"'Barlow Condensed',sans-serif", letterSpacing:2 }}>CALCULATING MATERIALS</h2>
+            <p className="text-sm" style={{ color:'#4B5563' }}>AccuQuote is working out exactly what you need</p>
+          </div>
+
+          <div className="rounded-2xl p-6" style={{ background:'#111418', border:'1px solid #1e2229' }}>
             {LOAD_STEPS.map((s,i) => (
-              <div key={i} className="flex items-center gap-3 text-sm transition-all"
-                style={{ color: i < loadStep ? '#22C55E' : i === loadStep ? '#FFD600' : '#374151', opacity: i > loadStep + 1 ? 0.3 : 1 }}>
-                <span>{i < loadStep ? '✓' : i === loadStep ? '→' : '○'}</span>
-                {s}
+              <div key={i} className="mb-4 last:mb-0">
+                <div className="flex items-center gap-3"
+                  style={{ opacity: i > loadStep + 1 ? 0.25 : 1, transition:'opacity 0.4s' }}>
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
+                    style={{ background: i < loadStep ? '#22C55E' : i === loadStep ? '#FFD600' : '#1e2229', color: i < loadStep || i === loadStep ? '#0D0D0D' : '#4B5563', transition:'background 0.3s' }}>
+                    {i < loadStep ? '✓' : i === loadStep ? <Spinner size={12}/> : i+1}
+                  </div>
+                  <span className="text-sm" style={{ color: i < loadStep ? '#22C55E' : i === loadStep ? '#FFD600' : '#4B5563', fontWeight: i === loadStep ? 600 : 400 }}>
+                    {s}
+                  </span>
+                </div>
+                {/* Live calculation detail */}
+                {liveCalcs[i] && i <= loadStep && (
+                  <div className="ml-9 mt-1.5 px-3 py-1.5 rounded-lg text-xs fade-up" style={{ background:'rgba(255,214,0,0.06)', color:'#6B7280', border:'1px solid rgba(255,214,0,0.1)', fontFamily:'monospace' }}>
+                    → {liveCalcs[i]}
+                  </div>
+                )}
               </div>
             ))}
           </div>
-          <div className="mt-12 w-80">
-            {[1,2,3,4].map(i => (
-              <div key={i} className="h-8 rounded mb-2 pulse" style={{ background:'#1e2229', width:`${70+i*5}%`, opacity:0.4+i*0.1 }} />
-            ))}
-          </div>
+
+          {/* Ghost BOM rows appearing */}
+          {loadStep >= 3 && (
+            <div className="mt-4 rounded-2xl p-4 fade-up" style={{ background:'#111418', border:'1px solid #1e2229' }}>
+              <div className="text-xs uppercase mb-3" style={{ color:'#4B5563', letterSpacing:1 }}>Materials found so far</div>
+              {[
+                ['2.5mm² twin & earth cable','25m','Screwfix','£21.25'],
+                ['IP65 LED downlight 6W','2 each','Screwfix','£25.98'],
+                ['IP65 shaver socket','1 each','Screwfix','£22.99'],
+                ['Earth bonding clamp 22mm','4 each','Screwfix','£7.96'],
+              ].slice(0, loadStep-2).map(([mat,qty,sup,price],i) => (
+                <div key={i} className="flex items-center gap-3 py-2 border-b fade-up" style={{ borderColor:'#0D0D0D', animationDelay:`${i*0.1}s` }}>
+                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background:'#22C55E' }}/>
+                  <span className="text-xs flex-1" style={{ color:'#9CA3AF' }}>{mat}</span>
+                  <span className="text-xs" style={{ color:'#6B7280' }}>{qty}</span>
+                  <span className="text-xs font-mono" style={{ color:'#FFD600' }}>{price}</span>
+                </div>
+              ))}
+              <div className="pulse h-4 rounded mt-2" style={{ background:'#1e2229', width:'60%' }}/>
+            </div>
+          )}
         </div>
-      </Screen>
+      </div>
     );
   }
 
@@ -1608,7 +1849,7 @@ function QuoteScreen() {
     });
     const quote = { matTotal, labourTotal, extrasTotal, costBase, days, operatives, dayRate, extras, margins, tiers, depositPct, selectedTiers, createdAt: new Date().toISOString() };
     setState(prev => ({ ...prev, quote, currentJob: { ...prev.currentJob, quote, status:'quoted' }, jobs: prev.jobs.map(j=>j.id===prev.currentJob?.id?{...j,quote,status:'quoted'}:j) }));
-    navigate('#/job/proposal');
+    navigate('#/job/send');
   };
 
   return (
@@ -1755,173 +1996,195 @@ function QuoteScreen() {
 // ─── JOB SCAN SCREEN ─────────────────────────────────────────────────────────
 function ScanScreen() {
   const { state, setState } = useApp();
-  const [phase, setPhase] = useState('scanning'); // scanning | inputs
+  const [phase, setPhase] = useState('ready'); // ready | scanning | confirm
   const [scanPct, setScanPct] = useState(0);
-  const [roomType, setRoomType] = useState(state.currentJob?.scan?.roomType || 'bathroom');
+  const [scanMsg, setScanMsg] = useState('');
   const [dims, setDims] = useState(state.currentJob?.scan?.dimensions || { length:'', width:'', height:'' });
-  const [features, setFeatures] = useState(state.currentJob?.scan?.features || { windowCount:0, doorCount:1, existingSocketCount:0, existingLightCount:0 });
-  const [anomalies, setAnomalies] = useState(state.currentJob?.scan?.anomalies || []);
-  const [anomalyInput, setAnomalyInput] = useState('');
+  const [roomType, setRoomType] = useState(state.currentJob?.scan?.roomType || '');
 
-  useEffect(() => {
-    if (phase !== 'scanning') return;
-    let pct = 0;
-    const iv = setInterval(() => {
-      pct += Math.random() * 18 + 5;
-      if (pct >= 100) { pct = 100; clearInterval(iv); setTimeout(() => setPhase('inputs'), 400); }
-      setScanPct(Math.min(100, Math.round(pct)));
-    }, 300);
-    return () => clearInterval(iv);
-  }, [phase]);
+  const SCAN_STEPS = [
+    [15, 'Detecting walls...'],
+    [32, 'Mapping floor plane...'],
+    [50, 'Measuring room length...'],
+    [67, 'Measuring room width...'],
+    [80, 'Calculating ceiling height...'],
+    [92, 'Detecting doors & windows...'],
+    [100, 'Scan complete'],
+  ];
 
-  const floorArea = dims.length && dims.width ? (dims.length * dims.width).toFixed(2) : null;
-  const wallArea = dims.length && dims.width && dims.height
-    ? (2 * (Number(dims.length) + Number(dims.width)) * Number(dims.height)).toFixed(2) : null;
-
-  const ROOM_TYPES = ['bathroom','kitchen','bedroom','living room','hallway','garage','office','loft','garden','utility','dining room'];
-  const ANOMALY_CHIPS = ['old wiring detected','no earth present','previous DIY work','damp/moisture present','no existing bonding','fuse wire present'];
-
-  const addAnomaly = (a) => { if (!anomalies.includes(a)) setAnomalies(x => [...x, a]); };
-  const removeAnomaly = (a) => setAnomalies(x => x.filter(i => i !== a));
+  const startScan = () => {
+    setPhase('scanning');
+    setScanPct(0);
+    let i = 0;
+    const tick = () => {
+      if (i >= SCAN_STEPS.length) return;
+      const [pct, msg] = SCAN_STEPS[i++];
+      setScanPct(pct);
+      setScanMsg(msg);
+      if (pct < 100) setTimeout(tick, 600 + Math.random() * 500);
+      else {
+        // Simulate realistic dimensions
+        const l = (3 + Math.random() * 2).toFixed(1);
+        const w = (2 + Math.random() * 2).toFixed(1);
+        const h = (2.3 + Math.random() * 0.4).toFixed(1);
+        setDims({ length: l, width: w, height: h });
+        setTimeout(() => setPhase('confirm'), 600);
+      }
+    };
+    setTimeout(tick, 400);
+  };
 
   const proceed = () => {
-    const scan = { roomType, dimensions: { length:+dims.length, width:+dims.width, height:+dims.height }, features, anomalies };
+    const scan = {
+      roomType: roomType || 'room',
+      dimensions: { length: +dims.length, width: +dims.width, height: +dims.height },
+      features: { windowCount: 1, doorCount: 1, existingSocketCount: 1, existingLightCount: 1 },
+      anomalies: [],
+    };
     const jobId = `AQ-${new Date().getFullYear()}-${String(Math.floor(Math.random()*900)+100)}`;
     const job = state.currentJob ? { ...state.currentJob, scan } : {
-      id: jobId, status:'scan', scan,
-      customer:{ name:'', email:'', phone:'', address:'' },
+      id: jobId, status: 'scan', scan,
+      customer: { name:'', email:'', phone:'', address:'' },
       jobDescription:'', outOfScope:'', customerSupplied:[],
-      proposedStartDate:'', estimatedDurationDays:1,
+      proposedStartDate:'', estimatedDurationDays: 1,
       createdAt: new Date().toISOString(),
     };
     setState(prev => ({ ...prev, currentJob: job, jobs: prev.jobs.find(j=>j.id===job.id) ? prev.jobs.map(j=>j.id===job.id?job:j) : [...prev.jobs, job] }));
     navigate('#/job/describe');
   };
 
-  if (phase === 'scanning') {
+  // ── READY ──
+  if (phase === 'ready') {
     return (
-      <Screen title="Scanning Room">
-        <div className="flex flex-col items-center justify-center py-20">
-          <div className="relative mb-8" style={{ width:120, height:120 }}>
-            <svg viewBox="0 0 120 120" width="120" height="120">
-              <circle cx="60" cy="60" r="54" fill="none" stroke="#1e2229" strokeWidth="8"/>
-              <circle cx="60" cy="60" r="54" fill="none" stroke="#FFD600" strokeWidth="8"
-                strokeDasharray={`${2*Math.PI*54}`}
-                strokeDashoffset={`${2*Math.PI*54*(1-scanPct/100)}`}
-                strokeLinecap="round"
-                style={{ transformOrigin:'center', transform:'rotate(-90deg)', transition:'stroke-dashoffset 0.3s ease' }}/>
-            </svg>
+      <div className="flex-1 flex flex-col items-center justify-center fade-up" style={{ background: '#0D0D0D', minHeight: '100vh' }}>
+        <div className="text-center px-8" style={{ maxWidth: 480 }}>
+          {/* Animated scan icon */}
+          <div className="relative mx-auto mb-10" style={{ width: 120, height: 120 }}>
+            <div className="absolute inset-0 rounded-2xl" style={{ border: '2px solid rgba(255,214,0,0.3)' }} />
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-2xl font-bold" style={{ color:'#FFD600' }}>{scanPct}%</span>
+              <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                <rect x="4" y="4" width="12" height="2" fill="#FFD600"/>
+                <rect x="4" y="4" width="2" height="12" fill="#FFD600"/>
+                <rect x="32" y="4" width="12" height="2" fill="#FFD600"/>
+                <rect x="42" y="4" width="2" height="12" fill="#FFD600"/>
+                <rect x="4" y="42" width="12" height="2" fill="#FFD600"/>
+                <rect x="4" y="32" width="2" height="12" fill="#FFD600"/>
+                <rect x="32" y="42" width="12" height="2" fill="#FFD600"/>
+                <rect x="42" y="32" width="2" height="12" fill="#FFD600"/>
+                <line x1="8" y1="24" x2="40" y2="24" stroke="rgba(255,214,0,0.4)" strokeWidth="1" strokeDasharray="3 3"/>
+              </svg>
             </div>
+            {/* Corner pulse rings */}
+            <div className="absolute inset-0 rounded-2xl pulse" style={{ border: '1px solid rgba(255,214,0,0.15)' }} />
           </div>
-          <div className="text-sm text-muted pulse">
-            {scanPct < 30 ? 'Initialising scan...' : scanPct < 60 ? 'Measuring room dimensions...' : scanPct < 90 ? 'Detecting anomalies...' : 'Finalising...'}
-          </div>
+
+          <h1 className="text-5xl font-bold mb-4" style={{ color: '#fff', fontFamily: "'Barlow Condensed', sans-serif", letterSpacing: 2 }}>SCAN SPACE</h1>
+          <p className="text-base mb-12" style={{ color: '#6B7280', lineHeight: 1.6 }}>
+            Point your phone around the room.<br/>AccuQuote measures the dimensions automatically.
+          </p>
+
+          <button onClick={startScan}
+            className="w-full py-5 rounded-2xl text-lg font-bold cursor-pointer border-0 transition-all"
+            style={{ background: '#FFD600', color: '#0D0D0D', letterSpacing: 1 }}>
+            Start Scan
+          </button>
+
+          <button onClick={() => setPhase('confirm')}
+            className="mt-4 w-full py-3 rounded-xl text-sm cursor-pointer border-0"
+            style={{ background: 'transparent', color: '#4B5563', border: '1px solid #1e2229' }}>
+            Enter dimensions manually
+          </button>
         </div>
-      </Screen>
+      </div>
     );
   }
 
-  return (
-    <Screen title="Room Scan" subtitle="Review and confirm room details">
-      <div className="max-w-2xl flex flex-col gap-6">
-
-        {/* Room type */}
-        <Card>
-          <div className="text-sm font-medium mb-3" style={{ color:'#E8EDF2' }}>Room Type</div>
-          <div className="flex flex-wrap gap-2">
-            {ROOM_TYPES.map(r => (
-              <button key={r} onClick={() => setRoomType(r)}
-                className="px-3 py-1.5 rounded text-sm cursor-pointer border-0 transition-colors"
-                style={{ background: roomType===r ? '#FFD600' : '#1e2229', color: roomType===r ? '#0D0D0D' : '#9CA3AF', fontWeight: roomType===r ? 600 : 400 }}>
-                {r.charAt(0).toUpperCase()+r.slice(1)}
-              </button>
-            ))}
+  // ── SCANNING ──
+  if (phase === 'scanning') {
+    const circumference = 2 * Math.PI * 54;
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center fade-up" style={{ background: '#0D0D0D', minHeight: '100vh' }}>
+        <div className="text-center px-8" style={{ maxWidth: 360 }}>
+          <div className="relative mx-auto mb-8" style={{ width: 140, height: 140 }}>
+            <svg viewBox="0 0 140 140" width="140" height="140">
+              <circle cx="70" cy="70" r="54" fill="none" stroke="#1e2229" strokeWidth="6"/>
+              <circle cx="70" cy="70" r="54" fill="none" stroke="#FFD600" strokeWidth="6"
+                strokeDasharray={circumference}
+                strokeDashoffset={circumference * (1 - scanPct / 100)}
+                strokeLinecap="round"
+                style={{ transformOrigin:'center', transform:'rotate(-90deg)', transition:'stroke-dashoffset 0.5s ease' }}/>
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-3xl font-bold" style={{ color:'#FFD600', fontFamily:"'Barlow Condensed',sans-serif" }}>{scanPct}%</span>
+            </div>
           </div>
-        </Card>
+          <div className="text-base font-medium mb-2" style={{ color: '#E8EDF2' }}>{scanMsg}</div>
+          <div className="text-sm" style={{ color: '#4B5563' }}>Keep moving slowly around the room</div>
+        </div>
+      </div>
+    );
+  }
 
-        {/* Dimensions */}
-        <Card>
-          <div className="text-sm font-medium mb-4" style={{ color:'#E8EDF2' }}>Dimensions</div>
-          <div className="grid grid-cols-3 gap-4 mb-4">
+  // ── CONFIRM ──
+  const floorArea = dims.length && dims.width ? (dims.length * dims.width).toFixed(2) : null;
+  const ROOM_TYPES = ['Bathroom','Kitchen','Bedroom','Living Room','Hallway','Garage','Office','Loft','Garden','Utility'];
+
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center fade-up px-6 py-10" style={{ background: '#0D0D0D', minHeight: '100vh' }}>
+      <div style={{ maxWidth: 440, width: '100%' }}>
+        <div className="text-center mb-8">
+          <div className="text-3xl mb-2" style={{ color: '#22C55E' }}>✓</div>
+          <h2 className="text-2xl font-bold mb-1" style={{ color: '#fff', fontFamily:"'Barlow Condensed',sans-serif", letterSpacing:2 }}>SCAN COMPLETE</h2>
+          <p className="text-sm" style={{ color: '#6B7280' }}>Review the dimensions below</p>
+        </div>
+
+        {/* Dimensions display */}
+        <div className="rounded-2xl p-6 mb-4" style={{ background: '#111418', border: '1px solid #1e2229' }}>
+          <div className="grid grid-cols-3 gap-4 mb-5">
             {['length','width','height'].map(d => (
-              <div key={d}>
-                <label className="block text-xs text-muted mb-1.5 capitalize">{d} (m)</label>
-                <input type="number" step="0.1" value={dims[d]} onChange={e => setDims(x => ({...x,[d]:e.target.value}))}
-                  placeholder="0.0" className="w-full rounded px-3 py-2 text-sm outline-none"
-                  style={{ background:'#0D0D0D', border:'1px solid #1e2229', color:'#E8EDF2' }}
-                  onFocus={e=>e.target.style.borderColor='#FFD600'} onBlur={e=>e.target.style.borderColor='#1e2229'} />
+              <div key={d} className="text-center">
+                <div className="text-xs uppercase mb-2" style={{ color: '#6B7280', letterSpacing: 1 }}>{d}</div>
+                <input type="number" step="0.1" value={dims[d]}
+                  onChange={e => setDims(x => ({...x,[d]:e.target.value}))}
+                  className="w-full text-center rounded-xl py-3 text-xl font-bold outline-none"
+                  style={{ background: '#0D0D0D', border: '1px solid #2a2e36', color: '#FFD600', fontFamily:"'Barlow Condensed',sans-serif" }}/>
+                <div className="text-xs mt-1" style={{ color: '#4B5563' }}>metres</div>
               </div>
             ))}
           </div>
           {floorArea && (
-            <div className="flex gap-6 text-sm">
-              <span className="text-muted">Floor area: <span style={{ color:'#FFD600' }}>{floorArea}m²</span></span>
-              {wallArea && <span className="text-muted">Wall area: <span style={{ color:'#FFD600' }}>{wallArea}m²</span></span>}
+            <div className="text-center text-sm pt-3" style={{ borderTop: '1px solid #1e2229', color: '#6B7280' }}>
+              Floor area <span className="font-bold" style={{ color: '#FFD600' }}>{floorArea}m²</span>
             </div>
           )}
-        </Card>
+        </div>
 
-        {/* Features */}
-        <Card>
-          <div className="text-sm font-medium mb-4" style={{ color:'#E8EDF2' }}>Existing Features</div>
-          <div className="grid grid-cols-2 gap-4">
-            {[['windowCount','Windows'],['doorCount','Doors'],['existingSocketCount','Existing sockets'],['existingLightCount','Existing lights']].map(([k,label]) => (
-              <div key={k} className="flex items-center justify-between">
-                <span className="text-sm text-muted">{label}</span>
-                <div className="flex items-center gap-2">
-                  <button onClick={() => setFeatures(f=>({...f,[k]:Math.max(0,f[k]-1)}))}
-                    className="w-8 h-8 rounded cursor-pointer border-0 text-sm font-bold"
-                    style={{ background:'#1e2229', color:'#E8EDF2' }}>−</button>
-                  <span className="w-6 text-center text-sm font-medium" style={{ color:'#FFD600' }}>{features[k]}</span>
-                  <button onClick={() => setFeatures(f=>({...f,[k]:f[k]+1}))}
-                    className="w-8 h-8 rounded cursor-pointer border-0 text-sm font-bold"
-                    style={{ background:'#1e2229', color:'#E8EDF2' }}>+</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        {/* Anomalies */}
-        <Card>
-          <div className="text-sm font-medium mb-3" style={{ color:'#E8EDF2' }}>Anomalies Noted</div>
-          <div className="flex flex-wrap gap-2 mb-3">
-            {ANOMALY_CHIPS.map(a => (
-              <button key={a} onClick={() => addAnomaly(a)}
-                className="px-2.5 py-1 rounded text-xs cursor-pointer border-0"
-                style={{ background: anomalies.includes(a) ? 'rgba(255,107,0,0.2)' : '#1e2229', color: anomalies.includes(a) ? '#FF6B00' : '#6B7280', border: anomalies.includes(a) ? '1px solid #FF6B00' : '1px solid transparent' }}>
-                + {a}
+        {/* Room type */}
+        <div className="rounded-2xl p-4 mb-6" style={{ background: '#111418', border: '1px solid #1e2229' }}>
+          <div className="text-xs uppercase mb-3" style={{ color: '#6B7280', letterSpacing: 1 }}>Room type</div>
+          <div className="flex flex-wrap gap-2">
+            {ROOM_TYPES.map(r => (
+              <button key={r} onClick={() => setRoomType(r.toLowerCase())}
+                className="px-3 py-1.5 rounded-lg text-xs cursor-pointer border-0 transition-all"
+                style={{ background: roomType===r.toLowerCase() ? '#FFD600' : '#1e2229', color: roomType===r.toLowerCase() ? '#0D0D0D' : '#6B7280', fontWeight: roomType===r.toLowerCase() ? 700 : 400 }}>
+                {r}
               </button>
             ))}
           </div>
-          <div className="flex gap-2">
-            <input value={anomalyInput} onChange={e=>setAnomalyInput(e.target.value)}
-              placeholder="Add custom anomaly..." className="flex-1 rounded px-3 py-2 text-sm outline-none"
-              style={{ background:'#0D0D0D', border:'1px solid #1e2229', color:'#E8EDF2' }}
-              onFocus={e=>e.target.style.borderColor='#FFD600'} onBlur={e=>e.target.style.borderColor='#1e2229'}
-              onKeyDown={e=>{ if(e.key==='Enter'&&anomalyInput.trim()){addAnomaly(anomalyInput.trim());setAnomalyInput('');} }} />
-            <Btn small onClick={()=>{ if(anomalyInput.trim()){addAnomaly(anomalyInput.trim());setAnomalyInput('');} }}>Add</Btn>
-          </div>
-          {anomalies.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-3">
-              {anomalies.map(a => (
-                <span key={a} className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs"
-                  style={{ background:'rgba(255,107,0,0.15)', color:'#FF6B00', border:'1px solid #FF6B00' }}>
-                  {a}
-                  <button onClick={()=>removeAnomaly(a)} className="cursor-pointer bg-transparent border-0 text-orange-400 leading-none">×</button>
-                </span>
-              ))}
-            </div>
-          )}
-        </Card>
+        </div>
 
-        <Btn onClick={proceed} disabled={!dims.length || !dims.width || !dims.height}>
+        <button onClick={proceed}
+          className="w-full py-4 rounded-2xl text-base font-bold cursor-pointer border-0"
+          style={{ background: '#FFD600', color: '#0D0D0D', letterSpacing: 1 }}
+          disabled={!dims.length || !dims.width || !dims.height}>
           Describe the Job →
-        </Btn>
+        </button>
+
+        <button onClick={() => setPhase('ready')} className="w-full mt-3 py-3 text-sm cursor-pointer border-0 bg-transparent" style={{ color: '#4B5563' }}>
+          ← Scan again
+        </button>
       </div>
-    </Screen>
+    </div>
   );
 }
 
@@ -1929,152 +2192,284 @@ function ScanScreen() {
 function DescribeScreen() {
   const { state, setState } = useApp();
   const job = state.currentJob;
+  const [phase, setPhase] = useState('listening'); // listening | review
+  const [listening, setListening] = useState(false);
+  const [transcript, setTranscript] = useState('');
+  const [interimText, setInterimText] = useState('');
+  const [extractedItems, setExtractedItems] = useState([]);
   const [customer, setCustomer] = useState(job?.customer || { name:'', email:'', phone:'', address:'' });
-  const [desc, setDesc] = useState(job?.jobDescription || '');
-  const [outOfScope, setOutOfScope] = useState(job?.outOfScope || '');
   const [startDate, setStartDate] = useState(job?.proposedStartDate || '');
   const [duration, setDuration] = useState(job?.estimatedDurationDays || 1);
-  const [listening, setListening] = useState(false);
-  const [checklistOpen, setChecklistOpen] = useState(false);
+  const [extraNote, setExtraNote] = useState('');
   const recognitionRef = useRef(null);
 
-  const CHIPS = ['Not in scope:','Customer supplying:','Sub-contractor needed:','Potential issue:','Existing item to be removed:'];
-  const CHECKLIST = [
-    "What's being installed or replaced",
-    "What's being removed or stripped",
-    "Any making good required",
-    "Access restrictions or site conditions",
-    "Any existing work needing testing or certification",
-  ];
-
-  const upd = (k,v) => setCustomer(c => ({...c,[k]:v}));
+  // Extract key items from transcript using simple keyword matching
+  // (Claude will do the real extraction in materials screen)
+  const extractItems = (text) => {
+    const patterns = [
+      { re: /shaver socket/i, label: 'Shaver socket' },
+      { re: /ip65|ip 65/i, label: 'IP65 rated fittings' },
+      { re: /downlight|down light/i, label: 'LED downlights' },
+      { re: /extractor fan|extract fan/i, label: 'Extractor fan' },
+      { re: /earth bond|bonding/i, label: 'Earth bonding' },
+      { re: /consumer unit|fuse ?board|cu /i, label: 'Consumer unit work' },
+      { re: /socket/i, label: 'Sockets' },
+      { re: /switch/i, label: 'Light switches' },
+      { re: /cable|wir/i, label: 'New cabling' },
+      { re: /certif|eic|test/i, label: 'Testing & certification' },
+      { re: /strip out|remove|replac/i, label: 'Strip out & removal' },
+      { re: /making good/i, label: 'Making good' },
+      { re: /ev charge|electric vehicle/i, label: 'EV charger' },
+      { re: /pendant|ceiling light/i, label: 'Ceiling light fitting' },
+      { re: /outdoor|external|outside/i, label: 'Outdoor works' },
+    ];
+    const found = patterns.filter(p => p.re.test(text)).map(p => p.label);
+    // Deduplicate
+    return [...new Set(found)];
+  };
 
   const toggleMic = () => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) { alert('Speech recognition not available in this browser.'); return; }
+    if (!SR) {
+      // No speech API — go straight to review with placeholder
+      setTranscript('Speech recognition not available. Please use the text field below.');
+      setExtractedItems([]);
+      setPhase('review');
+      return;
+    }
     if (listening) {
       recognitionRef.current?.stop();
       setListening(false);
     } else {
       const r = new SR();
       r.continuous = true; r.interimResults = true; r.lang = 'en-GB';
-      let interim = '';
       r.onresult = (e) => {
         let final = '';
+        let interim = '';
         for (let i = e.resultIndex; i < e.results.length; i++) {
           if (e.results[i].isFinal) final += e.results[i][0].transcript + ' ';
           else interim = e.results[i][0].transcript;
         }
-        if (final) setDesc(d => d + final);
+        if (final) setTranscript(t => t + final);
+        setInterimText(interim);
       };
-      r.onend = () => setListening(false);
+      r.onend = () => { setListening(false); setInterimText(''); };
       r.start();
       recognitionRef.current = r;
       setListening(true);
     }
   };
 
+  const finishSpeaking = () => {
+    recognitionRef.current?.stop();
+    setListening(false);
+    const items = extractItems(transcript);
+    setExtractedItems(items);
+    setPhase('review');
+  };
+
+  const loadDemo = () => {
+    const t = 'Full bathroom electrical refurb. Strip out the old round-pin sockets, there\'s one by the sink which isn\'t to regs. Install a new shaver socket above the mirror, IP65 rated. Two new LED downlights in the ceiling replacing the old pendant, need to be IP65 as well, six watt warm white. Run new earth bonding to the copper pipework under the sink and to the bath. New dedicated extractor fan circuit from the consumer unit. All circuits to be tested and certified, I\'ll provide an Electrical Installation Certificate.';
+    setTranscript(t);
+    setExtractedItems(extractItems(t));
+    setCustomer({ name:'Mr & Mrs Thompson', email:'j.thompson@gmail.com', phone:'07891 234567', address:'42 Maple Avenue, Bushey, WD23 2BT' });
+    setStartDate('2025-05-15');
+    setDuration(2);
+    setPhase('review');
+  };
+
   const proceed = () => {
-    const updated = { ...job, customer, jobDescription: desc, outOfScope, proposedStartDate: startDate, estimatedDurationDays: +duration, status:'describe' };
-    setState(prev => ({ ...prev, currentJob: updated, jobs: prev.jobs.map(j => j.id===updated.id ? updated : j) }));
+    const fullDesc = transcript + (extraNote ? '\n\nAdditional notes: ' + extraNote : '');
+    const updated = {
+      ...job, customer,
+      jobDescription: fullDesc,
+      outOfScope: '',
+      proposedStartDate: startDate,
+      estimatedDurationDays: +duration,
+      status: 'describe',
+    };
+    setState(prev => ({ ...prev, currentJob: updated, jobs: prev.jobs.map(j => j.id === updated.id ? updated : j) }));
     navigate('#/job/materials');
   };
 
-  const loadTest = () => {
-    setCustomer({ name:'Mr & Mrs Thompson', email:'j.thompson@gmail.com', phone:'07891 234567', address:'42 Maple Avenue, Bushey, WD23 2BT' });
-    setDesc('Full bathroom electrical refurb. Strip out the old round-pin sockets — there\'s one by the sink which isn\'t even to regs. Install a new shaver socket above the mirror, IP65 rated. Two new LED downlights in the ceiling replacing the old pendant, need to be IP65 as well, probably 6 watt warm white. Run new earth bonding to the copper pipework under the sink and to the bath — both need bonding. New dedicated extractor fan circuit from the consumer unit, the bathroom doesn\'t have mechanical ventilation at the moment. All circuits to be tested and certified, I\'ll provide an Electrical Installation Certificate. Making good to be done by the customer\'s plasterer.');
-    setOutOfScope('No general plumbing work. Making good after cable runs is by others. No tiling.');
-    setStartDate('2025-05-15');
-    setDuration(2);
-  };
+  // ── LISTENING PHASE ──
+  if (phase === 'listening') {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center fade-up" style={{ background: '#0D0D0D', minHeight: '100vh' }}>
+        <div className="text-center px-8" style={{ maxWidth: 480, width: '100%' }}>
 
-  return (
-    <Screen title="Describe the Job" subtitle="Tell Gloria what needs doing"
-      action={<Btn variant="ghost" small onClick={loadTest}>Load test job</Btn>}>
-      <div className="max-w-2xl flex flex-col gap-6">
+          <h1 className="text-4xl font-bold mb-3" style={{ color: '#fff', fontFamily:"'Barlow Condensed',sans-serif", letterSpacing: 2 }}>
+            DESCRIBE THE JOB
+          </h1>
+          <p className="text-base mb-12" style={{ color: '#6B7280' }}>
+            Tap the mic and tell AccuQuote what needs doing in your own words.
+          </p>
 
-        {/* Customer */}
-        <Card>
-          <div className="text-sm font-medium mb-4" style={{ color:'#E8EDF2' }}>Customer Details</div>
-          <div className="grid grid-cols-2 gap-4">
-            <Input label="Name" value={customer.name} onChange={v=>upd('name',v)} placeholder="Mr & Mrs Thompson" />
-            <Input label="Phone" value={customer.phone} onChange={v=>upd('phone',v)} placeholder="07891 234567" />
-            <Input label="Email" value={customer.email} onChange={v=>upd('email',v)} placeholder="customer@email.com" />
-            <Input label="Address" value={customer.address} onChange={v=>upd('address',v)} placeholder="42 Maple Ave, Bushey, WD23" />
-          </div>
-        </Card>
-
-        {/* Job description */}
-        <Card>
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-sm font-medium" style={{ color:'#E8EDF2' }}>Job Description</div>
+          {/* Big mic button */}
+          <div className="flex flex-col items-center mb-10">
             <button onClick={toggleMic}
-              className="flex items-center gap-2 px-3 py-1.5 rounded text-xs cursor-pointer border-0 transition-all"
-              style={{ background: listening ? 'rgba(255,107,0,0.2)' : '#1e2229', color: listening ? '#FF6B00' : '#9CA3AF', border: listening ? '1px solid #FF6B00' : '1px solid transparent' }}>
-              {listening ? '⏹ Stop' : '🎤 Voice'}
-              {listening && <span className="pulse">●</span>}
+              className="rounded-full flex items-center justify-center cursor-pointer border-0 transition-all mb-6"
+              style={{
+                width: 140, height: 140,
+                background: listening ? 'rgba(255,107,0,0.15)' : 'rgba(255,214,0,0.1)',
+                border: listening ? '3px solid #FF6B00' : '3px solid #FFD600',
+                boxShadow: listening ? '0 0 40px rgba(255,107,0,0.3)' : '0 0 20px rgba(255,214,0,0.1)',
+              }}>
+              {listening ? (
+                <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                  <rect x="16" y="12" width="6" height="24" rx="3" fill="#FF6B00"/>
+                  <rect x="26" y="12" width="6" height="24" rx="3" fill="#FF6B00"/>
+                </svg>
+              ) : (
+                <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                  <rect x="18" y="8" width="12" height="22" rx="6" fill="#FFD600"/>
+                  <path d="M10 24c0 7.7 6.3 14 14 14s14-6.3 14-14" stroke="#FFD600" strokeWidth="3" strokeLinecap="round"/>
+                  <line x1="24" y1="38" x2="24" y2="44" stroke="#FFD600" strokeWidth="3" strokeLinecap="round"/>
+                  <line x1="18" y1="44" x2="30" y2="44" stroke="#FFD600" strokeWidth="3" strokeLinecap="round"/>
+                </svg>
+              )}
+            </button>
+
+            {listening && (
+              <div className="fade-up">
+                <div className="flex items-center gap-1 mb-3">
+                  {[1,2,3,4,5].map(i => (
+                    <div key={i} className="rounded-full" style={{ width: 4, height: 4+Math.random()*20, background: '#FF6B00', animation: `pulse ${0.5+i*0.15}s ease-in-out infinite` }} />
+                  ))}
+                </div>
+                <div className="text-sm mb-1" style={{ color: '#FF6B00' }}>Listening...</div>
+                {interimText && <div className="text-xs italic" style={{ color:'#4B5563', maxWidth:300 }}>{interimText}</div>}
+              </div>
+            )}
+
+            {!listening && !transcript && (
+              <div className="text-sm" style={{ color: '#4B5563' }}>Tap to start speaking</div>
+            )}
+
+            {transcript && !listening && (
+              <div className="text-sm" style={{ color: '#22C55E' }}>✓ Captured — tap again to add more</div>
+            )}
+          </div>
+
+          {/* Live transcript preview */}
+          {transcript && (
+            <div className="rounded-2xl p-4 mb-6 text-left fade-up" style={{ background: '#111418', border: '1px solid #1e2229' }}>
+              <div className="text-xs uppercase mb-2" style={{ color: '#4B5563', letterSpacing: 1 }}>Transcript</div>
+              <p className="text-sm leading-relaxed" style={{ color: '#9CA3AF' }}>{transcript}</p>
+            </div>
+          )}
+
+          <div className="flex flex-col gap-3">
+            {transcript && (
+              <button onClick={finishSpeaking}
+                className="w-full py-4 rounded-2xl text-base font-bold cursor-pointer border-0"
+                style={{ background: '#FFD600', color: '#0D0D0D', letterSpacing: 1 }}>
+                That's everything →
+              </button>
+            )}
+            {listening && (
+              <button onClick={finishSpeaking}
+                className="w-full py-4 rounded-2xl text-base font-bold cursor-pointer border-0"
+                style={{ background: '#FFD600', color: '#0D0D0D', letterSpacing: 1 }}>
+                Done speaking →
+              </button>
+            )}
+            <button onClick={loadDemo}
+              className="w-full py-3 rounded-xl text-sm cursor-pointer border-0"
+              style={{ background: 'transparent', color: '#4B5563', border: '1px solid #1e2229' }}>
+              Load demo job
             </button>
           </div>
-          <div className="flex flex-wrap gap-2 mb-3">
-            {CHIPS.map(c => (
-              <button key={c} onClick={() => setDesc(d => d + (d && !d.endsWith(' ') ? ' ' : '') + c + ' ')}
-                className="px-2.5 py-1 rounded text-xs cursor-pointer border-0"
-                style={{ background:'#1e2229', color:'#9CA3AF' }}>
-                {c}
-              </button>
-            ))}
-          </div>
-          <textarea value={desc} onChange={e=>setDesc(e.target.value)} rows={6}
-            placeholder="Describe what needs doing in your own words. Be as specific as possible — Gloria will use this to build the materials list..."
-            className="w-full rounded px-3 py-2 text-sm outline-none resize-none"
-            style={{ background:'#0D0D0D', border:'1px solid #1e2229', color:'#E8EDF2', fontFamily:'inherit' }}
-            onFocus={e=>e.target.style.borderColor='#FFD600'} onBlur={e=>e.target.style.borderColor='#1e2229'} />
-          <div className="text-xs text-muted mt-2 text-right">{desc.length} chars {desc.length < 50 && <span style={{ color:'#FF6B00' }}>— need at least 50 to proceed</span>}</div>
-        </Card>
+        </div>
+      </div>
+    );
+  }
 
-        {/* Out of scope */}
-        <Card>
-          <Textarea label="Out of Scope" value={outOfScope} onChange={setOutOfScope} rows={2}
-            placeholder="Anything explicitly NOT included in this quote? E.g. making good, tiling, plumbing..." />
-        </Card>
+  // ── REVIEW PHASE ──
+  return (
+    <div className="flex-1 flex flex-col items-center fade-up px-6 py-10 overflow-y-auto" style={{ background: '#0D0D0D', minHeight: '100vh' }}>
+      <div style={{ maxWidth: 520, width: '100%' }}>
+        <h2 className="text-3xl font-bold mb-2 text-center" style={{ color: '#fff', fontFamily:"'Barlow Condensed',sans-serif", letterSpacing:2 }}>REVIEW JOB</h2>
+        <p className="text-sm text-center mb-8" style={{ color: '#6B7280' }}>Confirm what AccuQuote heard and add any details</p>
 
-        {/* Dates */}
-        <Card>
-          <div className="grid grid-cols-2 gap-4">
-            <Input label="Proposed start date" type="date" value={startDate} onChange={setStartDate} />
-            <div>
-              <label className="block text-xs text-muted mb-1.5">Estimated duration (days)</label>
-              <div className="flex items-center gap-3">
-                <button onClick={()=>setDuration(d=>Math.max(1,d-1))} className="w-9 h-9 rounded cursor-pointer border-0 font-bold" style={{ background:'#1e2229', color:'#E8EDF2' }}>−</button>
-                <span className="text-lg font-bold" style={{ color:'#FFD600' }}>{duration}</span>
-                <button onClick={()=>setDuration(d=>d+1)} className="w-9 h-9 rounded cursor-pointer border-0 font-bold" style={{ background:'#1e2229', color:'#E8EDF2' }}>+</button>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* Checklist */}
-        <Card>
-          <button onClick={()=>setChecklistOpen(o=>!o)} className="flex items-center justify-between w-full cursor-pointer bg-transparent border-0 text-left">
-            <span className="text-sm font-medium" style={{ color:'#E8EDF2' }}>Have you covered...</span>
-            <span className="text-muted">{checklistOpen ? '▲' : '▼'}</span>
-          </button>
-          {checklistOpen && (
-            <div className="mt-3 flex flex-col gap-2">
-              {CHECKLIST.map(item => (
-                <div key={item} className="flex items-center gap-2 text-sm text-muted">
-                  <span style={{ color:'#FFD600' }}>✓</span> {item}
+        {/* Extracted items as bubbles */}
+        {extractedItems.length > 0 && (
+          <div className="rounded-2xl p-5 mb-5" style={{ background: '#111418', border: '1px solid #1e2229' }}>
+            <div className="text-xs uppercase mb-4" style={{ color: '#6B7280', letterSpacing: 1 }}>Items identified</div>
+            <div className="flex flex-wrap gap-2">
+              {extractedItems.map((item, i) => (
+                <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm fade-up"
+                  style={{ background: 'rgba(255,214,0,0.1)', border: '1px solid rgba(255,214,0,0.3)', color: '#FFD600', animationDelay: `${i*0.05}s` }}>
+                  <span style={{ color: '#22C55E', fontSize: 10 }}>✓</span>
+                  {item}
                 </div>
               ))}
             </div>
-          )}
-        </Card>
+          </div>
+        )}
 
-        <Btn onClick={proceed} disabled={desc.length < 50}>
+        {/* Full transcript (editable) */}
+        <div className="rounded-2xl p-5 mb-5" style={{ background: '#111418', border: '1px solid #1e2229' }}>
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-xs uppercase" style={{ color: '#6B7280', letterSpacing: 1 }}>Full description</div>
+            <button onClick={() => setPhase('listening')}
+              className="text-xs cursor-pointer bg-transparent border-0 flex items-center gap-1"
+              style={{ color: '#4B5563' }}>
+              🎤 Re-record
+            </button>
+          </div>
+          <textarea value={transcript} onChange={e => setTranscript(e.target.value)} rows={5}
+            className="w-full rounded-xl px-3 py-2 text-sm outline-none resize-none"
+            style={{ background: '#0D0D0D', border: '1px solid #1e2229', color: '#9CA3AF', fontFamily: 'inherit', lineHeight: 1.6 }} />
+        </div>
+
+        {/* Additional notes */}
+        <div className="rounded-2xl p-5 mb-5" style={{ background: '#111418', border: '1px solid #1e2229' }}>
+          <div className="text-xs uppercase mb-3" style={{ color: '#6B7280', letterSpacing: 1 }}>Anything to add?</div>
+          <textarea value={extraNote} onChange={e => setExtraNote(e.target.value)} rows={2}
+            placeholder="Any out-of-scope work, customer supplying items, access issues..."
+            className="w-full rounded-xl px-3 py-2 text-sm outline-none resize-none"
+            style={{ background: '#0D0D0D', border: '1px solid #1e2229', color: '#E8EDF2', fontFamily: 'inherit', lineHeight: 1.6 }} />
+        </div>
+
+        {/* Customer & dates */}
+        <div className="rounded-2xl p-5 mb-6" style={{ background: '#111418', border: '1px solid #1e2229' }}>
+          <div className="text-xs uppercase mb-4" style={{ color: '#6B7280', letterSpacing: 1 }}>Job details</div>
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            {[['Customer name','name','Mr & Mrs Thompson'],['Phone','phone','07891 234567'],['Email','email','customer@email.com'],['Address','address','42 Maple Ave, Bushey']].map(([label,key,ph]) => (
+              <div key={key}>
+                <div className="text-xs mb-1" style={{ color:'#4B5563' }}>{label}</div>
+                <input value={customer[key]} onChange={e => setCustomer(c=>({...c,[key]:e.target.value}))}
+                  placeholder={ph} className="w-full rounded-lg px-3 py-2 text-sm outline-none"
+                  style={{ background:'#0D0D0D', border:'1px solid #1e2229', color:'#E8EDF2' }}/>
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <div className="text-xs mb-1" style={{ color:'#4B5563' }}>Start date</div>
+              <input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)}
+                className="w-full rounded-lg px-3 py-2 text-sm outline-none"
+                style={{ background:'#0D0D0D', border:'1px solid #1e2229', color:'#E8EDF2' }}/>
+            </div>
+            <div>
+              <div className="text-xs mb-1" style={{ color:'#4B5563' }}>Duration (days)</div>
+              <div className="flex items-center gap-3">
+                <button onClick={()=>setDuration(d=>Math.max(1,d-1))} className="w-9 h-9 rounded-lg cursor-pointer border-0 font-bold text-lg" style={{ background:'#1e2229', color:'#E8EDF2' }}>−</button>
+                <span className="text-xl font-bold" style={{ color:'#FFD600' }}>{duration}</span>
+                <button onClick={()=>setDuration(d=>d+1)} className="w-9 h-9 rounded-lg cursor-pointer border-0 font-bold text-lg" style={{ background:'#1e2229', color:'#E8EDF2' }}>+</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button onClick={proceed} disabled={!transcript}
+          className="w-full py-4 rounded-2xl text-base font-bold cursor-pointer border-0"
+          style={{ background: transcript ? '#FFD600' : '#1e2229', color: transcript ? '#0D0D0D' : '#4B5563', letterSpacing: 1 }}>
           Calculate Materials →
-        </Btn>
+        </button>
       </div>
-    </Screen>
+    </div>
   );
 }
 
@@ -2106,6 +2501,7 @@ function Router() {
     '#/job/describe': <DescribeScreen />,
     '#/job/materials': <MaterialsScreen />,
     '#/job/quote': <QuoteScreen />,
+    '#/job/send': <SendProposalScreen />,
     '#/job/proposal': <ProposalScreen />,
     '#/job/accepted': <AcceptanceScreen />,
     '#/job/orders': <OrdersScreen />,
@@ -2151,10 +2547,15 @@ function DemoButton() {
             style={{ background:'transparent', color:'#E8EDF2' }}>
             ▶ Jump to Quote
           </button>
+          <button onClick={() => { loadDemo(); navigate('#/job/send'); setOpen(false); }}
+            className="text-left text-sm px-3 py-2 rounded cursor-pointer border-0"
+            style={{ background:'transparent', color:'#E8EDF2' }}>
+            ▶ Jump to Send Proposal
+          </button>
           <button onClick={() => { loadDemo(); navigate('#/job/proposal'); setOpen(false); }}
             className="text-left text-sm px-3 py-2 rounded cursor-pointer border-0"
             style={{ background:'transparent', color:'#E8EDF2' }}>
-            ▶ Jump to Proposal
+            ▶ Jump to Proposal Editor
           </button>
           <button onClick={() => { loadDemo(); navigate('#/job/accepted'); setOpen(false); }}
             className="text-left text-sm px-3 py-2 rounded cursor-pointer border-0"
