@@ -1,0 +1,16 @@
+{
+  "name": "accuquote",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Instant quoting for UK tradespeople",
+  "scripts": {
+    "dev": "npx serve . -p 3000",
+    "deploy:api": "cd api && vercel deploy --prod",
+    "deploy:worker": "cd worker/price-proxy && npx wrangler deploy",
+    "deploy:web": "netlify deploy --prod --dir ."
+  },
+  "devDependencies": {
+    "serve": "^14.0.0",
+    "vercel": "^32.0.0"
+  }
+}

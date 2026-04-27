@@ -8,52 +8,68 @@
 
 /* Begin PBXBuildFile section */
 		A101 /* AccuQuoteScanApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A001 /* AccuQuoteScanApp.swift */; };
-		A102 /* ContentView.swift in Sources */     = {isa = PBXBuildFile; fileRef = A002 /* ContentView.swift */; };
+		A102 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A002 /* ContentView.swift */; };
 		A103 /* ScanCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A003 /* ScanCoordinator.swift */; };
-		A104 /* Views.swift in Sources */           = {isa = PBXBuildFile; fileRef = A004 /* Views.swift */; };
+		A104 /* Views.swift in Sources */ = {isa = PBXBuildFile; fileRef = A004 /* Views.swift */; };
 		A105 /* RoomPlan.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A005 /* RoomPlan.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		A001 /* AccuQuoteScanApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccuQuoteScanApp.swift; sourceTree = "<group>"; };
-		A002 /* ContentView.swift */     = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		A002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A003 /* ScanCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanCoordinator.swift; sourceTree = "<group>"; };
-		A004 /* Views.swift */           = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views.swift; sourceTree = "<group>"; };
-		A005 /* RoomPlan.framework */    = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = RoomPlan.framework; path = System/Library/Frameworks/RoomPlan.framework; sourceTree = SDKROOT; };
-		A006 /* Info.plist */            = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		A010 /* AccuQuoteScan.app */     = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AccuQuoteScan.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A004 /* Views.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views.swift; sourceTree = "<group>"; };
+		A005 /* RoomPlan.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = RoomPlan.framework; path = System/Library/Frameworks/RoomPlan.framework; sourceTree = SDKROOT; };
+		A006 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A010 /* AccuQuoteScan.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AccuQuoteScan.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		B001 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
-			files = (A105 /* RoomPlan.framework in Frameworks */);
+			files = (
+				A105 /* RoomPlan.framework in Frameworks */,
+			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		C000 /* root */ = {
+		C000 = {
 			isa = PBXGroup;
-			children = (C001 /* AccuQuoteScan */, C002 /* Frameworks */, C003 /* Products */);
+			children = (
+				C001 /* AccuQuoteScan */,
+				C002 /* Frameworks */,
+				C003 /* Products */,
+			);
 			sourceTree = "<group>";
 		};
 		C001 /* AccuQuoteScan */ = {
 			isa = PBXGroup;
-			children = (A001, A002, A003, A004, A006);
+			children = (
+				A001 /* AccuQuoteScanApp.swift */,
+				A002 /* ContentView.swift */,
+				A003 /* ScanCoordinator.swift */,
+				A004 /* Views.swift */,
+				A006 /* Info.plist */,
+			);
 			path = AccuQuoteScan;
 			sourceTree = "<group>";
 		};
 		C002 /* Frameworks */ = {
 			isa = PBXGroup;
-			children = (A005);
+			children = (
+				A005 /* RoomPlan.framework */,
+			);
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		C003 /* Products */ = {
 			isa = PBXGroup;
-			children = (A010);
+			children = (
+				A010 /* AccuQuoteScan.app */,
+			);
 			name = Products;
 			sourceTree = "<group>";
 		};
@@ -62,10 +78,15 @@
 /* Begin PBXNativeTarget section */
 		D001 /* AccuQuoteScan */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = E001;
-			buildPhases = (B001 /* Frameworks */, B002 /* Sources */);
-			buildRules = ();
-			dependencies = ();
+			buildConfigurationList = E001 /* Build configuration list for PBXNativeTarget "AccuQuoteScan" */;
+			buildPhases = (
+				B001 /* Frameworks */,
+				B002 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
 			name = AccuQuoteScan;
 			productName = AccuQuoteScan;
 			productReference = A010 /* AccuQuoteScan.app */;
@@ -74,24 +95,33 @@
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		F001 /* Project */ = {
+		F001 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1530;
 				LastUpgradeCheck = 1530;
-				TargetAttributes = { D001 = { CreatedOnToolsVersion = 15.3; }; };
+				TargetAttributes = {
+					D001 = {
+						CreatedOnToolsVersion = 15.3;
+					};
+				};
 			};
-			buildConfigurationList = E000;
+			buildConfigurationList = E000 /* Build configuration list for PBXProject "AccuQuoteScan" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
-			knownRegions = (en, Base);
+			knownRegions = (
+				en,
+				Base,
+			);
 			mainGroup = C000;
-			productRefGroup = C003;
+			productRefGroup = C003 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
-			targets = (D001);
+			targets = (
+				D001 /* AccuQuoteScan */,
+			);
 		};
 /* End PBXProject section */
 
@@ -99,13 +129,18 @@
 		B002 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
-			files = (A101, A102, A103, A104);
+			files = (
+				A101 /* AccuQuoteScanApp.swift in Sources */,
+				A102 /* ContentView.swift in Sources */,
+				A103 /* ScanCoordinator.swift in Sources */,
+				A104 /* Views.swift in Sources */,
+			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		E010 /* Debug */   = {
+		E010 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -146,7 +181,10 @@
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PREPROCESSOR_DEFINITIONS = ("DEBUG=1", "$(inherited)");
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
@@ -192,18 +230,21 @@
 			};
 			name = Release;
 		};
-		E020 /* Debug Target */ = {
+		E020 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = ZDKG9W6N5V;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = AccuQuoteScan/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
-				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks");
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.accuquote.scan;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -213,18 +254,21 @@
 			};
 			name = Debug;
 		};
-		E021 /* Release Target */ = {
+		E021 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = ZDKG9W6N5V;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = AccuQuoteScan/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
-				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks");
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.accuquote.scan;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -237,20 +281,25 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		E000 /* Project config */ = {
+		E000 /* Build configuration list for PBXProject "AccuQuoteScan" */ = {
 			isa = XCConfigurationList;
-			buildConfigurations = (E010 /* Debug */, E011 /* Release */);
+			buildConfigurations = (
+				E010 /* Debug */,
+				E011 /* Release */,
+			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		E001 /* Target config */ = {
+		E001 /* Build configuration list for PBXNativeTarget "AccuQuoteScan" */ = {
 			isa = XCConfigurationList;
-			buildConfigurations = (E020 /* Debug Target */, E021 /* Release Target */);
+			buildConfigurations = (
+				E020 /* Debug */,
+				E021 /* Release */,
+			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
-
 	};
-	rootObject = F001 /* Project */;
+	rootObject = F001 /* Project object */;
 }

@@ -2,11 +2,19 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0F172A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AccuQuote">
+<meta name="description" content="Instant quoting for UK tradespeople — scan, describe, quote.">
 <title>AccuQuote</title>
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icons/icon-180.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32.png">
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -56,8 +64,72 @@
   .fade-up { animation: fadeUp 0.2s ease forwards; }
   .pulse { animation: pulse 1.5s ease-in-out infinite; }
   .spinner { animation: spin 0.8s linear infinite; }
+
+  /* ── Mobile layout ── */
+  /* Bottom nav (mobile only) */
+  #bottom-nav {
+    display: none;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: #fff;
+    border-top: 1px solid #E2E8F0;
+    z-index: 100;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  /* Main content area padding on mobile to clear bottom nav */
+  .mobile-padded { padding-bottom: 80px; }
+
+  @media (max-width: 768px) {
+    #sidebar { display: none !important; }
+    #bottom-nav { display: flex !important; }
+    .mobile-padded { padding-bottom: 80px; }
+    /* Screen padding reduced on mobile */
+    .screen-content { padding-left: 1rem !important; padding-right: 1rem !important; }
+    .screen-header { padding-left: 1rem !important; padding-right: 1rem !important; }
+    /* BOM table: hide unit price col, make it readable */
+    .bom-unit-col { display: none; }
+    /* Stack header actions on mobile */
+    .screen-header-inner { flex-wrap: wrap; gap: 0.5rem; }
+    /* Cards full-width on mobile */
+    .card-grid { grid-template-columns: 1fr !important; }
+    /* Stat cards 2-col on mobile */
+    .stat-grid { grid-template-columns: 1fr 1fr !important; }
+    /* Job step tracker horizontal on mobile */
+    .step-tracker { flex-direction: row !important; overflow-x: auto; gap: 0.5rem; padding: 0.75rem 1rem; }
+    .step-tracker-item { flex-direction: column; align-items: center; flex-shrink: 0; }
+    .step-connector { width: 24px; height: 2px; }
+    /* Supplier badges wrap on mobile */
+    .supplier-badges { flex-wrap: wrap; }
+    /* Inputs larger touch targets */
+    input, textarea, select, button { min-height: 44px; }
+    .btn-sm { min-height: 36px !important; }
+    /* Dashboard pipeline cards scroll horizontal */
+    .pipeline-scroll { overflow-x: auto; display: flex; gap: 0.75rem; padding-bottom: 0.5rem; }
+    .pipeline-scroll > * { flex-shrink: 0; min-width: 200px; }
+  }
+
+  @media (max-width: 480px) {
+    .screen-content { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
+    h1.screen-title { font-size: 1rem !important; }
+  }
+
+  /* PWA install banner */
+  #pwa-banner {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+    background: #0F172A; color: #fff;
+    padding: 12px 16px; padding-bottom: calc(12px + env(safe-area-inset-bottom));
+    display: flex; align-items: center; gap: 12px;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+  }
+  #pwa-banner.visible { transform: translateY(0); }
+
+  /* Safe area padding for iOS notch / home bar */
+  .safe-top { padding-top: env(safe-area-inset-top); }
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+
   @media print {
-    #sidebar, #controls, .no-print { display: none !important; }
+    #sidebar, #controls, #bottom-nav, .no-print { display: none !important; }
     #proposal-content { width: 100% !important; box-shadow: none !important; }
   }
 </style>
@@ -107,8 +179,57 @@ tailwind.config = {
   window.addEventListener('hashchange', parseScanResult);
 })();
 </script>
+
+<!-- Service Worker registration -->
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js', { scope: '/' })
+      .then(reg => console.log('[SW] registered:', reg.scope))
+      .catch(err => console.warn('[SW] registration failed:', err));
+  });
+}
+
+// PWA install prompt
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  const banner = document.getElementById('pwa-banner');
+  if (banner) {
+    setTimeout(() => banner.classList.add('visible'), 2000);
+  }
+});
+window.addEventListener('appinstalled', () => {
+  const banner = document.getElementById('pwa-banner');
+  if (banner) banner.classList.remove('visible');
+  deferredInstallPrompt = null;
+});
+function installPWA() {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  deferredInstallPrompt.userChoice.then(() => {
+    deferredInstallPrompt = null;
+    const banner = document.getElementById('pwa-banner');
+    if (banner) banner.classList.remove('visible');
+  });
+}
+function dismissPWABanner() {
+  const banner = document.getElementById('pwa-banner');
+  if (banner) banner.classList.remove('visible');
+}
+</script>
 </head>
 <body>
+<!-- PWA install banner (shown automatically on eligible browsers) -->
+<div id="pwa-banner">
+  <div style="flex:1">
+    <div style="font-weight:700;font-size:14px">Install AccuQuote</div>
+    <div style="font-size:12px;color:#94A3B8">Add to home screen for the full app experience</div>
+  </div>
+  <button onclick="installPWA()" style="background:#FFD600;color:#0F172A;border:none;border-radius:8px;padding:8px 16px;font-weight:700;font-size:13px;cursor:pointer">Install</button>
+  <button onclick="dismissPWABanner()" style="background:transparent;border:none;color:#64748B;cursor:pointer;font-size:20px;padding:4px">×</button>
+</div>
 <div id="root"></div>
 <script type="text/babel" data-presets="react">
 const { useState, useEffect, useContext, createContext, useRef, useCallback } = React;
@@ -502,15 +623,15 @@ function Screen({ children, title, subtitle, action }) {
   return (
     <div className="flex-1 flex flex-col fade-up" style={{ minHeight: 0, background: '#F8FAFC' }}>
       {(title || action) && (
-        <div className="flex items-center justify-between px-8 py-5 border-b" style={{ background: '#fff', borderColor: '#E2E8F0', flexShrink: 0 }}>
-          <div>
-            {title && <h1 className="text-lg font-semibold" style={{ color: '#0F172A' }}>{title}</h1>}
+        <div className="screen-header flex items-center justify-between px-8 py-5 border-b screen-header-inner" style={{ background: '#fff', borderColor: '#E2E8F0', flexShrink: 0 }}>
+          <div style={{ minWidth: 0 }}>
+            {title && <h1 className="screen-title text-lg font-semibold" style={{ color: '#0F172A' }}>{title}</h1>}
             {subtitle && <p className="text-xs mt-0.5" style={{ color:'#64748B' }}>{subtitle}</p>}
           </div>
-          {action}
+          {action && <div style={{ flexShrink: 0 }}>{action}</div>}
         </div>
       )}
-      <div className="flex-1 overflow-y-auto px-8 py-6">{children}</div>
+      <div className="screen-content flex-1 overflow-y-auto px-8 py-6">{children}</div>
     </div>
   );
 }
@@ -1522,10 +1643,13 @@ function OrdersScreen() {
 const CATEGORY_LABELS = { cable:'⚡ Cable & Containment', containment:'⚡ Cable & Containment', accessories:'🔌 Accessories & Fittings', 'light-fittings':'🔦 Light Fittings', fixings:'🔧 Fixings & Sundries', consumables:'🔧 Fixings & Sundries', protection:'⚡ Consumer Units & Protection', ev:'🚗 EV Charging', outdoor:'🌿 Outdoor', data:'💾 Data & Comms', certification:'📋 Certification', other:'📦 Other' };
 const CATEGORY_DISPLAY_ORDER = ['cable','containment','accessories','light-fittings','protection','ev','outdoor','data','fixings','consumables','certification','other'];
 
-// ─── Price proxy URL ─────────────────────────────────────────────────────────
-// After deploying the Cloudflare Worker, replace this with your worker URL.
+// ─── API config ──────────────────────────────────────────────────────────────
+// CLAUDE_API_ENDPOINT: set to "/api/claude" once Vercel backend is deployed.
+// Falls back to direct Anthropic browser call (requires API key in settings).
+const CLAUDE_API_ENDPOINT = '/api/claude';
+
+// PRICE_PROXY_URL: set to your Cloudflare Worker URL once deployed.
 // e.g. "https://accuquote-price-proxy.YOUR_SUBDOMAIN.workers.dev"
-// Until deployed, set to null and the app will use catalogue fallback prices.
 const PRICE_PROXY_URL = null;
 
 // Supplier brand colours for badges
@@ -1683,14 +1807,30 @@ function MaterialsScreen() {
     const userPrompt = `TRADE: ${profile?.trade||'electrician'}\nSPECIALISMS: ${(profile?.specialisms||[]).join(', ')}\nROOM: ${scan.roomType||'room'}\nDIMENSIONS: ${dims.length}m × ${dims.width}m × ${dims.height}m\nFLOOR: ${floorArea}m² WALLS: ${wallArea}m²\nANOMALIES: ${(scan.anomalies||[]).join(', ')||'none'}\nJOB: ${job.jobDescription}\nOUT OF SCOPE: ${job.outOfScope||'none'}\nCUSTOMER SUPPLYING: ${(job.customerSupplied||[]).join(', ')||'nothing'}\n\nReturn JSON array:\n[{"material":"name","quantity":1,"unit":"each","category":"cable|accessories|light-fittings|fixings|consumables|protection|certification","wasteFactor":0.10,"quantityWithWaste":1,"rationale":"why","confidence":"high|medium|low","tradeSearchTerm":"search phrase"}]`;
 
     try {
-      const resp = await fetch('https://api.anthropic.com/v1/messages', {
-        method:'POST',
-        headers:{ 'x-api-key': state.profile?.anthropicKey || '', 'anthropic-version':'2023-06-01', 'content-type':'application/json', 'anthropic-dangerous-direct-browser-access':'true' },
-        body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:2000, system: systemPrompt, messages:[{ role:'user', content: userPrompt }] })
-      });
-      if (!resp.ok) throw new Error(`API ${resp.status}`);
-      const data = await resp.json();
-      const raw = data.content[0].text;
+      let raw;
+      // Try the server-side proxy first (no exposed API key)
+      try {
+        const proxyResp = await fetch(CLAUDE_API_ENDPOINT, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ system: systemPrompt, userPrompt, maxTokens: 2000 }),
+        });
+        if (!proxyResp.ok) throw new Error(`proxy ${proxyResp.status}`);
+        const proxyData = await proxyResp.json();
+        raw = proxyData.content;
+      } catch (_proxyErr) {
+        // Fallback: direct browser call (requires API key in settings)
+        const directKey = state.profile?.anthropicKey;
+        if (!directKey) throw new Error('No API key — add your Anthropic key in Settings or deploy the backend.');
+        const resp = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'x-api-key': directKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true' },
+          body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 2000, system: systemPrompt, messages: [{ role: 'user', content: userPrompt }] }),
+        });
+        if (!resp.ok) throw new Error(`API ${resp.status}`);
+        const data = await resp.json();
+        raw = data.content[0].text;
+      }
       const match = raw.match(/\[[\s\S]*\]/);
       if (!match) throw new Error('No JSON array in response');
       const items = JSON.parse(match[0]);
@@ -2858,6 +2998,45 @@ function PlaceholderScreen({ title, next, nextLabel }) {
 }
 
 // ─── ROUTER ───────────────────────────────────────────────────────────────────
+// ─── BOTTOM NAV (mobile) ─────────────────────────────────────────────────────
+function BottomNav({ route }) {
+  const { state } = useApp();
+  const stepIdx = stepIndexFromRoute(route);
+  const isJobRoute = stepIdx >= 0;
+
+  const tabs = [
+    { label: 'Home',     hash: '#/',            icon: (active) => (
+      <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke={active?'#0F172A':'#94A3B8'} strokeWidth="2"><path d="M3 12L12 4l9 8"/><path d="M5 10v9a1 1 0 001 1h4v-5h4v5h4a1 1 0 001-1v-9"/></svg>
+    )},
+    { label: 'New Job',  hash: '#/job/scan',    icon: (active) => (
+      <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke={active?'#0F172A':'#94A3B8'} strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+    )},
+    { label: 'Job',      hash: isJobRoute ? route : '#/job/describe', icon: (active) => (
+      <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke={active?'#0F172A':'#94A3B8'} strokeWidth="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+    )},
+    { label: 'Settings', hash: '#/settings',    icon: (active) => (
+      <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke={active?'#0F172A':'#94A3B8'} strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    )},
+  ];
+
+  return (
+    <nav id="bottom-nav" style={{ justifyContent: 'space-around' }}>
+      {tabs.map(tab => {
+        const active = tab.hash === '#/'
+          ? route === '#/' || route === '#'
+          : tab.label === 'Job' ? isJobRoute : route === tab.hash;
+        return (
+          <a key={tab.label} href={tab.hash}
+            style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'8px 4px', textDecoration:'none', gap:2, minHeight:56 }}>
+            {tab.icon(active)}
+            <span style={{ fontSize:10, fontWeight: active?600:400, color: active?'#0F172A':'#94A3B8' }}>{tab.label}</span>
+          </a>
+        );
+      })}
+    </nav>
+  );
+}
+
 function Router() {
   const route = useHashRoute();
   const { state } = useApp();
@@ -2882,9 +3061,10 @@ function Router() {
   return (
     <div className="flex" style={{ minHeight: '100vh' }}>
       <Sidebar route={route} />
-      <main className="flex-1 flex flex-col" style={{ minWidth: 0 }}>
+      <main className="flex-1 flex flex-col mobile-padded" style={{ minWidth: 0 }}>
         {content}
       </main>
+      <BottomNav route={route} />
     </div>
   );
 }
