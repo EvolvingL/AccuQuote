@@ -12,6 +12,7 @@
 		A103 /* ScanCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A003 /* ScanCoordinator.swift */; };
 		A104 /* Views.swift in Sources */ = {isa = PBXBuildFile; fileRef = A004 /* Views.swift */; };
 		A109 /* PhotogrammetryAssetManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A011 /* PhotogrammetryAssetManager.swift */; };
+		A110 /* TradesmanProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A012 /* TradesmanProfile.swift */; };
 		A105 /* RoomPlan.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A005 /* RoomPlan.framework */; };
 		A106 /* RealityKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A007 /* RealityKit.framework */; };
 		A107 /* ARKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A008 /* ARKit.framework */; };
@@ -29,6 +30,7 @@
 		A009 /* SceneKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SceneKit.framework; path = System/Library/Frameworks/SceneKit.framework; sourceTree = SDKROOT; };
 		A006 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A011 /* PhotogrammetryAssetManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotogrammetryAssetManager.swift; sourceTree = "<group>"; };
+		A012 /* TradesmanProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TradesmanProfile.swift; sourceTree = "<group>"; };
 		A010 /* AccuQuoteScan.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AccuQuoteScan.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -64,6 +66,7 @@
 				A003 /* ScanCoordinator.swift */,
 				A004 /* Views.swift */,
 				A011 /* PhotogrammetryAssetManager.swift */,
+				A012 /* TradesmanProfile.swift */,
 				A006 /* Info.plist */,
 			);
 			path = AccuQuoteScan;
@@ -150,6 +153,7 @@
 				A103 /* ScanCoordinator.swift in Sources */,
 				A104 /* Views.swift in Sources */,
 				A109 /* PhotogrammetryAssetManager.swift in Sources */,
+				A110 /* TradesmanProfile.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

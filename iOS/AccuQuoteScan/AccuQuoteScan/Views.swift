@@ -3,123 +3,337 @@ import RoomPlan
 import ARKit
 import SceneKit
 
-// MARK: - Preparing View (shown while OTA ML asset is downloading)
+// MARK: - Preparing View (flywheel onboarding while AI model downloads)
 
 struct PreparingView: View {
     @EnvironmentObject var assetManager: PhotogrammetryAssetManager
-    @State private var pulse = false
+    @StateObject private var engine = QuestionEngine.shared
+    @State private var inputText = ""
+    @State private var showAllDone = false
+    @FocusState private var inputFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
+            // ── Header ──────────────────────────────────────────────────
+            HStack(alignment: .center) {
                 Text("ACCUQUOTE")
-                    .font(.custom("AvenirNext-Heavy", size: 22))
+                    .font(.custom("AvenirNext-Heavy", size: 20))
                     .kerning(4)
                     .foregroundColor(.primary)
                 Spacer()
+                // Download pill
+                DownloadProgressPill(progress: assetManager.downloadProgress)
             }
             .padding(.horizontal, 24)
-            .padding(.top, 60)
-            .padding(.bottom, 24)
+            .padding(.top, 56)
+            .padding(.bottom, 20)
+
+            // ── Progress dots ────────────────────────────────────────────
+            OnboardingProgressDots(engine: engine)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 24)
 
             Spacer()
 
-            // Animated icon
+            // ── Question card ────────────────────────────────────────────
+            if let question = engine.currentQuestion, !showAllDone {
+                QuestionCard(
+                    question: question,
+                    inputText: $inputText,
+                    inputFocused: $inputFocused,
+                    onSubmit: {
+                        guard !inputText.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                            engine.submitAnswer(inputText)
+                            inputText = ""
+                        }
+                    },
+                    onSkip: {
+                        withAnimation { engine.skipCurrent() }
+                        inputText = ""
+                    }
+                )
+                .padding(.horizontal, 20)
+                .transition(.asymmetric(
+                    insertion: .move(edge: .trailing).combined(with: .opacity),
+                    removal:   .move(edge: .leading).combined(with: .opacity)
+                ))
+                .id(question.id)   // forces SwiftUI to animate between cards
+
+            } else if engine.isGeneratingMore {
+                // Generating next questions
+                VStack(spacing: 16) {
+                    ProgressView()
+                        .scaleEffect(1.2)
+                        .tint(Color(hex: "#3B82F6"))
+                    Text("Generating personalised questions…")
+                        .font(.system(size: 15))
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(40)
+                .background(Color(.systemGray6).opacity(0.6))
+                .cornerRadius(20)
+                .padding(.horizontal, 20)
+
+            } else {
+                // All current questions answered
+                AllAnsweredCard(answeredCount: engine.answeredCount)
+                    .padding(.horizontal, 20)
+            }
+
+            Spacer()
+
+            // ── Bottom context ───────────────────────────────────────────
+            VStack(spacing: 6) {
+                if assetManager.downloadProgress < 0.05 {
+                    Button { assetManager.retry() } label: {
+                        Label("Retry Download", systemImage: "arrow.clockwise")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(Color(hex: "#3B82F6"))
+                    }
+                    .padding(.bottom, 4)
+                }
+                Text("Your answers train your personal AI quoting assistant.")
+                    .font(.system(size: 12))
+                    .foregroundColor(Color(.tertiaryLabel))
+                    .multilineTextAlignment(.center)
+                Text("Scanning unlocks once the AI model finishes downloading.")
+                    .font(.system(size: 11))
+                    .foregroundColor(Color(.quaternaryLabel))
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.horizontal, 32)
+            .padding(.bottom, 40)
+        }
+        .background(Color(.systemBackground))
+        .onTapGesture { inputFocused = false }
+    }
+}
+
+// MARK: - Download progress pill (compact, lives in header)
+
+struct DownloadProgressPill: View {
+    let progress: Double
+
+    var body: some View {
+        HStack(spacing: 8) {
+            // Mini arc progress
             ZStack {
                 Circle()
-                    .stroke(Color(hex: "#3B82F6").opacity(0.15), lineWidth: 1.5)
-                    .frame(width: 140, height: 140)
-                    .scaleEffect(pulse ? 1.15 : 1.0)
-                    .animation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true),
-                               value: pulse)
+                    .stroke(Color(hex: "#3B82F6").opacity(0.15), lineWidth: 2.5)
+                    .frame(width: 22, height: 22)
                 Circle()
-                    .stroke(Color(hex: "#3B82F6").opacity(0.08), lineWidth: 1.5)
-                    .frame(width: 115, height: 115)
-                    .scaleEffect(pulse ? 1.1 : 1.0)
-                    .animation(.easeInOut(duration: 1.6).delay(0.2).repeatForever(autoreverses: true),
-                               value: pulse)
-                ZStack {
-                    RoundedRectangle(cornerRadius: 24)
-                        .fill(Color(hex: "#3B82F6").opacity(0.08))
-                        .frame(width: 88, height: 88)
-                    Image(systemName: "cpu")
-                        .font(.system(size: 38, weight: .light))
-                        .foregroundColor(Color(hex: "#3B82F6"))
+                    .trim(from: 0, to: CGFloat(progress))
+                    .stroke(Color(hex: "#3B82F6"), style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
+                    .frame(width: 22, height: 22)
+                    .rotationEffect(.degrees(-90))
+                    .animation(.easeInOut(duration: 0.6), value: progress)
+            }
+            Text("\(Int(progress * 100))%")
+                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                .foregroundColor(Color(hex: "#3B82F6"))
+                .contentTransition(.numericText())
+                .animation(.easeInOut(duration: 0.4), value: progress)
+            Text("AI model")
+                .font(.system(size: 12))
+                .foregroundColor(.secondary)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 7)
+        .background(Color(hex: "#3B82F6").opacity(0.08))
+        .cornerRadius(20)
+    }
+}
+
+// MARK: - Progress dots
+
+struct OnboardingProgressDots: View {
+    @ObservedObject var engine: QuestionEngine
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 4) {
+                ForEach(0..<min(engine.questions.count, 20), id: \.self) { i in
+                    Capsule()
+                        .fill(dotColor(for: i))
+                        .frame(width: i == engine.currentIndex ? 20 : 6, height: 6)
+                        .animation(.spring(response: 0.3), value: engine.currentIndex)
+                }
+                if engine.isGeneratingMore {
+                    ProgressView()
+                        .scaleEffect(0.6)
+                        .tint(Color(hex: "#3B82F6"))
+                        .padding(.leading, 2)
                 }
             }
-            .onAppear { pulse = true }
-            .padding(.bottom, 32)
+            HStack {
+                Text("\(engine.answeredCount) of \(engine.questions.count) answered")
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+                Spacer()
+                if engine.answeredCount > 0 {
+                    Text("Your AI is \(personalisation)% personalised")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(Color(hex: "#22C55E"))
+                }
+            }
+        }
+    }
 
-            Text("Preparing AI Scanner")
-                .font(.system(size: 32, weight: .bold))
+    func dotColor(for index: Int) -> Color {
+        if index < engine.questions.count && engine.questions[index].isAnswered {
+            return Color(hex: "#22C55E")
+        } else if index == engine.currentIndex {
+            return Color(hex: "#3B82F6")
+        } else {
+            return Color(.systemGray4)
+        }
+    }
+
+    var personalisation: Int {
+        // Each answer adds to personalisation, capped at 95% until enough answered
+        min(Int(Double(engine.answeredCount) / 14.0 * 95), 95)
+    }
+}
+
+// MARK: - Question card
+
+struct QuestionCard: View {
+    let question: OnboardingQuestion
+    @Binding var inputText: String
+    var inputFocused: FocusState<Bool>.Binding
+    let onSubmit: () -> Void
+    let onSkip: () -> Void
+
+    var categoryColor: Color {
+        switch question.category {
+        case "pricing":   return Color(hex: "#22C55E")
+        case "workflow":  return Color(hex: "#8B5CF6")
+        case "customers": return Color(hex: "#F59E0B")
+        case "materials": return Color(hex: "#EF4444")
+        default:          return Color(hex: "#3B82F6")
+        }
+    }
+
+    var categoryLabel: String {
+        switch question.category {
+        case "foundation": return "About You"
+        case "pricing":    return "Pricing"
+        case "workflow":   return "How You Work"
+        case "customers":  return "Your Customers"
+        case "materials":  return "Materials"
+        default:           return question.category.capitalized
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Category badge
+            HStack {
+                Text(categoryLabel.uppercased())
+                    .font(.system(size: 10, weight: .bold))
+                    .kerning(1.2)
+                    .foregroundColor(categoryColor)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(categoryColor.opacity(0.1))
+                    .cornerRadius(6)
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 20)
+            .padding(.bottom, 16)
+
+            // Question
+            Text(question.text)
+                .font(.system(size: 22, weight: .bold))
                 .foregroundColor(.primary)
-                .padding(.bottom, 12)
+                .lineSpacing(3)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
 
-            Text("Downloading the AI model required for\nhigh-accuracy room scanning.")
+            // Text input
+            VStack(spacing: 0) {
+                TextField(question.hint, text: $inputText, axis: .vertical)
+                    .font(.system(size: 16))
+                    .lineLimit(3)
+                    .focused(inputFocused)
+                    .submitLabel(.done)
+                    .onSubmit(onSubmit)
+                    .padding(16)
+                    .background(Color(.systemGray6))
+                    .cornerRadius(12)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 16)
+            }
+
+            // Buttons
+            HStack(spacing: 12) {
+                Button(action: onSkip) {
+                    Text("Skip")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(12)
+                }
+
+                Button(action: onSubmit) {
+                    HStack(spacing: 6) {
+                        Text("Save")
+                            .font(.system(size: 15, weight: .bold))
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 13, weight: .bold))
+                    }
+                    .foregroundColor(.black)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(
+                        inputText.trimmingCharacters(in: .whitespaces).isEmpty
+                            ? Color(hex: "#FFD600").opacity(0.4)
+                            : Color(hex: "#FFD600")
+                    )
+                    .cornerRadius(12)
+                }
+                .disabled(inputText.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 20)
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color(.systemBackground))
+                .shadow(color: .black.opacity(0.07), radius: 20, x: 0, y: 4)
+        )
+    }
+}
+
+// MARK: - All answered card
+
+struct AllAnsweredCard: View {
+    let answeredCount: Int
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 48))
+                .foregroundColor(Color(hex: "#22C55E"))
+            Text("Your AI is taking shape")
+                .font(.system(size: 22, weight: .bold))
+            Text("You've answered \(answeredCount) questions. More personalised questions will appear as your AI learns your trade.")
                 .font(.system(size: 15))
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
                 .lineSpacing(4)
-                .padding(.horizontal, 40)
-                .padding(.bottom, 32)
-
-            // Progress bar + percentage
-            VStack(spacing: 14) {
-                // Percentage label
-                Text("\(Int(assetManager.downloadProgress * 100))%")
-                    .font(.system(size: 48, weight: .bold, design: .rounded))
-                    .foregroundColor(Color(hex: "#3B82F6"))
-                    .contentTransition(.numericText())
-                    .animation(.easeInOut(duration: 0.4), value: assetManager.downloadProgress)
-
-                // Progress bar
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        Capsule()
-                            .fill(Color(hex: "#3B82F6").opacity(0.12))
-                        Capsule()
-                            .fill(Color(hex: "#3B82F6"))
-                            .frame(width: geo.size.width * CGFloat(assetManager.downloadProgress))
-                            .animation(.easeInOut(duration: 0.6), value: assetManager.downloadProgress)
-                    }
-                }
-                .frame(height: 6)
-                .padding(.horizontal, 40)
-
-                Text("~185 MB · Connect to Wi-Fi for fastest download")
-                    .font(.system(size: 12))
-                    .foregroundColor(.secondary)
-            }
-            .padding(.bottom, 32)
-
-            Spacer()
-
-            // Retry button (shown when stuck below 5% for a while)
-            if assetManager.downloadProgress < 0.05 {
-                Button { assetManager.retry() } label: {
-                    Text("Retry Download")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(Color(hex: "#3B82F6"))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(Color(hex: "#3B82F6").opacity(0.08))
-                        .cornerRadius(14)
-                }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 16)
-                .transition(.opacity)
-            }
-
-            Text("This only happens once. Future launches are instant.")
-                .font(.system(size: 12))
-                .foregroundColor(Color(.tertiaryLabel))
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
-                .padding(.bottom, 48)
+                .padding(.horizontal, 16)
         }
-        .background(Color(.systemBackground))
+        .padding(32)
+        .frame(maxWidth: .infinity)
+        .background(Color(.systemGray6).opacity(0.6))
+        .cornerRadius(20)
     }
-
 }
 
 // MARK: - Ready View
