@@ -63,33 +63,39 @@ struct PreparingView: View {
                 .padding(.horizontal, 40)
                 .padding(.bottom, 32)
 
-            // Progress indicator
-            VStack(spacing: 10) {
-                ProgressView()
-                    .scaleEffect(1.1)
-                    .tint(Color(hex: "#3B82F6"))
+            // Progress bar + percentage
+            VStack(spacing: 14) {
+                // Percentage label
+                Text("\(Int(assetManager.downloadProgress * 100))%")
+                    .font(.system(size: 48, weight: .bold, design: .rounded))
+                    .foregroundColor(Color(hex: "#3B82F6"))
+                    .contentTransition(.numericText())
+                    .animation(.easeInOut(duration: 0.4), value: assetManager.downloadProgress)
 
-                Text(progressLabel)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(.secondary)
-                    .animation(.easeInOut, value: assetManager.elapsedSeconds)
-            }
-            .padding(.bottom, 40)
+                // Progress bar
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Capsule()
+                            .fill(Color(hex: "#3B82F6").opacity(0.12))
+                        Capsule()
+                            .fill(Color(hex: "#3B82F6"))
+                            .frame(width: geo.size.width * CGFloat(assetManager.downloadProgress))
+                            .animation(.easeInOut(duration: 0.6), value: assetManager.downloadProgress)
+                    }
+                }
+                .frame(height: 6)
+                .padding(.horizontal, 40)
 
-            // Requirements callout
-            HStack(spacing: 8) {
-                Image(systemName: "wifi")
-                    .font(.system(size: 13))
-                    .foregroundColor(.secondary)
-                Text("Requires a Wi-Fi connection · One-time download")
+                Text("~185 MB · Connect to Wi-Fi for fastest download")
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
             }
+            .padding(.bottom, 32)
 
             Spacer()
 
-            // Retry button (shown after 2 minutes with no progress)
-            if assetManager.elapsedSeconds > 120 {
+            // Retry button (shown when stuck below 5% for a while)
+            if assetManager.downloadProgress < 0.05 {
                 Button { assetManager.retry() } label: {
                     Text("Retry Download")
                         .font(.system(size: 16, weight: .semibold))
@@ -114,13 +120,6 @@ struct PreparingView: View {
         .background(Color(.systemBackground))
     }
 
-    var progressLabel: String {
-        let s = assetManager.elapsedSeconds
-        if s < 10  { return "Starting download…" }
-        if s < 60  { return "Downloading… (\(s)s)" }
-        let m = s / 60; let rem = s % 60
-        return "Still downloading… (\(m)m \(rem)s) — stay on Wi-Fi"
-    }
 }
 
 // MARK: - Ready View

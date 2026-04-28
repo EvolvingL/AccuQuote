@@ -24,10 +24,14 @@ final class PhotogrammetryAssetManager: ObservableObject {
     static let shared = PhotogrammetryAssetManager()
 
     @Published var assetState: PhotogrammetryAssetState = .unknown
-    @Published var elapsedSeconds: Int = 0
+    /// 0.0 – 1.0 download progress, derived from MobileAsset cache directory size.
+    @Published var downloadProgress: Double = 0.0
 
-    nonisolated static let bgTaskID    = "com.accuquote.scan.asset-download"
+    nonisolated static let bgTaskID         = "com.accuquote.scan.asset-download"
     nonisolated private static let readyKey = "aq_photogrammetry_asset_ready"
+    /// Approximate total size of the RealityKit photogrammetry ML asset in bytes.
+    /// Measured empirically; used only to compute a progress fraction.
+    private static let assetTotalBytes: Int64 = 185_000_000   // ~185 MB
     private static let pollInterval: TimeInterval = 1
 
     private var pollTimer:   Timer?
@@ -150,7 +154,7 @@ final class PhotogrammetryAssetManager: ObservableObject {
     private func beginDownloadTrigger() {
         guard assetState != .downloading else { return }
         assetState = .downloading
-        elapsedSeconds = 0
+        downloadProgress = 0.0
 
         triggerTask = Task.detached(priority: .userInitiated) {
             let tmp = FileManager.default.temporaryDirectory
@@ -174,13 +178,62 @@ final class PhotogrammetryAssetManager: ObservableObject {
 
     private func poll() {
         guard #available(iOS 17.0, *) else { return }
-        elapsedSeconds += Int(Self.pollInterval)
 
         if PhotogrammetrySession.isSupported {
+            downloadProgress = 1.0
             pollTimer?.invalidate(); pollTimer = nil
             triggerTask?.cancel();   triggerTask = nil
             markReady()
+            return
         }
+
+        // Measure how much of the asset has been written to the MobileAsset cache.
+        // iOS stores partial downloads under /var/MobileAsset/AssetsV2/
+        // in a directory whose name contains "RealityKit".
+        let measured = Self.measureAssetCacheBytes()
+        if measured > 0 {
+            // Cap at 0.97 so the bar never falsely claims 100% before isSupported fires
+            downloadProgress = min(Double(measured) / Double(Self.assetTotalBytes), 0.97)
+        } else {
+            // Cache dir not found yet — show a slow creep so the bar isn't static
+            downloadProgress = min(downloadProgress + 0.002, 0.15)
+        }
+    }
+
+    /// Returns the total bytes written to any MobileAsset directory that looks
+    /// like the RealityKit photogrammetry asset. Returns 0 if not found.
+    private static func measureAssetCacheBytes() -> Int64 {
+        // Candidate locations — iOS puts MobileAssets in /var/MobileAsset on device.
+        // The sandbox exposes this under a path accessible to third-party apps.
+        let candidates: [URL] = [
+            URL(fileURLWithPath: "/var/MobileAsset/AssetsV2"),
+            URL(fileURLWithPath: "/private/var/MobileAsset/AssetsV2"),
+        ]
+        let fm = FileManager.default
+        for base in candidates {
+            guard let contents = try? fm.contentsOfDirectory(
+                at: base,
+                includingPropertiesForKeys: nil
+            ) else { continue }
+            for dir in contents where dir.lastPathComponent.contains("RealityKit") {
+                return directorySize(at: dir)
+            }
+        }
+        return 0
+    }
+
+    private static func directorySize(at url: URL) -> Int64 {
+        let fm = FileManager.default
+        guard let enumerator = fm.enumerator(
+            at: url,
+            includingPropertiesForKeys: [.fileSizeKey],
+            options: [.skipsHiddenFiles]
+        ) else { return 0 }
+        var total: Int64 = 0
+        for case let fileURL as URL in enumerator {
+            total += Int64((try? fileURL.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0)
+        }
+        return total
     }
 
     private func markReady() {
@@ -194,7 +247,7 @@ final class PhotogrammetryAssetManager: ObservableObject {
         guard #available(iOS 17.0, *) else { return }
         triggerTask?.cancel(); triggerTask = nil
         pollTimer?.invalidate(); pollTimer = nil
-        elapsedSeconds = 0
+        downloadProgress = 0.0
         beginDownloadTrigger()
     }
 
