@@ -41,10 +41,14 @@ enum ScanState {
 // forwards events to ScanCoordinator via closures. This keeps
 // ScanCoordinator free of NSObject / NSCoding entirely.
 
+@objc(AQSessionBridge)
 private final class SessionBridge: NSObject, RoomCaptureSessionDelegate, RoomCaptureViewDelegate {
 
     var onUpdate:  ((CapturedRoom) -> Void)?
     var onEnd:     ((CapturedRoomData, Error?) -> Void)?
+
+    override init() { super.init() }
+    required init?(coder: NSCoder) { fatalError("not supported") }
 
     // RoomCaptureSessionDelegate
     func captureSession(_ session: RoomCaptureSession, didUpdate room: CapturedRoom) {
