@@ -20,8 +20,7 @@ struct RoomDimensions {
     var heightStr: String { String(format: "%.2f", height) }
 
     var returnURL: URL? {
-        let baseURL = WEB_APP_BASE_URL
-        var components = URLComponents(string: baseURL)
+        var components = URLComponents(string: WEB_APP_BASE_URL)
         components?.fragment = "scan-result?length=\(lengthStr)&width=\(widthStr)&height=\(heightStr)&doors=\(doorCount)&windows=\(windowCount)&roomType=\(roomType)"
         return components?.url
     }
@@ -37,66 +36,122 @@ enum ScanState {
     case error(String)
 }
 
-// MARK: - Coordinator
+// MARK: - Delegate bridge
+// A minimal NSObject that satisfies the Obj-C delegate protocols and
+// forwards events to ScanCoordinator via closures. This keeps
+// ScanCoordinator free of NSObject / NSCoding entirely.
 
-// NSObject is required for the RoomPlan delegate protocols (Obj-C).
-// We cannot put @MainActor on the class itself in Swift 6 because that
-// makes NSCoding conformance cross actor boundaries. Instead @MainActor
-// is applied per-method where UI updates happen.
-class ScanCoordinator: NSObject, ObservableObject {
+private final class SessionBridge: NSObject, RoomCaptureSessionDelegate, RoomCaptureViewDelegate {
+
+    var onUpdate:  ((CapturedRoom) -> Void)?
+    var onEnd:     ((CapturedRoomData, Error?) -> Void)?
+
+    // RoomCaptureSessionDelegate
+    func captureSession(_ session: RoomCaptureSession, didUpdate room: CapturedRoom) {
+        onUpdate?(room)
+    }
+
+    func captureSession(_ session: RoomCaptureSession,
+                        didEndWith data: CapturedRoomData, error: Error?) {
+        onEnd?(data, error)
+    }
+
+    // RoomCaptureViewDelegate
+    func captureView(shouldPresent roomDataForProcessing: CapturedRoomData,
+                     error: Error?) -> Bool { true }
+
+    func captureView(didPresent processedResult: CapturedRoom, error: Error?) {}
+}
+
+// MARK: - Coordinator
+// Plain Swift class — no NSObject, no NSCoding, no actor conflicts.
+
+@MainActor
+final class ScanCoordinator: ObservableObject {
 
     @Published var state: ScanState = .ready
     @Published var instructionText: String = "Slowly move your iPhone around the room"
     @Published var scanProgress: Float = 0.0
 
-    private var roomCaptureSession: RoomCaptureSession?
+    private var session: RoomCaptureSession?
+    private var bridge:  SessionBridge?
     var captureView: RoomCaptureView?
-
-    override init() { super.init() }
 
     // MARK: - Start / Stop
 
-    @MainActor
     func startScan() {
         guard RoomCaptureSession.isSupported else {
-            state = .error("LiDAR not available on this device. RoomPlan requires iPhone 12 Pro or later.")
+            state = .error("LiDAR not available. RoomPlan requires iPhone 12 Pro or later.")
             return
         }
 
-        let session = RoomCaptureSession()
-        roomCaptureSession = session
-        session.delegate = self
+        let bridge   = SessionBridge()
+        let session  = RoomCaptureSession()
+        self.bridge  = bridge
+        self.session = session
 
+        // Wire callbacks
+        bridge.onUpdate = { [weak self] room in
+            guard let self else { return }
+            let wallCount = room.walls.count
+            let progress  = min(Float(wallCount) / 4.0, 0.95)
+            let text: String
+            if wallCount == 0      { text = "Point at the walls to start measuring" }
+            else if wallCount < 3  { text = "Keep moving — scanning more walls" }
+            else                   { text = "Looking good — scan the full room" }
+            Task { @MainActor in
+                self.instructionText = text
+                self.scanProgress    = progress
+            }
+        }
+
+        bridge.onEnd = { [weak self] data, error in
+            guard let self else { return }
+            if let error {
+                Task { @MainActor in self.state = .error("Scan error: \(error.localizedDescription)") }
+                return
+            }
+            Task { @MainActor in self.state = .processing }
+            Task {
+                do {
+                    let builder = RoomBuilder(options: [])
+                    let room    = try await builder.capturedRoom(from: data)
+                    let result  = ScanCoordinator.buildResult(from: room)
+                    await MainActor.run { self.state = .complete(result) }
+                } catch {
+                    await MainActor.run {
+                        self.state = .error("Processing failed: \(error.localizedDescription)")
+                    }
+                }
+            }
+        }
+
+        session.delegate = bridge
+
+        // Build the capture view and attach the session
         let view = RoomCaptureView(frame: .zero)
-        view.captureSession = session
-        view.delegate = self
-        captureView = view
+        view.delegate = bridge
+        self.captureView = view
 
-        let config = RoomCaptureSession.Configuration()
-        session.run(configuration: config)
-
+        session.run(configuration: RoomCaptureSession.Configuration())
         state = .scanning
     }
 
-    @MainActor
     func stopScan() {
-        roomCaptureSession?.stop()
+        session?.stop()
         state = .processing
     }
 
-    @MainActor
     func reset() {
-        roomCaptureSession?.stop()
-        roomCaptureSession = nil
+        session?.stop()
+        session     = nil
+        bridge      = nil
         captureView = nil
-        state = .ready
-        scanProgress = 0
+        state       = .ready
+        scanProgress    = 0
         instructionText = "Slowly move your iPhone around the room"
     }
 
-    // MARK: - Send result back to AccuQuote
-
-    @MainActor
     func sendResultToAccuQuote(result: RoomDimensions) {
         guard let url = result.returnURL else { return }
         UIApplication.shared.open(url, options: [:]) { success in
@@ -106,49 +161,34 @@ class ScanCoordinator: NSObject, ObservableObject {
         }
     }
 
-    // MARK: - Process Room (static — no actor isolation needed)
+    // MARK: - Process room (static, no actor isolation needed)
 
     private static func buildResult(from room: CapturedRoom) -> RoomDimensions {
         let walls = room.walls
-
-        var wallLengths: [Double] = walls.map { Double($0.dimensions.x) }
-        wallLengths.sort(by: >)
+        var lengths = walls.map { Double($0.dimensions.x) }.sorted(by: >)
 
         let length: Double
         let width: Double
 
-        if wallLengths.count >= 4 {
-            length = (wallLengths[0] + wallLengths[1]) / 2.0
-            width  = (wallLengths[2] + wallLengths[3]) / 2.0
-        } else if wallLengths.count >= 2 {
-            length = wallLengths[0]
-            width  = wallLengths[1]
-        } else if wallLengths.count == 1 {
-            length = wallLengths[0]
-            width  = wallLengths[0]
-        } else {
-            // Fallback: derive from wall height aspect ratio
-            length = 3.0
-            width  = 2.5
+        switch lengths.count {
+        case 4...: length = (lengths[0] + lengths[1]) / 2; width = (lengths[2] + lengths[3]) / 2
+        case 2...3: length = lengths[0]; width = lengths[1]
+        case 1:     length = lengths[0]; width = lengths[0]
+        default:    length = 3.0;        width = 2.5
         }
 
-        // Height from first wall's Y dimension
-        let height: Double = walls.first.map { Double($0.dimensions.y) } ?? 2.4
-
-        let doorCount   = room.doors.count
-        let windowCount = room.windows.count
-        let floorArea   = length * width
-        let roomType    = guessRoomType(area: floorArea, windows: windowCount)
+        let height    = walls.first.map { Double($0.dimensions.y) } ?? 2.4
+        let floorArea = length * width
 
         return RoomDimensions(
-            length:      round(length    * 10)  / 10,
-            width:       round(width     * 10)  / 10,
-            height:      round(height    * 10)  / 10,
-            floorArea:   round(floorArea * 100) / 100,
+            length:      (length    * 10).rounded()  / 10,
+            width:       (width     * 10).rounded()  / 10,
+            height:      (height    * 10).rounded()  / 10,
+            floorArea:   (floorArea * 100).rounded() / 100,
             wallCount:   walls.count,
-            doorCount:   doorCount,
-            windowCount: windowCount,
-            roomType:    roomType
+            doorCount:   room.doors.count,
+            windowCount: room.windows.count,
+            roomType:    guessRoomType(area: floorArea, windows: room.windows.count)
         )
     }
 
@@ -160,66 +200,4 @@ class ScanCoordinator: NSObject, ObservableObject {
         default:      return "living room"
         }
     }
-}
-
-// MARK: - RoomCaptureSessionDelegate
-
-extension ScanCoordinator: RoomCaptureSessionDelegate {
-
-    nonisolated func captureSession(_ session: RoomCaptureSession,
-                                    didUpdate room: CapturedRoom) {
-        let wallCount = room.walls.count
-        let progress  = min(Float(wallCount) / 4.0, 0.95)
-
-        let instruction: String
-        if wallCount == 0 {
-            instruction = "Point at the walls to start measuring"
-        } else if wallCount < 3 {
-            instruction = "Keep moving — scanning more walls"
-        } else {
-            instruction = "Looking good — scan the full room"
-        }
-
-        Task { @MainActor in
-            self.instructionText = instruction
-            self.scanProgress    = progress
-        }
-    }
-
-    nonisolated func captureSession(_ session: RoomCaptureSession,
-                                    didEndWith data: CapturedRoomData,
-                                    error: Error?) {
-        if let error {
-            Task { @MainActor in
-                self.state = .error("Scan error: \(error.localizedDescription)")
-            }
-            return
-        }
-
-        Task { @MainActor in self.state = .processing }
-
-        Task {
-            do {
-                let builder = RoomBuilder(options: [])
-                let room    = try await builder.capturedRoom(from: data)
-                let result  = Self.buildResult(from: room)
-                await MainActor.run { self.state = .complete(result) }
-            } catch {
-                await MainActor.run {
-                    self.state = .error("Processing failed: \(error.localizedDescription)")
-                }
-            }
-        }
-    }
-}
-
-// MARK: - RoomCaptureViewDelegate
-
-extension ScanCoordinator: RoomCaptureViewDelegate {
-
-    nonisolated func captureView(shouldPresent roomDataForProcessing: CapturedRoomData,
-                                  error: Error?) -> Bool { true }
-
-    nonisolated func captureView(didPresent processedResult: CapturedRoom,
-                                  error: Error?) {}
 }
