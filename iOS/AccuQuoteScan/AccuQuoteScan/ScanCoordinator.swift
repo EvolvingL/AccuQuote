@@ -59,6 +59,10 @@ class ScanCoordinator: NSObject, ObservableObject, RoomCaptureSessionDelegate, R
     var captureSession: RoomCaptureSession?
     var captureView: RoomCaptureView?
 
+    // Required to satisfy NSCoding (inherited via NSObject) — not used.
+    required init?(coder: NSCoder) { fatalError("init(coder:) not supported") }
+    override init() { super.init() }
+
     // MARK: - Start / Stop
 
     func startScan() {
