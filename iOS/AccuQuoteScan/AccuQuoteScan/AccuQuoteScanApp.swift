@@ -13,19 +13,20 @@ struct AccuQuoteScanApp: App {
 
     @StateObject private var assetManager = PhotogrammetryAssetManager.shared
 
+    init() {
+        // Trigger the OTA ML asset download as early as possible — before
+        // the first frame renders — so the download starts immediately on launch.
+        Task { @MainActor in
+            PhotogrammetryAssetManager.shared.prepareAsset()
+        }
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(assetManager)
-                .onAppear {
-                    // Kick off OTA asset download in the background.
-                    // On first launch this triggers iOS to fetch the ML model.
-                    // On subsequent launches it returns immediately if already ready.
-                    assetManager.prepareAsset()
-                }
                 .onOpenURL { _ in
                     // Deep link handler: accuquote://scan
-                    // ContentView observes ScanCoordinator — no extra work needed
                 }
         }
     }

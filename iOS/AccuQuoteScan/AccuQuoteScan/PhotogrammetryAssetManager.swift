@@ -26,7 +26,7 @@ final class PhotogrammetryAssetManager: ObservableObject {
     @Published var elapsedSeconds: Int = 0
 
     nonisolated private static let readyKey    = "aq_photogrammetry_asset_ready"
-    private static let pollInterval: TimeInterval = 3
+    private static let pollInterval: TimeInterval = 1
 
     private var pollTimer:   Timer?
     private var triggerTask: Task<Void, Never>?
@@ -64,30 +64,18 @@ final class PhotogrammetryAssetManager: ObservableObject {
         assetState = .downloading
         elapsedSeconds = 0
 
-        // Instantiating PhotogrammetrySession against any directory causes iOS
-        // to queue the MobileAsset download automatically.
-        triggerTask = Task.detached(priority: .background) {
+        // Calling PhotogrammetrySession(input:) — even on an empty/invalid path —
+        // is sufficient to cause iOS to queue the MobileAsset download.
+        // We use .userInitiated so iOS treats it as a foreground request,
+        // not a deferred background task, which gives it higher download priority.
+        triggerTask = Task.detached(priority: .userInitiated) {
             let tmp = FileManager.default.temporaryDirectory
-                .appendingPathComponent("aq_pg_trigger_\(Int(Date().timeIntervalSince1970))")
+                .appendingPathComponent("aq_pg_trigger")
             try? FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
-            // Minimal valid JPEG so the session init doesn't throw immediately
-            let jpeg: [UInt8] = [
-                0xFF,0xD8,0xFF,0xE0,0x00,0x10,0x4A,0x46,0x49,0x46,0x00,0x01,
-                0x01,0x00,0x00,0x01,0x00,0x01,0x00,0x00,0xFF,0xDB,0x00,0x43,
-                0x00,0x08,0x06,0x06,0x07,0x06,0x05,0x08,0x07,0x07,0x07,0x09,
-                0x09,0x08,0x0A,0x0C,0x14,0x0D,0x0C,0x0B,0x0B,0x0C,0x19,0x12,
-                0x13,0x0F,0x14,0x1D,0x1A,0x1F,0x1E,0x1D,0x1A,0x1C,0x1C,0x20,
-                0x24,0x2E,0x27,0x20,0x22,0x2C,0x23,0x1C,0x1C,0x28,0x37,0x29,
-                0x2C,0x30,0x31,0x34,0x34,0x34,0x1F,0x27,0x39,0x3D,0x38,0x32,
-                0x3C,0x2E,0x33,0x34,0x32,0xFF,0xC0,0x00,0x0B,0x08,0x00,0x01,
-                0x00,0x01,0x01,0x01,0x11,0x00,0xFF,0xC4,0x00,0x1F,0x00,0x00,
-                0x01,0x05,0x01,0x01,0x01,0x01,0x01,0x01,0x00,0x00,0x00,0x00,
-                0x00,0x00,0x00,0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,
-                0x09,0x0A,0x0B,0xFF,0xDA,0x00,0x08,0x01,0x01,0x00,0x00,0x3F,
-                0x00,0xFB,0xD4,0xFF,0xD9
-            ]
-            try? Data(jpeg).write(to: tmp.appendingPathComponent("placeholder.jpg"))
             _ = try? PhotogrammetrySession(input: tmp)
+            // Re-trigger every 30s while still downloading — keeps the asset
+            // request alive if iOS de-prioritises it in the background.
+            try? await Task.sleep(nanoseconds: 30_000_000_000)
             try? FileManager.default.removeItem(at: tmp)
         }
 
