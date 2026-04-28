@@ -49,6 +49,7 @@ private final class SessionBridge: NSObject, RoomCaptureSessionDelegate, RoomCap
 
     override init() { super.init() }
     required init?(coder: NSCoder) { fatalError("not supported") }
+    func encode(with coder: NSCoder) { fatalError("not supported") }
 
     // RoomCaptureSessionDelegate
     func captureSession(_ session: RoomCaptureSession, didUpdate room: CapturedRoom) {
