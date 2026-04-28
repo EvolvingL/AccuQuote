@@ -3,31 +3,14 @@ import RoomPlan
 import ARKit
 import SceneKit
 
-// MARK: - Ready View
+// MARK: - Preparing View (shown while OTA ML asset is downloading)
 
-struct ReadyView: View {
-    @ObservedObject var coordinator: ScanCoordinator
+struct PreparingView: View {
     @EnvironmentObject var assetManager: PhotogrammetryAssetManager
-
-    var methodIcon: String {
-        switch coordinator.scanMethod {
-        case .lidar:          return "cube.transparent"
-        case .photogrammetry: return "camera.viewfinder"
-        case .arPlanes:       return "camera"
-        }
-    }
-
-    var methodBadgeColor: Color {
-        switch coordinator.scanMethod {
-        case .lidar:          return Color(hex: "#22C55E")
-        case .photogrammetry: return Color(hex: "#3B82F6")
-        case .arPlanes:       return Color(hex: "#F59E0B")
-        }
-    }
+    @State private var pulse = false
 
     var body: some View {
         VStack(spacing: 0) {
-            // Header
             HStack {
                 Text("ACCUQUOTE")
                     .font(.custom("AvenirNext-Heavy", size: 22))
@@ -37,14 +20,145 @@ struct ReadyView: View {
             }
             .padding(.horizontal, 24)
             .padding(.top, 60)
-            .padding(.bottom, 16)
-
-            // Asset download banner (shown while AI model is downloading)
-            assetDownloadBanner
+            .padding(.bottom, 24)
 
             Spacer()
 
-            // Icon
+            // Animated icon
+            ZStack {
+                Circle()
+                    .stroke(Color(hex: "#3B82F6").opacity(0.15), lineWidth: 1.5)
+                    .frame(width: 140, height: 140)
+                    .scaleEffect(pulse ? 1.15 : 1.0)
+                    .animation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true),
+                               value: pulse)
+                Circle()
+                    .stroke(Color(hex: "#3B82F6").opacity(0.08), lineWidth: 1.5)
+                    .frame(width: 115, height: 115)
+                    .scaleEffect(pulse ? 1.1 : 1.0)
+                    .animation(.easeInOut(duration: 1.6).delay(0.2).repeatForever(autoreverses: true),
+                               value: pulse)
+                ZStack {
+                    RoundedRectangle(cornerRadius: 24)
+                        .fill(Color(hex: "#3B82F6").opacity(0.08))
+                        .frame(width: 88, height: 88)
+                    Image(systemName: "cpu")
+                        .font(.system(size: 38, weight: .light))
+                        .foregroundColor(Color(hex: "#3B82F6"))
+                }
+            }
+            .onAppear { pulse = true }
+            .padding(.bottom, 32)
+
+            Text("Preparing AI Scanner")
+                .font(.system(size: 32, weight: .bold))
+                .foregroundColor(.primary)
+                .padding(.bottom, 12)
+
+            Text("Downloading the AI model required for\nhigh-accuracy room scanning.")
+                .font(.system(size: 15))
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .lineSpacing(4)
+                .padding(.horizontal, 40)
+                .padding(.bottom, 32)
+
+            // Progress indicator
+            VStack(spacing: 10) {
+                ProgressView()
+                    .scaleEffect(1.1)
+                    .tint(Color(hex: "#3B82F6"))
+
+                Text(progressLabel)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.secondary)
+                    .animation(.easeInOut, value: assetManager.elapsedSeconds)
+            }
+            .padding(.bottom, 40)
+
+            // Requirements callout
+            HStack(spacing: 8) {
+                Image(systemName: "wifi")
+                    .font(.system(size: 13))
+                    .foregroundColor(.secondary)
+                Text("Requires a Wi-Fi connection · One-time download")
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+            }
+
+            Spacer()
+
+            // Retry button (shown after 2 minutes with no progress)
+            if assetManager.elapsedSeconds > 120 {
+                Button { assetManager.retry() } label: {
+                    Text("Retry Download")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(Color(hex: "#3B82F6"))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(Color(hex: "#3B82F6").opacity(0.08))
+                        .cornerRadius(14)
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 16)
+                .transition(.opacity)
+            }
+
+            Text("This only happens once. Future launches are instant.")
+                .font(.system(size: 12))
+                .foregroundColor(Color(.tertiaryLabel))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
+                .padding(.bottom, 48)
+        }
+        .background(Color(.systemBackground))
+    }
+
+    var progressLabel: String {
+        let s = assetManager.elapsedSeconds
+        if s < 10  { return "Starting download…" }
+        if s < 60  { return "Downloading… (\(s)s)" }
+        let m = s / 60; let rem = s % 60
+        return "Still downloading… (\(m)m \(rem)s) — stay on Wi-Fi"
+    }
+}
+
+// MARK: - Ready View
+
+struct ReadyView: View {
+    @ObservedObject var coordinator: ScanCoordinator
+
+    var methodIcon: String {
+        switch coordinator.scanMethod {
+        case .lidar:          return "cube.transparent"
+        case .photogrammetry: return "camera.viewfinder"
+        case nil:             return "camera.viewfinder"
+        }
+    }
+
+    var methodBadgeColor: Color {
+        switch coordinator.scanMethod {
+        case .lidar:          return Color(hex: "#22C55E")
+        case .photogrammetry: return Color(hex: "#3B82F6")
+        case nil:             return Color(hex: "#3B82F6")
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("ACCUQUOTE")
+                    .font(.custom("AvenirNext-Heavy", size: 22))
+                    .kerning(4)
+                    .foregroundColor(.primary)
+                Spacer()
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 60)
+            .padding(.bottom, 24)
+
+            Spacer()
+
             ZStack {
                 RoundedRectangle(cornerRadius: 24)
                     .stroke(Color.primary.opacity(0.12), lineWidth: 1.5)
@@ -60,12 +174,11 @@ struct ReadyView: View {
                 .foregroundColor(.primary)
                 .padding(.bottom, 12)
 
-            // Method badge
             HStack(spacing: 6) {
                 Circle()
                     .fill(methodBadgeColor)
                     .frame(width: 8, height: 8)
-                Text(coordinator.scanMethod.displayName)
+                Text(coordinator.scanMethod?.displayName ?? "")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(methodBadgeColor)
             }
@@ -75,7 +188,7 @@ struct ReadyView: View {
             .cornerRadius(20)
             .padding(.bottom, 16)
 
-            Text(coordinator.scanMethod.description)
+            Text(coordinator.scanMethod?.description ?? "")
                 .font(.system(size: 15))
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
@@ -88,9 +201,7 @@ struct ReadyView: View {
 
             Spacer()
 
-            Button {
-                coordinator.startScan()
-            } label: {
+            Button { coordinator.startScan() } label: {
                 Text("Start Scan")
                     .font(.system(size: 18, weight: .bold))
                     .foregroundColor(.black)
@@ -110,86 +221,16 @@ struct ReadyView: View {
         .background(Color(.systemBackground))
     }
 
-    // Banner shown while OTA AI model is downloading / failed
-    @ViewBuilder
-    var assetDownloadBanner: some View {
-        switch assetManager.assetState {
-        case .downloading:
-            HStack(spacing: 10) {
-                ProgressView()
-                    .scaleEffect(0.85)
-                    .tint(Color(hex: "#3B82F6"))
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Preparing AI scanning")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(Color(hex: "#3B82F6"))
-                    Text(assetManager.progressMessage)
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary)
-                }
-                Spacer()
-                // Scanning still works via AR Planes while downloading
-                Text("AR mode active")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(Color(hex: "#F59E0B"))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color(hex: "#F59E0B").opacity(0.12))
-                    .cornerRadius(8)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(Color(hex: "#3B82F6").opacity(0.08))
-            .cornerRadius(12)
-            .padding(.horizontal, 20)
-            .padding(.bottom, 8)
-
-        case .failed(let msg):
-            HStack(spacing: 10) {
-                Image(systemName: "exclamationmark.wifi")
-                    .foregroundColor(.orange)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("AI model download failed")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(.orange)
-                    Text(msg)
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary)
-                }
-                Spacer()
-                Button("Retry") { assetManager.retry() }
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(.orange)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(Color.orange.opacity(0.08))
-            .cornerRadius(12)
-            .padding(.horizontal, 20)
-            .padding(.bottom, 8)
-
-        default:
-            EmptyView()
-        }
-    }
-
     @ViewBuilder
     var methodInstructions: some View {
         switch coordinator.scanMethod {
-        case .lidar:
+        case .lidar, nil:
             EmptyView()
         case .photogrammetry:
             VStack(alignment: .leading, spacing: 8) {
                 InstructionRow(icon: "1.circle.fill", text: "Walk slowly around the entire room")
                 InstructionRow(icon: "2.circle.fill", text: "Keep all walls visible as you move")
                 InstructionRow(icon: "3.circle.fill", text: "Good lighting gives better results")
-            }
-            .padding(.top, 12)
-        case .arPlanes:
-            VStack(alignment: .leading, spacing: 8) {
-                InstructionRow(icon: "1.circle.fill", text: "Point camera slowly at each wall")
-                InstructionRow(icon: "2.circle.fill", text: "Hold steady for 2–3 seconds per wall")
-                InstructionRow(icon: "3.circle.fill", text: "Cover all 4 walls for best accuracy")
             }
             .padding(.top, 12)
         }
@@ -199,7 +240,7 @@ struct ReadyView: View {
         switch coordinator.scanMethod {
         case .lidar:          return "Using LiDAR — iPhone 12 Pro or later"
         case .photogrammetry: return "Using AI depth — iPhone XS or later, iOS 17+"
-        case .arPlanes:       return "Using camera measurement — any ARKit device"
+        case nil:             return ""
         }
     }
 }
@@ -219,7 +260,7 @@ struct InstructionRow: View {
     }
 }
 
-// MARK: - Scanning View (dispatches to correct UI)
+// MARK: - Scanning View
 
 struct ScanningView: View {
     @ObservedObject var coordinator: ScanCoordinator
@@ -230,8 +271,8 @@ struct ScanningView: View {
             LiDARScanningView(coordinator: coordinator)
         case .photogrammetry:
             PhotoScanningView(coordinator: coordinator)
-        case .arPlanes:
-            ARPlaneScanningView(coordinator: coordinator)
+        case nil:
+            EmptyView()
         }
     }
 }
@@ -247,32 +288,28 @@ struct LiDARScanningView: View {
                 RoomCaptureViewRepresentable(captureView: captureView)
                     .ignoresSafeArea()
             }
-            scanOverlay
+            VStack(spacing: 0) {
+                HStack {
+                    Spacer()
+                    Button { coordinator.stopScan() } label: {
+                        Text("Done")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 10)
+                            .background(Color.black.opacity(0.6))
+                            .cornerRadius(20)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 60)
+                Spacer()
+                ScanProgressCard(coordinator: coordinator)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 40)
+            }
         }
         .ignoresSafeArea()
-    }
-
-    var scanOverlay: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Spacer()
-                Button { coordinator.stopScan() } label: {
-                    Text("Done")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 10)
-                        .background(Color.black.opacity(0.6))
-                        .cornerRadius(20)
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 60)
-            Spacer()
-            ScanProgressCard(coordinator: coordinator)
-                .padding(.horizontal, 20)
-                .padding(.bottom, 40)
-        }
     }
 }
 
@@ -355,45 +392,6 @@ struct PhotoScanningView: View {
     }
 }
 
-// MARK: - AR Plane Scanning View
-
-struct ARPlaneScanningView: View {
-    @ObservedObject var coordinator: ScanCoordinator
-
-    var body: some View {
-        ZStack(alignment: .bottom) {
-            if let arSession = coordinator.planeSession {
-                ARViewRepresentable(session: arSession)
-                    .ignoresSafeArea()
-            } else {
-                Color.black.ignoresSafeArea()
-            }
-
-            VStack(spacing: 0) {
-                HStack {
-                    Spacer()
-                    Button { coordinator.stopScan() } label: {
-                        Text("Done")
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 10)
-                            .background(Color.black.opacity(0.6))
-                            .cornerRadius(20)
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 60)
-                Spacer()
-                ScanProgressCard(coordinator: coordinator)
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 40)
-            }
-        }
-        .ignoresSafeArea()
-    }
-}
-
 // MARK: - Shared progress card
 
 struct ScanProgressCard: View {
@@ -466,7 +464,6 @@ struct ResultView: View {
         switch result.scanMethod {
         case .lidar:          return "High precision · LiDAR"
         case .photogrammetry: return "AI depth · ±5% accuracy"
-        case .arPlanes:       return "Camera estimate · ±15% accuracy"
         }
     }
 
@@ -474,7 +471,6 @@ struct ResultView: View {
         switch result.scanMethod {
         case .lidar:          return Color(hex: "#22C55E")
         case .photogrammetry: return Color(hex: "#3B82F6")
-        case .arPlanes:       return Color(hex: "#F59E0B")
         }
     }
 
@@ -646,7 +642,7 @@ struct RoomCaptureViewRepresentable: UIViewRepresentable {
     func updateUIView(_ uiView: RoomCaptureView, context: Context) {}
 }
 
-// MARK: - UIViewRepresentable for ARSession (photogrammetry / AR planes)
+// MARK: - UIViewRepresentable for ARSession (photogrammetry)
 
 struct ARViewRepresentable: UIViewRepresentable {
     let session: ARSession
