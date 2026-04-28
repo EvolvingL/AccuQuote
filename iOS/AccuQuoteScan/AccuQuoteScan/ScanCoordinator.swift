@@ -28,13 +28,12 @@ enum ScanMethod {
         }
     }
 
-    /// Detect best available method on this device
+    /// Detect best available method on this device.
+    /// PhotogrammetrySession is excluded: it requires a large ML asset downloaded
+    /// OTA by iOS which is often absent, causing LockNoWaitNoDownloadedAsset errors.
     static func best() -> ScanMethod {
         if RoomCaptureSession.isSupported {
             return .lidar
-        }
-        if #available(iOS 17.0, *), PhotogrammetrySession.isSupported {
-            return .photogrammetry
         }
         return .arPlanes
     }
