@@ -1,6 +1,6 @@
 import Foundation
 import RealityKit
-import Combine
+import BackgroundTasks
 
 // MARK: - Asset state
 
@@ -15,8 +15,9 @@ enum PhotogrammetryAssetState: Equatable {
 
 /// Manages the one-time OTA download of the ML model that PhotogrammetrySession needs.
 ///
-/// Non-LiDAR devices must wait for this to complete before scanning is available.
-/// Once ready it is persisted in UserDefaults — all subsequent launches are instant.
+/// On first launch it triggers the download and polls while the app is foreground.
+/// When the app is backgrounded/closed, a BGProcessingTask is scheduled so iOS
+/// can continue nudging the download while the device is on Wi-Fi and charging.
 @MainActor
 final class PhotogrammetryAssetManager: ObservableObject {
 
@@ -25,13 +26,28 @@ final class PhotogrammetryAssetManager: ObservableObject {
     @Published var assetState: PhotogrammetryAssetState = .unknown
     @Published var elapsedSeconds: Int = 0
 
-    nonisolated private static let readyKey    = "aq_photogrammetry_asset_ready"
+    nonisolated static let bgTaskID    = "com.accuquote.scan.asset-download"
+    nonisolated private static let readyKey = "aq_photogrammetry_asset_ready"
     private static let pollInterval: TimeInterval = 1
 
     private var pollTimer:   Timer?
     private var triggerTask: Task<Void, Never>?
 
     private init() {}
+
+    // MARK: - Registration (call once at app launch, before app becomes active)
+
+    /// Register the BGProcessingTask handler. Must be called before the app
+    /// finishes launching — i.e. from App.init() or AppDelegate.
+    nonisolated static func registerBackgroundTask() {
+        BGTaskScheduler.shared.register(
+            forTaskWithIdentifier: bgTaskID,
+            using: nil
+        ) { task in
+            guard let task = task as? BGProcessingTask else { return }
+            Self.handleBackgroundTask(task)
+        }
+    }
 
     // MARK: - Public API
 
@@ -41,12 +57,10 @@ final class PhotogrammetryAssetManager: ObservableObject {
             assetState = .unsupported
             return
         }
-        // Already confirmed ready
         if UserDefaults.standard.bool(forKey: Self.readyKey) {
             assetState = .ready
             return
         }
-        // Already present on this device right now
         if PhotogrammetrySession.isSupported {
             markReady()
             return
@@ -54,9 +68,83 @@ final class PhotogrammetryAssetManager: ObservableObject {
         beginDownloadTrigger()
     }
 
+    /// Call when the app moves to the background so iOS can continue the download.
+    func scheduleBackgroundTaskIfNeeded() {
+        guard assetState == .downloading else { return }
+        let request = BGProcessingTaskRequest(identifier: Self.bgTaskID)
+        request.requiresNetworkConnectivity = true
+        request.requiresExternalPower = false   // allow on battery too
+        request.earliestBeginDate = Date(timeIntervalSinceNow: 10)
+        try? BGTaskScheduler.shared.submit(request)
+    }
+
+    /// Call when the app returns to the foreground.
+    func resumeForegroundPolling() {
+        guard #available(iOS 17.0, *) else { return }
+        guard assetState == .downloading else { return }
+        // Re-check immediately — the BG task may have completed the download
+        if PhotogrammetrySession.isSupported {
+            markReady()
+            return
+        }
+        startPolling()
+    }
+
     var isReady: Bool { assetState == .ready }
 
-    // MARK: - Download trigger
+    // MARK: - Background task handler (nonisolated — called by BGTaskScheduler)
+
+    private nonisolated static func handleBackgroundTask(_ task: BGProcessingTask) {
+        // Give ourselves up to 30s of background time to nudge the download
+        let work = Task.detached(priority: .userInitiated) {
+            guard #available(iOS 17.0, *) else { task.setTaskCompleted(success: true); return }
+
+            // Check if it already completed while we were suspended
+            if PhotogrammetrySession.isSupported {
+                UserDefaults.standard.set(true, forKey: readyKey)
+                task.setTaskCompleted(success: true)
+                return
+            }
+
+            // Re-trigger the session init to keep the asset download alive
+            let tmp = FileManager.default.temporaryDirectory
+                .appendingPathComponent("aq_pg_bg_trigger")
+            try? FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
+            _ = try? PhotogrammetrySession(input: tmp)
+            try? FileManager.default.removeItem(at: tmp)
+
+            // Wait up to 25s polling, then yield back to iOS
+            for _ in 0..<25 {
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+                if PhotogrammetrySession.isSupported {
+                    UserDefaults.standard.set(true, forKey: readyKey)
+                    task.setTaskCompleted(success: true)
+                    return
+                }
+            }
+
+            // Not done yet — schedule another background run
+            let request = BGProcessingTaskRequest(identifier: bgTaskID)
+            request.requiresNetworkConnectivity = true
+            request.requiresExternalPower = false
+            request.earliestBeginDate = Date(timeIntervalSinceNow: 60)
+            try? BGTaskScheduler.shared.submit(request)
+
+            task.setTaskCompleted(success: false)
+        }
+
+        task.expirationHandler = {
+            work.cancel()
+            // Reschedule so iOS tries again later
+            let request = BGProcessingTaskRequest(identifier: bgTaskID)
+            request.requiresNetworkConnectivity = true
+            request.requiresExternalPower = false
+            request.earliestBeginDate = Date(timeIntervalSinceNow: 60)
+            try? BGTaskScheduler.shared.submit(request)
+        }
+    }
+
+    // MARK: - Foreground trigger & polling
 
     @available(iOS 17.0, *)
     private func beginDownloadTrigger() {
@@ -64,18 +152,11 @@ final class PhotogrammetryAssetManager: ObservableObject {
         assetState = .downloading
         elapsedSeconds = 0
 
-        // Calling PhotogrammetrySession(input:) — even on an empty/invalid path —
-        // is sufficient to cause iOS to queue the MobileAsset download.
-        // We use .userInitiated so iOS treats it as a foreground request,
-        // not a deferred background task, which gives it higher download priority.
         triggerTask = Task.detached(priority: .userInitiated) {
             let tmp = FileManager.default.temporaryDirectory
                 .appendingPathComponent("aq_pg_trigger")
             try? FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
             _ = try? PhotogrammetrySession(input: tmp)
-            // Re-trigger every 30s while still downloading — keeps the asset
-            // request alive if iOS de-prioritises it in the background.
-            try? await Task.sleep(nanoseconds: 30_000_000_000)
             try? FileManager.default.removeItem(at: tmp)
         }
 
@@ -105,9 +186,10 @@ final class PhotogrammetryAssetManager: ObservableObject {
     private func markReady() {
         UserDefaults.standard.set(true, forKey: Self.readyKey)
         assetState = .ready
+        pollTimer?.invalidate(); pollTimer = nil
+        triggerTask?.cancel(); triggerTask = nil
     }
 
-    /// Retry trigger — e.g. user tapped "Try again" after a long wait
     func retry() {
         guard #available(iOS 17.0, *) else { return }
         triggerTask?.cancel(); triggerTask = nil
@@ -116,7 +198,6 @@ final class PhotogrammetryAssetManager: ObservableObject {
         beginDownloadTrigger()
     }
 
-    /// Remove persisted flag (for testing/reset purposes)
     func resetReadyFlag() {
         UserDefaults.standard.removeObject(forKey: Self.readyKey)
         assetState = .unknown

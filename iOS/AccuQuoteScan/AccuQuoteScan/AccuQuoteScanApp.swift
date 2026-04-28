@@ -1,10 +1,6 @@
 import SwiftUI
 
 // ── Web app URL ───────────────────────────────────────────────────────────────
-// Change this one constant to switch between local dev and production.
-// Local testing:  "http://localhost:3000"   (run: node server/index.js)
-// Render staging: "https://accuquote-YOURNAME.onrender.com"
-// Production:     "https://accuquote.co.uk"  (once custom domain is set)
 let WEB_APP_BASE_URL = "http://localhost:3000"
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -12,10 +8,12 @@ let WEB_APP_BASE_URL = "http://localhost:3000"
 struct AccuQuoteScanApp: App {
 
     @StateObject private var assetManager = PhotogrammetryAssetManager.shared
+    @Environment(\.scenePhase) private var scenePhase
 
     init() {
-        // Trigger the OTA ML asset download as early as possible — before
-        // the first frame renders — so the download starts immediately on launch.
+        // Must be registered before the app finishes launching
+        PhotogrammetryAssetManager.registerBackgroundTask()
+        // Trigger the download as early as possible
         Task { @MainActor in
             PhotogrammetryAssetManager.shared.prepareAsset()
         }
@@ -25,9 +23,21 @@ struct AccuQuoteScanApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(assetManager)
-                .onOpenURL { _ in
-                    // Deep link handler: accuquote://scan
-                }
+                .onOpenURL { _ in }
+        }
+        .onChange(of: scenePhase) { phase in
+            switch phase {
+            case .background:
+                // Schedule a BGProcessingTask so the download can continue
+                // even when the app is closed or the screen is locked
+                assetManager.scheduleBackgroundTaskIfNeeded()
+            case .active:
+                // App came back to foreground — resume polling in case
+                // the background task completed the download
+                assetManager.resumeForegroundPolling()
+            default:
+                break
+            }
         }
     }
 }
