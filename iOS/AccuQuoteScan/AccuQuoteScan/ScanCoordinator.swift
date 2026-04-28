@@ -29,11 +29,16 @@ enum ScanMethod {
     }
 
     /// Detect best available method on this device.
-    /// PhotogrammetrySession is excluded: it requires a large ML asset downloaded
-    /// OTA by iOS which is often absent, causing LockNoWaitNoDownloadedAsset errors.
+    /// Photogrammetry is only selected when the OTA ML asset is confirmed ready
+    /// (stored in UserDefaults by PhotogrammetryAssetManager after a successful check).
     static func best() -> ScanMethod {
         if RoomCaptureSession.isSupported {
             return .lidar
+        }
+        let assetReady = UserDefaults.standard.bool(
+            forKey: "aq_photogrammetry_asset_ready")
+        if assetReady {
+            return .photogrammetry
         }
         return .arPlanes
     }
@@ -107,7 +112,8 @@ final class ScanCoordinator: ObservableObject {
     @Published var scanProgress: Float = 0.0
     @Published var photoCount: Int = 0
 
-    let scanMethod: ScanMethod = ScanMethod.best()
+    /// Re-evaluated each time — upgrades to .photogrammetry once the OTA asset lands.
+    var scanMethod: ScanMethod { ScanMethod.best() }
 
     // LiDAR
     private var lidarSession: RoomCaptureSession?

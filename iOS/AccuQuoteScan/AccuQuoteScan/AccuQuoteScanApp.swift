@@ -10,12 +10,22 @@ let WEB_APP_BASE_URL = "http://localhost:3000"
 
 @main
 struct AccuQuoteScanApp: App {
+
+    @StateObject private var assetManager = PhotogrammetryAssetManager.shared
+
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .onOpenURL { url in
+                .environmentObject(assetManager)
+                .onAppear {
+                    // Kick off OTA asset download in the background.
+                    // On first launch this triggers iOS to fetch the ML model.
+                    // On subsequent launches it returns immediately if already ready.
+                    assetManager.prepareAsset()
+                }
+                .onOpenURL { _ in
                     // Deep link handler: accuquote://scan
-                    // The ContentView observes ScanCoordinator so no extra work needed here
+                    // ContentView observes ScanCoordinator — no extra work needed
                 }
         }
     }
