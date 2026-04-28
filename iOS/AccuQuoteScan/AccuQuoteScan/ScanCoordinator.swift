@@ -24,9 +24,12 @@ struct RoomDimensions {
     ///
     /// UPDATE baseURL below to match your live domain once deployed.
     var returnURL: URL? {
-        // ── Change this to your live domain when deployed ──
-        let baseURL = "http://localhost:3000"
-        // ──────────────────────────────────────────────────
+        // ── Set this to your Render URL once deployed ──────────────────────
+        // Format: "https://accuquote.onrender.com"  (no trailing slash)
+        // For local testing with Xcode, keep as "http://localhost:3000"
+        //   and run: node server/index.js  in the AccuQuote project folder
+        let baseURL = WEB_APP_BASE_URL
+        // ──────────────────────────────────────────────────────────────────
 
         var components = URLComponents(string: baseURL)
         components?.fragment = "scan-result?length=\(lengthStr)&width=\(widthStr)&height=\(heightStr)&doors=\(doorCount)&windows=\(windowCount)&roomType=\(roomType)"
