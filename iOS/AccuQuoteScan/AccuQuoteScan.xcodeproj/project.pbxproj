@@ -12,6 +12,9 @@
 		A103 /* ScanCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A003 /* ScanCoordinator.swift */; };
 		A104 /* Views.swift in Sources */ = {isa = PBXBuildFile; fileRef = A004 /* Views.swift */; };
 		A105 /* RoomPlan.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A005 /* RoomPlan.framework */; };
+		A106 /* RealityKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A007 /* RealityKit.framework */; };
+		A107 /* ARKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A008 /* ARKit.framework */; };
+		A108 /* SceneKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A009 /* SceneKit.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -20,6 +23,9 @@
 		A003 /* ScanCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanCoordinator.swift; sourceTree = "<group>"; };
 		A004 /* Views.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views.swift; sourceTree = "<group>"; };
 		A005 /* RoomPlan.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = RoomPlan.framework; path = System/Library/Frameworks/RoomPlan.framework; sourceTree = SDKROOT; };
+		A007 /* RealityKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = RealityKit.framework; path = System/Library/Frameworks/RealityKit.framework; sourceTree = SDKROOT; };
+		A008 /* ARKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ARKit.framework; path = System/Library/Frameworks/ARKit.framework; sourceTree = SDKROOT; };
+		A009 /* SceneKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SceneKit.framework; path = System/Library/Frameworks/SceneKit.framework; sourceTree = SDKROOT; };
 		A006 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A010 /* AccuQuoteScan.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AccuQuoteScan.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -30,6 +36,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				A105 /* RoomPlan.framework in Frameworks */,
+				A106 /* RealityKit.framework in Frameworks */,
+				A107 /* ARKit.framework in Frameworks */,
+				A108 /* SceneKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -61,6 +70,9 @@
 			isa = PBXGroup;
 			children = (
 				A005 /* RoomPlan.framework */,
+				A007 /* RealityKit.framework */,
+				A008 /* ARKit.framework */,
+				A009 /* SceneKit.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";

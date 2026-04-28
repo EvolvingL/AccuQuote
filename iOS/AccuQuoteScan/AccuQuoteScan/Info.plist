@@ -23,7 +23,7 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>AccuQuote Scan needs camera access to measure room dimensions using LiDAR.</string>
+	<string>AccuQuote Scan uses the camera to measure room dimensions using LiDAR, AI depth, or AR plane detection.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
