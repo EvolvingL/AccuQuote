@@ -1,10 +1,10 @@
 import SwiftUI
 
 // ── API configuration ─────────────────────────────────────────────────────────
-// NOTE: rotate this key before any public release — see memory/project_pre_production_checklist.md
-let ANTHROPIC_API_KEY = "YOUR_ANTHROPIC_API_KEY_HERE"
+// ANTHROPIC_API_KEY is defined in APIKeys.swift (gitignored).
+// Copy APIKeys.swift.example → APIKeys.swift and fill in your key.
 let ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
-// Legacy — kept so QuestionEngine compiles; question gen now also calls Anthropic directly
+// Legacy — kept so QuestionEngine compiles
 let WEB_APP_BASE_URL  = "https://api.anthropic.com"
 // ─────────────────────────────────────────────────────────────────────────────
 

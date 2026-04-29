@@ -1,0 +1,3 @@
+// Copy this file to APIKeys.swift (gitignored) and fill in your key.
+// Get your key from https://console.anthropic.com
+let ANTHROPIC_API_KEY = "YOUR_ANTHROPIC_API_KEY_HERE"

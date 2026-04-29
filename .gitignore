@@ -1,4 +1,7 @@
 node_modules/
+# iOS secrets — never commit
+iOS/AccuQuoteScan/AccuQuoteScan/Secrets.xcconfig
+iOS/AccuQuoteScan/AccuQuoteScan/APIKeys.swift
 .env
 .env.local
 .env.production
