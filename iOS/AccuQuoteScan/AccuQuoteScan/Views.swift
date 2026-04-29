@@ -124,18 +124,14 @@ struct ProfileGateView: View {
                     .padding(.top, 24)
                     .transition(.scale(scale: 0.92).combined(with: .opacity))
             } else {
-                // Accuracy target explainer
-                VStack(spacing: 6) {
-                    Text("Answer questions until your AI is accurate enough to quote.")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundColor(AQ.ink)
-                        .multilineTextAlignment(.center)
-                        .lineSpacing(4)
-                    Text("Scanning unlocks at \(profileUnlockThreshold)%.")
-                        .font(AQ.body(13))
-                        .foregroundColor(AQ.secondary)
-                }
-                .padding(.horizontal, 32)
+                // Why-this-step explainer
+                StepWhyCard(
+                    icon: "sparkles",
+                    color: AQ.blue,
+                    headline: "Step 1 of 3 — Tell your AI about your business",
+                    detail: "Without this, the AI quotes at industry-average rates — which are almost certainly wrong for you. Answer each question so it knows your actual day rate, material markup, VAT status, and how you price different jobs. The scan unlocks at \(profileUnlockThreshold)%."
+                )
+                .padding(.horizontal, 24)
                 .padding(.top, 20)
                 .padding(.bottom, 4)
             }
@@ -334,6 +330,44 @@ private struct UnlockBanner: View {
     }
 }
 
+// MARK: - Step Why Card
+// Explains to the user why the current step exists and what it does for them.
+
+private struct StepWhyCard: View {
+    let icon: String
+    let color: Color
+    let headline: String
+    let detail: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(color.opacity(0.09))
+                    .frame(width: 36, height: 36)
+                Image(systemName: icon)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(color)
+            }
+            VStack(alignment: .leading, spacing: 4) {
+                Text(headline)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(color)
+                    .kerning(0.2)
+                Text(detail)
+                    .font(.system(size: 13))
+                    .foregroundColor(AQ.secondary)
+                    .lineSpacing(4)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(14)
+        .background(color.opacity(0.04))
+        .cornerRadius(12)
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(color.opacity(0.12), lineWidth: 1))
+    }
+}
+
 // MARK: - Ready View
 
 struct ReadyView: View {
@@ -420,6 +454,16 @@ struct ReadyView: View {
                 .multilineTextAlignment(.center)
                 .lineSpacing(5)
                 .padding(.horizontal, 44)
+                .padding(.bottom, 16)
+
+            // Why this step matters
+            StepWhyCard(
+                icon: "cube.transparent",
+                color: AQ.blue,
+                headline: "Step 2 of 3 — Measure the room",
+                detail: "The scan gives the AI the exact floor area, wall area, and ceiling height it needs to calculate how much material and how many labour days your quote should include. No guessing — every dimension feeds directly into the numbers."
+            )
+            .padding(.horizontal, 24)
 
             // Non-LiDAR: show method options inline
             if !isLiDAR {
@@ -1134,11 +1178,11 @@ struct WelcomeBanner: View {
             .onAppear { pulse = true }
 
             VStack(alignment: .leading, spacing: 6) {
-                Text("The more you share, the more accurate every quote.")
+                Text("The more your AI knows, the more money you make per quote.")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(AQ.ink)
                     .lineSpacing(3)
-                Text("Answer each question so the AI knows your exact rates, materials, and how you price jobs. Tradesmen who complete this earn back their subscription in their first quote.")
+                Text("Every answer trains your AI to use your actual day rate, markup, and terms — not guesses. Tradespeople who complete the profile typically recoup their subscription cost on the very first quote they send.")
                     .font(AQ.body(13))
                     .foregroundColor(AQ.secondary)
                     .lineSpacing(4)
@@ -2042,7 +2086,16 @@ struct JobDescriptionView: View {
 
                         Text("Describe the job by voice. The more detail, the more accurate the quote.")
                             .font(AQ.body(15)).foregroundColor(AQ.secondary)
-                            .lineSpacing(4).padding(.horizontal, 24).padding(.bottom, 32)
+                            .lineSpacing(4).padding(.horizontal, 24).padding(.bottom, 16)
+
+                        // Why this step matters
+                        StepWhyCard(
+                            icon: "waveform",
+                            color: AQ.blue,
+                            headline: "Step 3 of 3 — Describe the job",
+                            detail: "The AI uses your description to figure out scope: how many labour days, which materials, whether there's prep or waste removal. Say things like 'full bathroom refit, remove old suite, tile floor and walls' — the more specific you are, the tighter the numbers."
+                        )
+                        .padding(.horizontal, 24).padding(.bottom, 28)
 
                         // ── Voice waveform / transcript area ─────────────────
                         VoiceInputCard(
