@@ -208,6 +208,32 @@ final class QuestionEngine: ObservableObject {
         triggerGenerationIfNeeded()
     }
 
+    // MARK: - Demo / testing
+
+    /// Bulk-loads a realistic demo profile (electrician, Manchester).
+    /// Use during testing to bypass the question flow instantly.
+    func loadDemoProfile() {
+        let demoAnswers: [String: String] = [
+            "trade":            "Electrician",
+            "region":           "Manchester",
+            "day_rate":         "£320/day, £45/hour for callouts",
+            "team_size":        "Just me, occasionally me + 1 apprentice on larger jobs",
+            "material_markup":  "20% on all materials",
+            "vat":              "Yes — VAT registered, 20% added to all quotes",
+            "what_included":    "Labour and materials included unless stated otherwise",
+            "waste_disposal":   "I include disposal for small jobs; skip hire charged separately on large refurbs",
+        ]
+        for i in questions.indices {
+            if let ans = demoAnswers[questions[i].id] {
+                questions[i].answer = ans
+            }
+        }
+        profile.answers = questions
+        currentIndex = questions.firstIndex(where: { !$0.isAnswered }) ?? questions.count
+        saveProfile()
+        triggerGenerationIfNeeded()
+    }
+
     // MARK: - Document upload
 
     func addDocument(_ doc: ProfileDocument) {

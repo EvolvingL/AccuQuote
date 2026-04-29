@@ -222,15 +222,33 @@ struct ProfileGateView: View {
                     .padding(.horizontal, 24)
                     .onAppear { unlockPulse = true }
                 } else {
-                    // Add a document shortcut
-                    Button { showDocumentSheet = true } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: "doc.badge.plus")
-                                .font(.system(size: 14, weight: .medium))
-                            Text("Upload a rate card to boost accuracy faster")
-                                .font(.system(size: 14, weight: .medium))
+                    VStack(spacing: 12) {
+                        // Add a document shortcut
+                        Button { showDocumentSheet = true } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "doc.badge.plus")
+                                    .font(.system(size: 14, weight: .medium))
+                                Text("Upload a rate card to boost accuracy faster")
+                                    .font(.system(size: 14, weight: .medium))
+                            }
+                            .foregroundColor(AQ.blue)
                         }
-                        .foregroundColor(AQ.blue)
+
+                        // ── DEMO BUTTON ─────────────────────────────────────
+                        Button {
+                            withAnimation { engine.loadDemoProfile() }
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "flask")
+                                    .font(.system(size: 13, weight: .medium))
+                                Text("Use Demo Profile (testing)")
+                                    .font(.system(size: 13, weight: .medium))
+                            }
+                            .foregroundColor(AQ.secondary)
+                            .padding(.horizontal, 16).padding(.vertical, 10)
+                            .background(AQ.fill)
+                            .cornerRadius(10)
+                        }
                     }
                     .padding(.horizontal, 24)
                 }
@@ -495,11 +513,25 @@ struct ReadyView: View {
                         .font(AQ.body(12))
                         .foregroundColor(AQ.secondary.opacity(0.7))
                         .padding(.top, 12)
-                        .padding(.bottom, 36)
                 }
-            } else {
-                Color.clear.frame(height: 36)
             }
+
+            // ── DEMO BUTTON ──────────────────────────────────────────────────
+            Button {
+                coordinator.submitManual(length: 4.8, width: 3.6, height: 2.4)
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "flask")
+                        .font(.system(size: 13, weight: .medium))
+                    Text("Use Demo Room (testing)")
+                        .font(.system(size: 13, weight: .medium))
+                }
+                .foregroundColor(AQ.secondary)
+                .padding(.horizontal, 16).padding(.vertical, 10)
+                .background(AQ.fill)
+                .cornerRadius(10)
+            }
+            .padding(.bottom, 36)
         }
         .background(Color.white)
         .sheet(isPresented: $showOnboarding) {
@@ -2103,6 +2135,24 @@ struct JobDescriptionView: View {
                             transcript: $jobDescription
                         )
                         .padding(.horizontal, 24).padding(.bottom, 20)
+
+                        // ── DEMO BUTTON ──────────────────────────────────────
+                        Button {
+                            jobDescription = "Full rewire of a 3-bed semi. Strip out all old wiring, first and second fix throughout. 14 double sockets, 10 single sockets, 12 LED downlights in kitchen and bathrooms, new consumer unit with RCDs, outside socket and PIR flood light. Old plaster in good condition — no re-plastering needed. Customer has already cleared the rooms."
+                            showTypeInput = true
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "flask")
+                                    .font(.system(size: 13, weight: .medium))
+                                Text("Use Demo Description (testing)")
+                                    .font(.system(size: 13, weight: .medium))
+                            }
+                            .foregroundColor(AQ.secondary)
+                            .padding(.horizontal, 16).padding(.vertical, 10)
+                            .background(AQ.fill)
+                            .cornerRadius(10)
+                        }
+                        .padding(.horizontal, 24).padding(.bottom, 12)
 
                         // ── Typed fallback ───────────────────────────────────
                         if showTypeInput || !jobDescription.isEmpty {
