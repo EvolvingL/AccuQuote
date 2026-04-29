@@ -1562,7 +1562,7 @@ struct ProcessingView: View {
 struct ResultView: View {
     let result: RoomDimensions
     @ObservedObject var coordinator: ScanCoordinator
-    @State private var sent = false
+    @State private var showJobDescription = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -1573,8 +1573,8 @@ struct ResultView: View {
                     Text("AccuQuote")
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundColor(AQ.ink)
-                    Text("Scan complete")
-                        .font(.system(size: 12, weight: .regular))
+                    Text("Room measured")
+                        .font(.system(size: 12))
                         .foregroundColor(AQ.green)
                 }
                 Spacer()
@@ -1593,8 +1593,6 @@ struct ResultView: View {
 
             // Dimensions card
             VStack(spacing: 0) {
-
-                // Card header
                 HStack {
                     Text("Room Dimensions")
                         .font(.system(size: 11, weight: .semibold))
@@ -1613,13 +1611,10 @@ struct ResultView: View {
                             .foregroundColor(Color(hex: result.scanMethod.accuracyHex))
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
-                .padding(.bottom, 20)
+                .padding(.horizontal, 20).padding(.top, 20).padding(.bottom, 20)
 
                 Divider().background(AQ.rule).padding(.horizontal, 20)
 
-                // L / W / H
                 HStack(spacing: 0) {
                     DimensionCell(label: "Length", value: result.lengthStr, unit: "m")
                     Divider().frame(height: 60).background(AQ.rule)
@@ -1631,52 +1626,43 @@ struct ResultView: View {
 
                 Divider().background(AQ.rule).padding(.horizontal, 20)
 
-                // Stats row
                 HStack(spacing: 0) {
-                    StatCell(label: "Floor area", value: String(format: "%.1f m²", result.floorArea))
+                    StatCell(label: "Floor area", value: "\(result.floorAreaStr) m²")
                     Divider().frame(height: 44).background(AQ.rule)
-                    StatCell(label: "Doors",      value: "\(result.doorCount)")
+                    StatCell(label: "Doors",    value: "\(result.doorCount)")
                     Divider().frame(height: 44).background(AQ.rule)
-                    StatCell(label: "Windows",    value: "\(result.windowCount)")
+                    StatCell(label: "Windows",  value: "\(result.windowCount)")
                 }
-                .padding(.vertical, 4)
-                .padding(.bottom, 8)
+                .padding(.vertical, 4).padding(.bottom, 8)
             }
             .background(Color.white)
             .cornerRadius(16)
-            .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(AQ.rule, lineWidth: 1)
-            )
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(AQ.rule, lineWidth: 1))
             .padding(.horizontal, 24)
 
             Spacer()
 
-            // CTA
+            // CTAs
             VStack(spacing: 0) {
                 Divider().background(AQ.rule).padding(.bottom, 20)
 
-                Button {
-                    coordinator.sendResultToAccuQuote(result: result)
-                    withAnimation(.easeInOut(duration: 0.2)) { sent = true }
-                } label: {
+                Button { showJobDescription = true } label: {
                     HStack(spacing: 8) {
-                        Image(systemName: sent ? "checkmark" : "arrow.right.circle.fill")
+                        Image(systemName: "doc.text")
                             .font(.system(size: 16, weight: .semibold))
-                        Text(sent ? "Sent to AccuQuote" : "Send to AccuQuote")
+                        Text("Describe the Job")
                             .font(.system(size: 17, weight: .semibold))
                     }
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 17)
-                    .background(sent ? AQ.green : AQ.blue)
+                    .background(AQ.blue)
                     .cornerRadius(14)
                 }
                 .padding(.horizontal, 24)
-                .disabled(sent)
 
                 Button { coordinator.reset() } label: {
-                    Text("Scan Again")
+                    Text("Measure Again")
                         .font(.system(size: 15, weight: .medium))
                         .foregroundColor(AQ.secondary)
                         .frame(maxWidth: .infinity)
@@ -1687,6 +1673,603 @@ struct ResultView: View {
             }
         }
         .background(AQ.fill)
+        .fullScreenCover(isPresented: $showJobDescription) {
+            JobDescriptionView(result: result, coordinator: coordinator)
+        }
+    }
+}
+
+// MARK: - Job Description View
+
+struct JobDescriptionView: View {
+    let result: RoomDimensions
+    @ObservedObject var coordinator: ScanCoordinator
+    @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var questionEngine: QuestionEngine
+
+    @State private var jobDescription = ""
+    @State private var customerName = ""
+    @State private var showQuote = false
+    @FocusState private var descFocused: Bool
+
+    var canProceed: Bool { jobDescription.trimmingCharacters(in: .whitespaces).count > 10 }
+
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+
+                    // Room summary pill
+                    HStack(spacing: 8) {
+                        Image(systemName: "cube.transparent")
+                            .font(.system(size: 12))
+                            .foregroundColor(AQ.blue)
+                        Text("\(result.lengthStr) × \(result.widthStr) × \(result.heightStr)m  ·  \(result.floorAreaStr)m²  ·  \(result.roomType.capitalized)")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(AQ.blue)
+                    }
+                    .padding(.horizontal, 12).padding(.vertical, 7)
+                    .background(AQ.blue.opacity(0.07))
+                    .cornerRadius(20)
+                    .padding(.horizontal, 24).padding(.top, 24).padding(.bottom, 28)
+
+                    // Instruction
+                    Text("What needs doing?")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundColor(AQ.ink)
+                        .padding(.horizontal, 24).padding(.bottom, 8)
+
+                    Text("Describe the work in plain English. The more detail you give, the more accurate the quote.")
+                        .font(AQ.body(15))
+                        .foregroundColor(AQ.secondary)
+                        .lineSpacing(4)
+                        .padding(.horizontal, 24).padding(.bottom, 24)
+
+                    // Description input
+                    ZStack(alignment: .topLeading) {
+                        if jobDescription.isEmpty {
+                            Text("e.g. Replace consumer unit, add 3 double sockets in living room, install LED downlights in kitchen — customer supplying fittings. Old wiring throughout, allow for remedials.")
+                                .font(.system(size: 15))
+                                .foregroundColor(AQ.secondary.opacity(0.6))
+                                .padding(16)
+                                .allowsHitTesting(false)
+                        }
+                        TextEditor(text: $jobDescription)
+                            .font(.system(size: 15))
+                            .foregroundColor(AQ.ink)
+                            .focused($descFocused)
+                            .frame(minHeight: 160)
+                            .padding(12)
+                            .scrollContentBackground(.hidden)
+                    }
+                    .background(AQ.fill)
+                    .cornerRadius(14)
+                    .overlay(RoundedRectangle(cornerRadius: 14)
+                        .stroke(descFocused ? AQ.blue : AQ.rule, lineWidth: 1)
+                        .animation(.easeInOut(duration: 0.15), value: descFocused))
+                    .padding(.horizontal, 24).padding(.bottom, 20)
+
+                    // Optional customer name
+                    FieldLabel("Customer name (optional)")
+                    TextField("e.g. Mr Smith — 14 Oak Street", text: $customerName)
+                        .font(.system(size: 16))
+                        .padding(.horizontal, 16).padding(.vertical, 14)
+                        .background(AQ.fill).cornerRadius(12)
+                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(AQ.rule, lineWidth: 1))
+                        .padding(.horizontal, 24).padding(.bottom, 32)
+
+                    Color.clear.frame(height: 100) // keyboard clearance
+                }
+            }
+            .background(Color.white)
+            .navigationTitle("Job Details")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Back") { dismiss() }
+                        .foregroundColor(AQ.secondary)
+                }
+            }
+            .safeAreaInset(edge: .bottom) {
+                VStack(spacing: 0) {
+                    Divider().background(AQ.rule)
+                    Button {
+                        descFocused = false
+                        showQuote = true
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 15, weight: .semibold))
+                            Text("Generate Quote")
+                                .font(.system(size: 17, weight: .semibold))
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 17)
+                        .background(canProceed ? AQ.blue : AQ.blue.opacity(0.3))
+                        .cornerRadius(14)
+                        .animation(.easeInOut(duration: 0.15), value: canProceed)
+                    }
+                    .disabled(!canProceed)
+                    .padding(.horizontal, 24).padding(.vertical, 16)
+                    .background(Color.white)
+                }
+            }
+        }
+        .fullScreenCover(isPresented: $showQuote) {
+            QuoteView(
+                result: result,
+                jobDescription: jobDescription,
+                customerName: customerName,
+                coordinator: coordinator
+            )
+            .environmentObject(questionEngine)
+        }
+        .onTapGesture { descFocused = false }
+    }
+}
+
+// MARK: - Quote Line Item model
+
+struct QuoteLineItem: Identifiable {
+    let id = UUID()
+    let description: String
+    let qty: Double
+    let unit: String
+    let unitPrice: Double
+    var total: Double { qty * unitPrice }
+}
+
+struct GeneratedQuote {
+    let labourDays: Double
+    let labourRate: Double
+    let labourTotal: Double
+    let items: [QuoteLineItem]
+    let materialsTotal: Double
+    let subtotal: Double
+    let vatRate: Double
+    let vatAmount: Double
+    let grandTotal: Double
+    let notes: String
+    let customerName: String
+    let jobDescription: String
+}
+
+// MARK: - Quote View
+
+struct QuoteView: View {
+    let result: RoomDimensions
+    let jobDescription: String
+    let customerName: String
+    @ObservedObject var coordinator: ScanCoordinator
+    @EnvironmentObject var questionEngine: QuestionEngine
+    @Environment(\.dismiss) var dismiss
+
+    @State private var quote: GeneratedQuote?
+    @State private var isLoading = true
+    @State private var errorMessage: String?
+    @State private var loadingStep = 0
+
+    private let loadingSteps = [
+        "Reading room dimensions…",
+        "Analysing job description…",
+        "Calculating materials…",
+        "Applying your rates…",
+        "Building quote…",
+    ]
+
+    var body: some View {
+        NavigationView {
+            Group {
+                if isLoading {
+                    QuoteLoadingView(step: loadingStep, steps: loadingSteps)
+                } else if let error = errorMessage {
+                    QuoteErrorView(message: error) {
+                        errorMessage = nil
+                        isLoading = true
+                        Task { await generateQuote() }
+                    }
+                } else if let quote = quote {
+                    QuoteResultView(quote: quote, result: result) {
+                        // Start over
+                        dismiss()
+                        coordinator.reset()
+                    }
+                }
+            }
+            .navigationTitle("Quote")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    if !isLoading {
+                        Button("Back") { dismiss() }
+                            .foregroundColor(AQ.secondary)
+                    }
+                }
+            }
+        }
+        .task { await generateQuote() }
+    }
+
+    private func generateQuote() async {
+        isLoading = true
+        errorMessage = nil
+
+        // Animate through loading steps
+        let stepTask = Task {
+            for i in 0..<loadingSteps.count {
+                try? await Task.sleep(nanoseconds: 700_000_000)
+                await MainActor.run { loadingStep = i }
+            }
+        }
+
+        let context = questionEngine.claudeContext()
+        let floorArea = result.floorArea
+        let wallArea  = result.wallArea
+
+        let prompt = """
+        You are an expert quoting assistant for a UK tradesperson.
+
+        \(context.isEmpty ? "" : context + "\n\n")
+        ROOM: \(result.roomType)
+        DIMENSIONS: \(result.lengthStr)m × \(result.widthStr)m × \(result.heightStr)m
+        FLOOR AREA: \(String(format: "%.1f", floorArea))m²
+        WALL AREA: \(String(format: "%.1f", wallArea))m²
+        DOORS: \(result.doorCount)   WINDOWS: \(result.windowCount)
+
+        JOB DESCRIPTION: \(jobDescription)
+
+        Produce a detailed, accurate quote. Use the tradesperson's actual rates from their profile above if available, otherwise use realistic UK market rates.
+
+        Respond with ONLY valid JSON, no markdown:
+        {
+          "labourDays": 2.0,
+          "labourRate": 280.0,
+          "items": [
+            { "description": "Item name", "qty": 1.0, "unit": "each", "unitPrice": 12.50 }
+          ],
+          "vatRate": 20,
+          "notes": "Any important notes, inclusions, exclusions"
+        }
+        """
+
+        guard let url = URL(string: "\(WEB_APP_BASE_URL)/api/claude") else {
+            stepTask.cancel()
+            await MainActor.run {
+                errorMessage = "Could not connect to AccuQuote. Check your network."
+                isLoading = false
+            }
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = 45
+
+        let body: [String: Any] = [
+            "model": "claude-haiku-4-5-20251001",
+            "max_tokens": 2048,
+            "messages": [["role": "user", "content": prompt]]
+        ]
+
+        do {
+            let bodyData = try JSONSerialization.data(withJSONObject: body)
+            request.httpBody = bodyData
+            let (data, _) = try await URLSession.shared.data(for: request)
+
+            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let content = json["content"] as? [[String: Any]],
+               let text = content.first?["text"] as? String,
+               let jsonStart = text.firstIndex(of: "{"),
+               let jsonEnd = text.lastIndex(of: "}") {
+                let slice = String(text[jsonStart...jsonEnd])
+                if let sliceData = slice.data(using: .utf8),
+                   let parsed = try? JSONSerialization.jsonObject(with: sliceData) as? [String: Any] {
+                    let q = buildQuote(from: parsed)
+                    stepTask.cancel()
+                    await MainActor.run { quote = q; isLoading = false }
+                    return
+                }
+            }
+            throw URLError(.cannotParseResponse)
+        } catch {
+            stepTask.cancel()
+            await MainActor.run {
+                errorMessage = "Failed to generate quote. Please check your connection and try again."
+                isLoading = false
+            }
+        }
+    }
+
+    private func buildQuote(from json: [String: Any]) -> GeneratedQuote {
+        let labourDays = (json["labourDays"] as? Double) ?? 1.0
+        let labourRate = (json["labourRate"] as? Double) ?? 280.0
+        let labourTotal = labourDays * labourRate
+        let vatRate = (json["vatRate"] as? Double) ?? 20.0
+        let notes = (json["notes"] as? String) ?? ""
+
+        var items: [QuoteLineItem] = []
+        if let rawItems = json["items"] as? [[String: Any]] {
+            for raw in rawItems {
+                let desc  = (raw["description"] as? String) ?? "Item"
+                let qty   = (raw["qty"] as? Double) ?? 1.0
+                let unit  = (raw["unit"] as? String) ?? "each"
+                let price = (raw["unitPrice"] as? Double) ?? 0.0
+                items.append(QuoteLineItem(description: desc, qty: qty, unit: unit, unitPrice: price))
+            }
+        }
+
+        let materialsTotal = items.reduce(0) { $0 + $1.total }
+        let subtotal = labourTotal + materialsTotal
+        let vatAmount = subtotal * (vatRate / 100)
+        let grandTotal = subtotal + vatAmount
+
+        return GeneratedQuote(
+            labourDays: labourDays, labourRate: labourRate, labourTotal: labourTotal,
+            items: items, materialsTotal: materialsTotal,
+            subtotal: subtotal, vatRate: vatRate, vatAmount: vatAmount, grandTotal: grandTotal,
+            notes: notes, customerName: customerName, jobDescription: jobDescription
+        )
+    }
+}
+
+// MARK: - Quote Loading View
+
+struct QuoteLoadingView: View {
+    let step: Int
+    let steps: [String]
+    @State private var pulse = false
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Spacer()
+
+            ZStack {
+                Circle().fill(AQ.blue.opacity(0.07)).frame(width: 100, height: 100)
+                    .scaleEffect(pulse ? 1.2 : 1.0)
+                    .animation(.easeInOut(duration: 1.4).repeatForever(autoreverses: true), value: pulse)
+                Circle().fill(AQ.blue.opacity(0.13)).frame(width: 72, height: 72)
+                Image(systemName: "sparkles")
+                    .font(.system(size: 26, weight: .light))
+                    .foregroundColor(AQ.blue)
+            }
+            .onAppear { pulse = true }
+            .padding(.bottom, 36)
+
+            Text("Building your quote")
+                .font(.system(size: 22, weight: .semibold))
+                .foregroundColor(AQ.ink)
+                .padding(.bottom, 10)
+
+            Text(step < steps.count ? steps[step] : "Almost done…")
+                .font(AQ.body(15))
+                .foregroundColor(AQ.secondary)
+                .animation(.easeInOut(duration: 0.3), value: step)
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.white)
+    }
+}
+
+// MARK: - Quote Error View
+
+struct QuoteErrorView: View {
+    let message: String
+    let onRetry: () -> Void
+    var body: some View {
+        VStack(spacing: 24) {
+            Spacer()
+            Image(systemName: "exclamationmark.circle")
+                .font(.system(size: 44, weight: .light))
+                .foregroundColor(AQ.secondary)
+            Text("Quote Failed")
+                .font(.system(size: 22, weight: .semibold)).foregroundColor(AQ.ink)
+            Text(message)
+                .font(AQ.body(15)).foregroundColor(AQ.secondary)
+                .multilineTextAlignment(.center).lineSpacing(4).padding(.horizontal, 40)
+            Spacer()
+            VStack(spacing: 0) {
+                Divider().background(AQ.rule).padding(.bottom, 20)
+                Button(action: onRetry) {
+                    Text("Try Again")
+                        .font(.system(size: 17, weight: .semibold)).foregroundColor(.white)
+                        .frame(maxWidth: .infinity).padding(.vertical, 17)
+                        .background(AQ.blue).cornerRadius(14)
+                }
+                .padding(.horizontal, 24).padding(.bottom, 36)
+            }
+        }
+        .background(Color.white)
+    }
+}
+
+// MARK: - Quote Result View
+
+struct QuoteResultView: View {
+    let quote: GeneratedQuote
+    let result: RoomDimensions
+    let onStartOver: () -> Void
+    @State private var shareText: String?
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+
+                // Grand total hero
+                VStack(spacing: 6) {
+                    Text("Total")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(AQ.secondary)
+                        .kerning(0.8)
+                        .textCase(.uppercase)
+                    Text("£\(Int(quote.grandTotal).formatted())")
+                        .font(.system(size: 52, weight: .bold, design: .rounded))
+                        .foregroundColor(AQ.ink)
+                    Text("inc. VAT")
+                        .font(AQ.body(13))
+                        .foregroundColor(AQ.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 36)
+                .background(AQ.fill)
+
+                Divider().background(AQ.rule)
+
+                // Labour
+                QuoteSectionHeader(title: "Labour")
+                QuoteRow(
+                    label: "\(String(format: "%.1f", quote.labourDays)) day\(quote.labourDays == 1 ? "" : "s") @ £\(Int(quote.labourRate))/day",
+                    value: "£\(Int(quote.labourTotal).formatted())",
+                    bold: false
+                )
+                Divider().background(AQ.rule).padding(.leading, 24)
+
+                // Materials
+                if !quote.items.isEmpty {
+                    QuoteSectionHeader(title: "Materials & Items")
+                    ForEach(quote.items) { item in
+                        QuoteRow(
+                            label: "\(item.description)\n\(formatQty(item.qty)) \(item.unit) × £\(String(format: "%.2f", item.unitPrice))",
+                            value: "£\(String(format: "%.2f", item.total))",
+                            bold: false,
+                            multiline: true
+                        )
+                        Divider().background(AQ.rule).padding(.leading, 24)
+                    }
+                }
+
+                // Totals
+                QuoteSectionHeader(title: "Summary")
+                QuoteRow(label: "Subtotal", value: "£\(Int(quote.subtotal).formatted())", bold: false)
+                Divider().background(AQ.rule).padding(.leading, 24)
+                QuoteRow(label: "VAT (\(Int(quote.vatRate))%)", value: "£\(String(format: "%.2f", quote.vatAmount))", bold: false)
+                Divider().background(AQ.rule).padding(.leading, 24)
+                QuoteRow(label: "Total", value: "£\(Int(quote.grandTotal).formatted())", bold: true)
+                Divider().background(AQ.rule)
+
+                // Notes
+                if !quote.notes.isEmpty {
+                    QuoteSectionHeader(title: "Notes & Inclusions")
+                    Text(quote.notes)
+                        .font(AQ.body(14))
+                        .foregroundColor(AQ.secondary)
+                        .lineSpacing(5)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 16)
+                    Divider().background(AQ.rule)
+                }
+
+                // Actions
+                VStack(spacing: 10) {
+                    // Share as text
+                    Button {
+                        shareText = buildShareText()
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "square.and.arrow.up")
+                                .font(.system(size: 15, weight: .semibold))
+                            Text("Share Quote")
+                                .font(.system(size: 17, weight: .semibold))
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity).padding(.vertical, 17)
+                        .background(AQ.blue).cornerRadius(14)
+                    }
+
+                    Button(action: onStartOver) {
+                        Text("Start New Quote")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(AQ.secondary)
+                            .frame(maxWidth: .infinity).padding(.vertical, 14)
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 24)
+                .padding(.bottom, 40)
+            }
+        }
+        .background(Color.white)
+        .sheet(item: Binding(
+            get: { shareText.map { ShareContent(text: $0) } },
+            set: { if $0 == nil { shareText = nil } }
+        )) { content in
+            ShareSheet(text: content.text)
+        }
+    }
+
+    private func formatQty(_ qty: Double) -> String {
+        qty == qty.rounded() ? "\(Int(qty))" : String(format: "%.1f", qty)
+    }
+
+    private func buildShareText() -> String {
+        var lines = ["QUOTE — AccuQuote"]
+        if !quote.customerName.isEmpty { lines.append("Customer: \(quote.customerName)") }
+        lines.append("Room: \(result.roomType.capitalized) \(result.lengthStr)×\(result.widthStr)×\(result.heightStr)m")
+        lines.append("Work: \(quote.jobDescription)")
+        lines.append("")
+        lines.append("Labour: £\(Int(quote.labourTotal))")
+        lines.append("Materials: £\(Int(quote.materialsTotal))")
+        lines.append("Subtotal: £\(Int(quote.subtotal))")
+        lines.append("VAT (\(Int(quote.vatRate))%): £\(String(format: "%.2f", quote.vatAmount))")
+        lines.append("TOTAL: £\(Int(quote.grandTotal)) inc. VAT")
+        if !quote.notes.isEmpty { lines.append("\nNotes: \(quote.notes)") }
+        lines.append("\nGenerated by AccuQuote")
+        return lines.joined(separator: "\n")
+    }
+}
+
+struct ShareContent: Identifiable {
+    let id = UUID()
+    let text: String
+}
+
+struct ShareSheet: UIViewControllerRepresentable {
+    let text: String
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: [text], applicationActivities: nil)
+    }
+    func updateUIViewController(_ vc: UIActivityViewController, context: Context) {}
+}
+
+// MARK: - Quote row components
+
+struct QuoteSectionHeader: View {
+    let title: String
+    var body: some View {
+        Text(title.uppercased())
+            .font(.system(size: 10, weight: .semibold))
+            .kerning(0.8)
+            .foregroundColor(AQ.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 24)
+            .padding(.top, 20)
+            .padding(.bottom, 4)
+    }
+}
+
+struct QuoteRow: View {
+    let label: String
+    let value: String
+    let bold: Bool
+    var multiline: Bool = false
+
+    var body: some View {
+        HStack(alignment: multiline ? .top : .center) {
+            Text(label)
+                .font(bold ? .system(size: 15, weight: .semibold) : AQ.body(15))
+                .foregroundColor(bold ? AQ.ink : AQ.label)
+                .lineSpacing(3)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Text(value)
+                .font(bold ? .system(size: 17, weight: .bold) : .system(size: 15, weight: .medium))
+                .foregroundColor(bold ? AQ.ink : AQ.label)
+                .monospacedDigit()
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 14)
     }
 }
 

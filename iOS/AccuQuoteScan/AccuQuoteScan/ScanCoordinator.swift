@@ -1,5 +1,4 @@
 import Foundation
-import UIKit
 import RoomPlan
 import ARKit
 import Combine
@@ -53,12 +52,8 @@ struct RoomDimensions {
     var lengthStr: String { String(format: "%.2f", length) }
     var widthStr:  String { String(format: "%.2f", width) }
     var heightStr: String { String(format: "%.2f", height) }
-
-    var returnURL: URL? {
-        var c = URLComponents(string: WEB_APP_BASE_URL)
-        c?.fragment = "scan-result?length=\(lengthStr)&width=\(widthStr)&height=\(heightStr)&doors=\(doorCount)&windows=\(windowCount)&roomType=\(roomType)"
-        return c?.url
-    }
+    var floorAreaStr: String { String(format: "%.1f", floorArea) }
+    var wallArea: Double { 2 * (length + width) * height }
 }
 
 // MARK: - Scan State
@@ -416,17 +411,6 @@ final class ScanCoordinator: ObservableObject {
         }
     }
 
-    // MARK: - Send to web app
-
-    func sendResultToAccuQuote(result: RoomDimensions) {
-        guard let url = result.returnURL else { return }
-        UIApplication.shared.open(url, options: [:]) { success in
-            if !success {
-                UIPasteboard.general.string =
-                    "\(result.lengthStr),\(result.widthStr),\(result.heightStr)"
-            }
-        }
-    }
 }
 
 // MARK: - Numeric helpers
