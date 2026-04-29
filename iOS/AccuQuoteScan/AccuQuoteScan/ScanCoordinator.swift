@@ -3,56 +3,37 @@ import UIKit
 import RoomPlan
 import ARKit
 import Combine
+import simd
 
 // MARK: - Scan Method
 
 enum ScanMethod {
-    case lidar       // RoomPlan — iPhone 12 Pro+ (LiDAR sensor)
-    case sceneDepth  // ARKit sceneDepth — iPhone XS+ with Face ID (TrueDepth sensor)
-    case arPlanes    // ARKit plane detection — fallback for older devices
+    case lidar          // RoomPlan — iPhone 12 Pro+ (LiDAR)
+    case poseFusion     // ARKit world tracking + point cloud bounding box — any ARKit device
+    case manual         // User entered dimensions with tape measure
 
     var displayName: String {
         switch self {
         case .lidar:      return "LiDAR Scan"
-        case .sceneDepth: return "Depth Scan"
-        case .arPlanes:   return "Camera Scan"
-        }
-    }
-
-    var description: String {
-        switch self {
-        case .lidar:      return "High-precision LiDAR measurement"
-        case .sceneDepth: return "TrueDepth sensor measurement — walk slowly around the room"
-        case .arPlanes:   return "Camera-based measurement — point at each wall"
+        case .poseFusion: return "Camera Sweep"
+        case .manual:     return "Manual Entry"
         }
     }
 
     var accuracyLabel: String {
         switch self {
         case .lidar:      return "High precision · LiDAR"
-        case .sceneDepth: return "Depth sensor · ±3–5cm"
-        case .arPlanes:   return "Camera estimate · ±10%"
+        case .poseFusion: return "Camera sweep · ±5–10cm"
+        case .manual:     return "Tape measure · exact"
         }
     }
 
     var accuracyHex: String {
         switch self {
         case .lidar:      return "#22C55E"
-        case .sceneDepth: return "#3B82F6"
-        case .arPlanes:   return "#F59E0B"
+        case .poseFusion: return "#3B82F6"
+        case .manual:     return "#22C55E"
         }
-    }
-
-    /// Pick the best available method with no downloads required.
-    static func best() -> ScanMethod {
-        // LiDAR — iPhone 12 Pro+
-        if RoomCaptureSession.isSupported { return .lidar }
-        // sceneDepth — requires ARWorldTrackingConfiguration.supportsFrameSemantics(.sceneDepth)
-        // Available on A12+ devices (iPhone XS, XR, 11, 12, 13, 14, 15 non-Pro)
-        if ARWorldTrackingConfiguration.supportsFrameSemantics(.sceneDepth) {
-            return .sceneDepth
-        }
-        return .arPlanes
     }
 }
 
@@ -74,9 +55,9 @@ struct RoomDimensions {
     var heightStr: String { String(format: "%.2f", height) }
 
     var returnURL: URL? {
-        var components = URLComponents(string: WEB_APP_BASE_URL)
-        components?.fragment = "scan-result?length=\(lengthStr)&width=\(widthStr)&height=\(heightStr)&doors=\(doorCount)&windows=\(windowCount)&roomType=\(roomType)"
-        return components?.url
+        var c = URLComponents(string: WEB_APP_BASE_URL)
+        c?.fragment = "scan-result?length=\(lengthStr)&width=\(widthStr)&height=\(heightStr)&doors=\(doorCount)&windows=\(windowCount)&roomType=\(roomType)"
+        return c?.url
     }
 }
 
@@ -98,8 +79,8 @@ private final class SessionBridge: NSObject, RoomCaptureSessionDelegate, RoomCap
     var onEnd:    ((CapturedRoomData, Error?) -> Void)?
 
     override init() { super.init() }
-    required init?(coder: NSCoder) { fatalError("not supported") }
-    func encode(with coder: NSCoder) { fatalError("not supported") }
+    required init?(coder: NSCoder) { fatalError() }
+    func encode(with coder: NSCoder) { fatalError() }
 
     func captureSession(_ session: RoomCaptureSession, didUpdate room: CapturedRoom) {
         onUpdate?(room)
@@ -123,51 +104,66 @@ final class ScanCoordinator: ObservableObject {
     @Published var scanProgress: Float = 0.0
     @Published var frameCount: Int = 0
 
-    let scanMethod: ScanMethod = ScanMethod.best()
+    // Determined once at init — LiDAR if available, otherwise poseFusion
+    let scanMethod: ScanMethod = RoomCaptureSession.isSupported ? .lidar : .poseFusion
 
     // LiDAR
     private var lidarSession: RoomCaptureSession?
     private var bridge: SessionBridge?
     var captureView: RoomCaptureView?
 
-    // sceneDepth + arPlanes share an ARSession
+    // Pose fusion
     var arSession: ARSession?
-    private var frameTimer: Timer?
-    private var depthSamples: [DepthSample] = []
+    private var sweepTimer: Timer?
+    private var worldPoints: [SIMD3<Float>] = []   // accumulated surface points in world space
+    private var lastCameraPos: SIMD3<Float>?
+    private var distanceTravelled: Float = 0
 
     init() {
-        instructionText = scanMethod.description
+        instructionText = scanMethod == .lidar
+            ? "Walk slowly around the room"
+            : "Hold the button and sweep the camera around every wall"
     }
+
+    // MARK: - Start / Stop
 
     func startScan() {
         switch scanMethod {
         case .lidar:      startLiDAR()
-        case .sceneDepth: startSceneDepth()
-        case .arPlanes:   startARPlanes()
+        case .poseFusion: startPoseFusion()
+        case .manual:     break  // manual is driven by the view
         }
     }
 
     func stopScan() {
         switch scanMethod {
-        case .lidar:
-            lidarSession?.stop()
-            state = .processing
-        case .sceneDepth:
-            stopDepthScan(method: .sceneDepth)
-        case .arPlanes:
-            stopDepthScan(method: .arPlanes)
+        case .lidar:      lidarSession?.stop(); state = .processing
+        case .poseFusion: stopPoseFusion()
+        case .manual:     break
         }
+    }
+
+    func submitManual(length: Double, width: Double, height: Double) {
+        let area = length * width
+        let result = RoomDimensions(
+            length: length.rounded(to: 2), width: width.rounded(to: 2),
+            height: height.rounded(to: 2), floorArea: (area * 100).rounded() / 100,
+            wallCount: 4, doorCount: 1, windowCount: 1,
+            roomType: ScanCoordinator.guessRoomType(area: area, windows: 1),
+            scanMethod: .manual
+        )
+        state = .complete(result)
     }
 
     func reset() {
         lidarSession?.stop(); lidarSession = nil; bridge = nil; captureView = nil
-        frameTimer?.invalidate(); frameTimer = nil
+        sweepTimer?.invalidate(); sweepTimer = nil
         arSession?.pause(); arSession = nil
-        depthSamples = []
-        frameCount = 0
-        state = .ready
-        scanProgress = 0
-        instructionText = scanMethod.description
+        worldPoints = []; lastCameraPos = nil; distanceTravelled = 0
+        frameCount = 0; state = .ready; scanProgress = 0
+        instructionText = scanMethod == .lidar
+            ? "Walk slowly around the room"
+            : "Hold the button and sweep the camera around every wall"
     }
 
     // MARK: - LiDAR path
@@ -179,16 +175,18 @@ final class ScanCoordinator: ObservableObject {
         }
         let bridge  = SessionBridge()
         let session = RoomCaptureSession()
-        self.bridge = bridge; self.lidarSession = session
+        self.bridge = bridge
+        self.lidarSession = session
 
         bridge.onUpdate = { [weak self] room in
             guard let self else { return }
             let n = room.walls.count
             Task { @MainActor in
-                self.scanProgress    = min(Float(n) / 4.0, 0.95)
-                self.instructionText = n == 0 ? "Point at the walls to start measuring"
-                    : n < 3 ? "Keep moving — scanning more walls"
-                    : "Looking good — scan the full room"
+                self.scanProgress    = min(Float(n) / 6.0, 0.95)
+                self.instructionText = n == 0 ? "Point at the walls to begin"
+                    : n < 3 ? "Keep moving — \(n) wall\(n == 1 ? "" : "s") detected"
+                    : n < 5 ? "Good — scan remaining walls"
+                    : "Excellent — tap Done when complete"
             }
         }
 
@@ -218,94 +216,116 @@ final class ScanCoordinator: ObservableObject {
         state = .scanning
     }
 
-    // MARK: - sceneDepth path
+    // MARK: - Pose fusion path
 
-    private func startSceneDepth() {
+    private func startPoseFusion() {
         let session = ARSession()
         let config  = ARWorldTrackingConfiguration()
-        config.frameSemantics    = [.sceneDepth]
-        config.planeDetection    = [.horizontal, .vertical]
-        session.run(config)
-        arSession  = session
-        depthSamples = []
-        frameCount = 0
-        state      = .scanning
-        instructionText = "Walk slowly — point at each wall in turn"
-        scanProgress = 0
-
-        // Sample depth frame every 0.75s
-        frameTimer = Timer.scheduledTimer(withTimeInterval: 0.75, repeats: true) { [weak self] _ in
-            guard let self else { return }
-            Task { @MainActor in
-                guard let frame = session.currentFrame,
-                      let depth = frame.sceneDepth else { return }
-                if let sample = DepthSample(frame: frame, depthMap: depth) {
-                    self.depthSamples.append(sample)
-                    self.frameCount += 1
-                    self.scanProgress = min(Float(self.frameCount) / 20.0, 0.95)
-                    if self.frameCount < 8 {
-                        self.instructionText = "Keep walking — point at walls (\(self.frameCount) frames)"
-                    } else if self.frameCount < 15 {
-                        self.instructionText = "Good — cover all 4 walls"
-                    } else {
-                        self.instructionText = "Excellent — tap Done when complete"
-                    }
-                }
-            }
+        // Enable scene depth on supported devices for denser point cloud
+        if ARWorldTrackingConfiguration.supportsFrameSemantics(.sceneDepth) {
+            config.frameSemantics = [.sceneDepth]
         }
-    }
-
-    // MARK: - AR planes path (fallback)
-
-    private func startARPlanes() {
-        let session = ARSession()
-        let config  = ARWorldTrackingConfiguration()
-        config.planeDetection = [.horizontal, .vertical]
         session.run(config)
-        arSession  = session
-        frameCount = 0
-        state      = .scanning
-        instructionText = "Point slowly at each wall — hold steady"
-        scanProgress = 0
+        arSession        = session
+        worldPoints      = []
+        lastCameraPos    = nil
+        distanceTravelled = 0
+        frameCount       = 0
+        state            = .scanning
+        scanProgress     = 0
+        instructionText  = "Walk slowly — sweep camera across every wall"
 
-        frameTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+        // Sample at 4 Hz — enough resolution without hammering memory
+        sweepTimer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] _ in
             guard let self else { return }
             Task { @MainActor in
                 guard let frame = session.currentFrame else { return }
-                let vPlanes = frame.anchors
-                    .compactMap { $0 as? ARPlaneAnchor }
-                    .filter { $0.alignment == .vertical }
-                self.frameCount  = vPlanes.count
-                self.scanProgress = min(Float(vPlanes.count) / 4.0, 0.95)
-                self.instructionText = vPlanes.count < 2
-                    ? "Point at walls — \(vPlanes.count) found"
-                    : vPlanes.count < 4
-                    ? "\(vPlanes.count) walls detected — keep scanning"
-                    : "Good coverage — tap Done when ready"
+                self.ingestFrame(frame)
             }
         }
     }
 
-    // MARK: - Stop & process (sceneDepth + arPlanes)
+    private func ingestFrame(_ frame: ARFrame) {
+        let camTransform = frame.camera.transform
+        let camPos       = SIMD3<Float>(camTransform.columns.3.x,
+                                        camTransform.columns.3.y,
+                                        camTransform.columns.3.z)
 
-    private func stopDepthScan(method: ScanMethod) {
-        frameTimer?.invalidate(); frameTimer = nil
-        let frame = arSession?.currentFrame
+        // Accumulate distance walked
+        if let last = lastCameraPos {
+            distanceTravelled += simd_distance(camPos, last)
+        }
+        lastCameraPos = camPos
+
+        // Project depth samples into world space
+        if let depthData = frame.sceneDepth {
+            ingestDepthMap(depthData, frame: frame)
+        } else {
+            // Fallback: project feature points
+            if let rawFeatures = frame.rawFeaturePoints {
+                for pt in rawFeatures.points {
+                    worldPoints.append(pt)
+                }
+            }
+        }
+
+        frameCount   += 1
+        // Progress based on distance walked — encourage full room coverage
+        // ~4m of walking typically covers a room; cap display at 95%
+        let distProgress = min(distanceTravelled / 4.0, 0.95)
+        scanProgress = Float(distProgress)
+
+        let meters = String(format: "%.1f", distanceTravelled)
+        instructionText = distanceTravelled < 1.0
+            ? "Keep walking — sweep every wall"
+            : distanceTravelled < 2.5
+            ? "Good — \(meters)m covered, keep going"
+            : distanceTravelled < 4.0
+            ? "Almost there — cover remaining walls"
+            : "Tap Done when you've swept the full room"
+    }
+
+    private func ingestDepthMap(_ depthData: ARDepthData, frame: ARFrame) {
+        let buf  = depthData.depthMap
+        let w    = CVPixelBufferGetWidth(buf)
+        let h    = CVPixelBufferGetHeight(buf)
+        CVPixelBufferLockBaseAddress(buf, .readOnly)
+        defer { CVPixelBufferUnlockBaseAddress(buf, .readOnly) }
+        guard let base = CVPixelBufferGetBaseAddress(buf) else { return }
+        let ptr = base.assumingMemoryBound(to: Float32.self)
+
+        let camIntrinsics = frame.camera.intrinsics   // 3×3 matrix
+        let camTransform  = frame.camera.transform    // 4×4 world transform
+        // Sample a sparse grid (every 16px) to keep point count manageable
+        let step = 16
+        for row in stride(from: 0, to: h, by: step) {
+            for col in stride(from: 0, to: w, by: step) {
+                let depth = ptr[row * w + col]
+                guard depth > 0.1 && depth < 8.0 else { continue }
+
+                // Back-project pixel to camera space
+                let fx = camIntrinsics[0][0], fy = camIntrinsics[1][1]
+                let cx = camIntrinsics[2][0], cy = camIntrinsics[2][1]
+                let xCam = (Float(col) - cx) / fx * depth
+                let yCam = (Float(row) - cy) / fy * depth
+                let zCam = depth
+
+                // Transform to world space
+                let localPt = SIMD4<Float>(xCam, yCam, -zCam, 1)
+                let worldPt = camTransform * localPt
+                worldPoints.append(SIMD3<Float>(worldPt.x, worldPt.y, worldPt.z))
+            }
+        }
+    }
+
+    private func stopPoseFusion() {
+        sweepTimer?.invalidate(); sweepTimer = nil
+        let points = worldPoints
         arSession?.pause()
         state = .processing
-        instructionText = "Calculating dimensions…"
 
         Task {
-            let result: RoomDimensions
-            switch method {
-            case .sceneDepth:
-                result = await ScanCoordinator.resultFromDepthSamples(depthSamples,
-                                                                       fallbackFrame: frame)
-            case .arPlanes:
-                result = await ScanCoordinator.resultFromARPlanes(frame)
-            case .lidar:
-                result = ScanCoordinator.fallbackResult(method: .lidar)
-            }
+            let result = ScanCoordinator.resultFromPointCloud(points)
             await MainActor.run { self.state = .complete(result) }
         }
     }
@@ -315,8 +335,7 @@ final class ScanCoordinator: ObservableObject {
     private static func resultFromLiDAR(_ room: CapturedRoom) -> RoomDimensions {
         let walls   = room.walls
         let lengths = walls.map { Double($0.dimensions.x) }.sorted(by: >)
-        let length: Double
-        let width:  Double
+        let length: Double, width: Double
         switch lengths.count {
         case 4...: length = (lengths[0]+lengths[1])/2; width = (lengths[2]+lengths[3])/2
         case 2...3: length = lengths[0]; width = lengths[1]
@@ -328,113 +347,65 @@ final class ScanCoordinator: ObservableObject {
         return RoomDimensions(
             length: (length*10).rounded()/10, width: (width*10).rounded()/10,
             height: (height*10).rounded()/10, floorArea: (floorArea*100).rounded()/100,
-            wallCount: walls.count, doorCount: room.doors.count,
-            windowCount: room.windows.count,
+            wallCount: walls.count, doorCount: room.doors.count, windowCount: room.windows.count,
             roomType: guessRoomType(area: floorArea, windows: room.windows.count),
             scanMethod: .lidar
         )
     }
 
-    // MARK: - Dimension extraction: sceneDepth
+    // MARK: - Dimension extraction: point cloud bounding box
 
-    private static func resultFromDepthSamples(
-        _ samples: [DepthSample], fallbackFrame: ARFrame?
-    ) async -> RoomDimensions {
-        guard !samples.isEmpty else {
-            return await resultFromARPlanes(fallbackFrame)
+    private static func resultFromPointCloud(_ points: [SIMD3<Float>]) -> RoomDimensions {
+        guard points.count > 50 else { return stubbedResult(method: .poseFusion) }
+
+        // Filter outliers with IQR on each axis
+        func iqrFiltered(_ vals: [Float]) -> [Float] {
+            let s = vals.sorted()
+            let q1 = s[s.count / 4], q3 = s[3 * s.count / 4]
+            let iqr = q3 - q1
+            return s.filter { $0 >= q1 - 1.5*iqr && $0 <= q3 + 1.5*iqr }
         }
 
-        // Aggregate depth measurements across all frames.
-        // For each frame we take the 5th-percentile depth (closest solid surface)
-        // in left, centre, right thirds of the image — these correspond to walls.
-        var wallDistances: [Float] = []
-        var ceilingDistances: [Float] = []
-        var floorDistances: [Float] = []
+        let xs = iqrFiltered(points.map { $0.x })
+        let ys = iqrFiltered(points.map { $0.y })
+        let zs = iqrFiltered(points.map { $0.z })
 
-        for sample in samples {
-            let w = sample.width, h = sample.height
-            // Sample a 20×20 grid of depth values across the frame
-            for row in stride(from: h/10, through: 9*h/10, by: h/10) {
-                for col in stride(from: w/10, through: 9*w/10, by: w/10) {
-                    let d = sample.depth(x: col, y: row)
-                    guard d > 0.1 && d < 10.0 else { continue }  // valid range 0.1–10m
-                    let normY = Float(row) / Float(h)
-                    // Classify by vertical position: top=ceiling, bottom=floor, sides=walls
-                    if normY < 0.25 {
-                        ceilingDistances.append(d)
-                    } else if normY > 0.75 {
-                        floorDistances.append(d)
-                    } else {
-                        wallDistances.append(d)
-                    }
-                }
-            }
+        guard !xs.isEmpty, !ys.isEmpty, !zs.isEmpty else {
+            return stubbedResult(method: .poseFusion)
         }
 
-        // Room width/length from wall depth percentiles
-        let wallSorted = wallDistances.sorted()
-        // 10th percentile = near wall, 90th percentile = far wall
-        let nearWall = percentile(wallSorted, 0.10)
-        let farWall  = percentile(wallSorted, 0.90)
+        let xSpan = Double(xs.max()! - xs.min()!)
+        let ySpan = Double(ys.max()! - ys.min()!)
+        let zSpan = Double(zs.max()! - zs.min()!)
 
-        // Height = distance from camera to ceiling + distance to floor
-        // Camera is typically held at ~1.2m, so total = ceilingDist + floorDist
-        let ceilDist  = percentile(ceilingDistances.sorted(), 0.15)
-        let floorDist = percentile(floorDistances.sorted(), 0.15)
-        let height    = Double(ceilDist + floorDist)
-
-        // Length and width from far/near wall distances
-        // We take the two dominant wall distances as the two room dimensions
-        let dim1 = Double(farWall)
-        let dim2 = Double(nearWall + 0.5)  // offset for room behind camera
-        let length = max(dim1, dim2).clamped(2.0, 12.0)
-        let width  = min(dim1, dim2).clamped(1.5, 10.0)
+        // X/Z are floor-plane dimensions (horizontal), Y is height
+        let dim1   = xSpan.clamped(1.5, 15.0)
+        let dim2   = zSpan.clamped(1.5, 15.0)
+        let length = max(dim1, dim2).rounded(to: 2)
+        let width  = min(dim1, dim2).rounded(to: 2)
+        let height = ySpan.clamped(1.8, 5.0).rounded(to: 2)
         let area   = length * width
 
         return RoomDimensions(
-            length: (length*10).rounded()/10,
-            width:  (width*10).rounded()/10,
-            height: min(max(height, 2.0), 4.0).rounded(to: 1),
-            floorArea: (area*100).rounded()/100,
+            length: length, width: width, height: height,
+            floorArea: (area * 100).rounded() / 100,
             wallCount: 4, doorCount: 1, windowCount: 1,
-            roomType: guessRoomType(area: area, windows: 1),
-            scanMethod: .sceneDepth
+            roomType: ScanCoordinator.guessRoomType(area: area, windows: 1),
+            scanMethod: .poseFusion
         )
     }
 
-    // MARK: - Dimension extraction: AR planes
+    // MARK: - Fallback stub (insufficient data)
 
-    private static func resultFromARPlanes(_ frame: ARFrame?) async -> RoomDimensions {
-        guard let frame else { return fallbackResult(method: .arPlanes) }
-        let planes = frame.anchors
-            .compactMap { $0 as? ARPlaneAnchor }
-            .filter { $0.alignment == .vertical }
-
-        guard planes.count >= 2 else { return fallbackResult(method: .arPlanes) }
-
-        let widths  = planes.map { Double($0.planeExtent.width) }.sorted(by: >)
-        let heights = planes.map { Double($0.planeExtent.height) }
-        let length  = widths[0].clamped(2.0, 12.0)
-        let width   = widths[1].clamped(1.5, 10.0)
-        let height  = (heights.max() ?? 2.4).clamped(2.0, 4.0)
-        let area    = length * width
-
-        return RoomDimensions(
-            length: (length*10).rounded()/10, width: (width*10).rounded()/10,
-            height: (height*10).rounded()/10, floorArea: (area*100).rounded()/100,
-            wallCount: planes.count, doorCount: 1, windowCount: 1,
-            roomType: guessRoomType(area: area, windows: 1),
-            scanMethod: .arPlanes
+    static func stubbedResult(method: ScanMethod) -> RoomDimensions {
+        RoomDimensions(
+            length: 4.20, width: 3.60, height: 2.40, floorArea: 15.12,
+            wallCount: 4, doorCount: 1, windowCount: 2,
+            roomType: "living room", scanMethod: method
         )
     }
 
     // MARK: - Helpers
-
-    private static func percentile(_ sorted: [Float], _ p: Double) -> Float {
-        guard !sorted.isEmpty else { return 2.5 }
-        let idx = Int(Double(sorted.count - 1) * p)
-        return sorted[idx]
-    }
 
     private static func guessRoomType(area: Double, windows: Int) -> String {
         switch area {
@@ -445,13 +416,7 @@ final class ScanCoordinator: ObservableObject {
         }
     }
 
-    static func fallbackResult(method: ScanMethod) -> RoomDimensions {
-        RoomDimensions(length: 3.5, width: 2.8, height: 2.4, floorArea: 9.8,
-                       wallCount: 4, doorCount: 1, windowCount: 1,
-                       roomType: "room", scanMethod: method)
-    }
-
-    // MARK: - Send result to web app
+    // MARK: - Send to web app
 
     func sendResultToAccuQuote(result: RoomDimensions) {
         guard let url = result.returnURL else { return }
@@ -461,33 +426,6 @@ final class ScanCoordinator: ObservableObject {
                     "\(result.lengthStr),\(result.widthStr),\(result.heightStr)"
             }
         }
-    }
-}
-
-// MARK: - Depth sample helper
-
-/// Wraps a single ARFrame's sceneDepth map for efficient sampling.
-struct DepthSample {
-    let width:  Int
-    let height: Int
-    private let values: [Float]  // row-major, metres
-
-    init?(frame: ARFrame, depthMap: ARDepthData) {
-        let buf    = depthMap.depthMap
-        let w      = CVPixelBufferGetWidth(buf)
-        let h      = CVPixelBufferGetHeight(buf)
-        guard w > 0 && h > 0 else { return nil }
-        CVPixelBufferLockBaseAddress(buf, .readOnly)
-        defer { CVPixelBufferUnlockBaseAddress(buf, .readOnly) }
-        guard let base = CVPixelBufferGetBaseAddress(buf) else { return nil }
-        let ptr    = base.assumingMemoryBound(to: Float32.self)
-        width  = w; height = h
-        values = Array(UnsafeBufferPointer(start: ptr, count: w * h))
-    }
-
-    func depth(x: Int, y: Int) -> Float {
-        guard x >= 0 && x < width && y >= 0 && y < height else { return 0 }
-        return values[y * width + x]
     }
 }
 

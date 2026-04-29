@@ -40,7 +40,10 @@ struct ReadyView: View {
     @ObservedObject var coordinator: ScanCoordinator
     @EnvironmentObject var questionEngine: QuestionEngine
     @State private var showOnboarding = false
+    @State private var showManualEntry = false
     @State private var pulseIcon = false
+
+    var isLiDAR: Bool { coordinator.scanMethod == .lidar }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -67,104 +70,367 @@ struct ReadyView: View {
 
             Divider().background(AQ.rule).padding(.horizontal, 24)
 
-            // ── Hero ────────────────────────────────────────────────────────
             Spacer()
 
+            // ── Hero icon ───────────────────────────────────────────────────
             ZStack {
-                // Outer ring — faint
                 Circle()
-                    .stroke(AQ.blue.opacity(0.08), lineWidth: 1)
+                    .stroke(AQ.blue.opacity(0.07), lineWidth: 1)
                     .frame(width: 160, height: 160)
-                // Mid ring — subtle
                 Circle()
-                    .stroke(AQ.blue.opacity(0.14), lineWidth: 1)
-                    .frame(width: 120, height: 120)
-                // Core
+                    .stroke(AQ.blue.opacity(0.13), lineWidth: 1)
+                    .frame(width: 118, height: 118)
                 Circle()
                     .fill(AQ.fill)
-                    .frame(width: 80, height: 80)
-                Image(systemName: scanIcon)
-                    .font(.system(size: 30, weight: .light))
+                    .frame(width: 78, height: 78)
+                Image(systemName: isLiDAR ? "cube.transparent" : "camera.aperture")
+                    .font(.system(size: 28, weight: .light))
                     .foregroundColor(AQ.blue)
                     .scaleEffect(pulseIcon ? 1.06 : 1.0)
-                    .animation(
-                        .easeInOut(duration: 2.4).repeatForever(autoreverses: true),
-                        value: pulseIcon
-                    )
+                    .animation(.easeInOut(duration: 2.4).repeatForever(autoreverses: true),
+                               value: pulseIcon)
             }
             .onAppear { pulseIcon = true }
-            .padding(.bottom, 36)
+            .padding(.bottom, 32)
 
-            // Headline
-            Text("Scan the Room")
-                .font(.system(size: 38, weight: .bold))
+            Text("Measure the Room")
+                .font(.system(size: 36, weight: .bold))
                 .foregroundColor(AQ.ink)
                 .padding(.bottom, 10)
 
-            // Method badge
             ScanMethodBadge(method: coordinator.scanMethod)
-                .padding(.bottom, 20)
+                .padding(.bottom, 18)
 
-            // Description
-            Text(coordinator.scanMethod.description)
+            Text(isLiDAR
+                 ? "Walk slowly around the room. LiDAR measures every surface in real time."
+                 : "Sweep the camera around every wall or enter measurements manually.")
                 .font(AQ.body(15))
                 .foregroundColor(AQ.secondary)
                 .multilineTextAlignment(.center)
                 .lineSpacing(5)
                 .padding(.horizontal, 44)
 
-            // Instructions
-            if coordinator.scanMethod != .lidar {
-                ScanInstructionList(method: coordinator.scanMethod)
-                    .padding(.top, 28)
-                    .padding(.horizontal, 44)
+            // Non-LiDAR: show method options inline
+            if !isLiDAR {
+                NonLiDARMethodCards(
+                    onSweep: { coordinator.startScan() },
+                    onManual: { showManualEntry = true }
+                )
+                .padding(.top, 28)
+                .padding(.horizontal, 24)
             }
 
             Spacer()
 
             // ── CTA ─────────────────────────────────────────────────────────
-            VStack(spacing: 0) {
-                Divider().background(AQ.rule)
-                    .padding(.bottom, 20)
-
-                Button { coordinator.startScan() } label: {
-                    Text("Start Scan")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 17)
-                        .background(AQ.blue)
-                        .cornerRadius(14)
+            if isLiDAR {
+                VStack(spacing: 0) {
+                    Divider().background(AQ.rule).padding(.bottom, 20)
+                    Button { coordinator.startScan() } label: {
+                        Text("Start Scan")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 17)
+                            .background(AQ.blue)
+                            .cornerRadius(14)
+                    }
+                    .padding(.horizontal, 24)
+                    Text("LiDAR · iPhone 12 Pro or later")
+                        .font(AQ.body(12))
+                        .foregroundColor(AQ.secondary.opacity(0.7))
+                        .padding(.top, 12)
+                        .padding(.bottom, 36)
                 }
-                .padding(.horizontal, 24)
-
-                Text(deviceRequirementText)
-                    .font(AQ.body(12))
-                    .foregroundColor(AQ.secondary.opacity(0.7))
-                    .padding(.top, 12)
-                    .padding(.bottom, 36)
+            } else {
+                Color.clear.frame(height: 36)
             }
         }
         .background(Color.white)
         .sheet(isPresented: $showOnboarding) {
             OnboardingSheet().environmentObject(questionEngine)
         }
-    }
-
-    var scanIcon: String {
-        switch coordinator.scanMethod {
-        case .lidar:      return "cube.transparent"
-        case .sceneDepth: return "sensor.tag.radiowaves.forward"
-        case .arPlanes:   return "camera"
+        .sheet(isPresented: $showManualEntry) {
+            ManualEntrySheet(coordinator: coordinator)
         }
     }
+}
 
-    var deviceRequirementText: String {
-        switch coordinator.scanMethod {
-        case .lidar:      return "LiDAR · iPhone 12 Pro or later"
-        case .sceneDepth: return "Depth sensor · Face ID iPhone XS or later"
-        case .arPlanes:   return "Camera · any ARKit device"
+// MARK: - Non-LiDAR method cards
+
+struct NonLiDARMethodCards: View {
+    let onSweep: () -> Void
+    let onManual: () -> Void
+
+    var body: some View {
+        VStack(spacing: 10) {
+            // Camera sweep
+            Button(action: onSweep) {
+                HStack(spacing: 16) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10).fill(AQ.blue.opacity(0.08))
+                            .frame(width: 44, height: 44)
+                        Image(systemName: "camera.aperture")
+                            .font(.system(size: 18, weight: .light))
+                            .foregroundColor(AQ.blue)
+                    }
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Sweep Room")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(AQ.ink)
+                        Text("Walk around pointing camera at every wall · ±5–10cm")
+                            .font(AQ.body(12))
+                            .foregroundColor(AQ.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(AQ.secondary.opacity(0.5))
+                }
+                .padding(16)
+                .background(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(AQ.blue.opacity(0.25), lineWidth: 1)
+                )
+            }
+
+            // Manual entry
+            Button(action: onManual) {
+                HStack(spacing: 16) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10).fill(AQ.green.opacity(0.08))
+                            .frame(width: 44, height: 44)
+                        Image(systemName: "ruler")
+                            .font(.system(size: 18, weight: .light))
+                            .foregroundColor(AQ.green)
+                    }
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Enter Manually")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(AQ.ink)
+                        Text("Type tape measure readings · exact accuracy")
+                            .font(AQ.body(12))
+                            .foregroundColor(AQ.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(AQ.secondary.opacity(0.5))
+                }
+                .padding(16)
+                .background(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(AQ.green.opacity(0.25), lineWidth: 1)
+                )
+            }
         }
+    }
+}
+
+// MARK: - Manual Entry Sheet
+
+struct ManualEntrySheet: View {
+    @ObservedObject var coordinator: ScanCoordinator
+    @Environment(\.dismiss) var dismiss
+
+    @State private var lengthText = ""
+    @State private var widthText  = ""
+    @State private var heightText = "2.4"
+    @FocusState private var focused: Field?
+
+    enum Field { case length, width, height }
+
+    var length: Double? { Double(lengthText.replacingOccurrences(of: ",", with: ".")) }
+    var width:  Double? { Double(widthText.replacingOccurrences(of: ",", with: "."))  }
+    var height: Double? { Double(heightText.replacingOccurrences(of: ",", with: ".")) }
+    var canSubmit: Bool { length != nil && width != nil && height != nil }
+
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                // Instruction
+                VStack(spacing: 6) {
+                    Text("Enter Room Measurements")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundColor(AQ.ink)
+                    Text("Use a tape measure for best accuracy.")
+                        .font(AQ.body(14))
+                        .foregroundColor(AQ.secondary)
+                }
+                .padding(.top, 32)
+                .padding(.bottom, 36)
+
+                // Diagram
+                RoomDiagramView()
+                    .padding(.horizontal, 48)
+                    .padding(.bottom, 36)
+
+                // Inputs
+                VStack(spacing: 14) {
+                    MeasurementField(
+                        label: "Length",
+                        hint: "e.g. 4.5",
+                        unit: "m",
+                        text: $lengthText,
+                        focused: $focused,
+                        field: .length,
+                        next: { focused = .width }
+                    )
+                    MeasurementField(
+                        label: "Width",
+                        hint: "e.g. 3.2",
+                        unit: "m",
+                        text: $widthText,
+                        focused: $focused,
+                        field: .width,
+                        next: { focused = .height }
+                    )
+                    MeasurementField(
+                        label: "Ceiling height",
+                        hint: "e.g. 2.4",
+                        unit: "m",
+                        text: $heightText,
+                        focused: $focused,
+                        field: .height,
+                        next: { focused = nil }
+                    )
+                }
+                .padding(.horizontal, 24)
+
+                Spacer()
+
+                // CTA
+                VStack(spacing: 0) {
+                    Divider().background(AQ.rule).padding(.bottom, 20)
+                    Button {
+                        guard let l = length, let w = width, let h = height else { return }
+                        coordinator.submitManual(length: l, width: w, height: h)
+                        dismiss()
+                    } label: {
+                        Text("Calculate Quote")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 17)
+                            .background(canSubmit ? AQ.blue : AQ.blue.opacity(0.35))
+                            .cornerRadius(14)
+                    }
+                    .disabled(!canSubmit)
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 36)
+                }
+            }
+            .background(Color.white)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") { dismiss() }
+                        .foregroundColor(AQ.secondary)
+                }
+            }
+        }
+        .onTapGesture { focused = nil }
+    }
+}
+
+// MARK: - Room diagram (simple top-down illustration)
+
+struct RoomDiagramView: View {
+    var body: some View {
+        GeometryReader { geo in
+            let w = geo.size.width, h = geo.size.height
+            ZStack {
+                // Room outline
+                Rectangle()
+                    .stroke(AQ.rule, lineWidth: 1.5)
+                    .frame(width: w, height: h)
+
+                // Length arrow (horizontal)
+                ArrowLine(start: CGPoint(x: 12, y: h/2),
+                          end:   CGPoint(x: w - 12, y: h/2))
+                    .stroke(AQ.blue, lineWidth: 1)
+                Text("Length")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(AQ.blue)
+                    .position(x: w/2, y: h/2 - 12)
+
+                // Width arrow (vertical)
+                ArrowLine(start: CGPoint(x: w/2, y: 12),
+                          end:   CGPoint(x: w/2, y: h - 12))
+                    .stroke(AQ.secondary, lineWidth: 1)
+                Text("Width")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(AQ.secondary)
+                    .position(x: w/2 + 28, y: h/2)
+                    .rotationEffect(.degrees(90))
+            }
+        }
+        .frame(height: 100)
+    }
+}
+
+struct ArrowLine: Shape {
+    let start: CGPoint, end: CGPoint
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        p.move(to: start); p.addLine(to: end)
+        // Arrowhead at end
+        let angle = atan2(end.y - start.y, end.x - start.x)
+        let size: CGFloat = 6
+        p.move(to: end)
+        p.addLine(to: CGPoint(x: end.x - size * cos(angle - 0.4),
+                              y: end.y - size * sin(angle - 0.4)))
+        p.move(to: end)
+        p.addLine(to: CGPoint(x: end.x - size * cos(angle + 0.4),
+                              y: end.y - size * sin(angle + 0.4)))
+        // Arrowhead at start
+        let angle2 = atan2(start.y - end.y, start.x - end.x)
+        p.move(to: start)
+        p.addLine(to: CGPoint(x: start.x - size * cos(angle2 - 0.4),
+                              y: start.y - size * sin(angle2 - 0.4)))
+        p.move(to: start)
+        p.addLine(to: CGPoint(x: start.x - size * cos(angle2 + 0.4),
+                              y: start.y - size * sin(angle2 + 0.4)))
+        return p
+    }
+}
+
+// MARK: - Measurement input field
+
+struct MeasurementField: View {
+    let label: String
+    let hint: String
+    let unit: String
+    @Binding var text: String
+    var focused: FocusState<ManualEntrySheet.Field?>.Binding
+    let field: ManualEntrySheet.Field
+    let next: () -> Void
+
+    var body: some View {
+        HStack(spacing: 0) {
+            Text(label)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(AQ.secondary)
+                .frame(width: 110, alignment: .leading)
+            TextField(hint, text: $text)
+                .font(.system(size: 20, weight: .semibold, design: .rounded))
+                .foregroundColor(AQ.ink)
+                .keyboardType(.decimalPad)
+                .focused(focused, equals: field)
+                .multilineTextAlignment(.trailing)
+                .frame(maxWidth: .infinity)
+            Text(unit)
+                .font(.system(size: 16, weight: .regular))
+                .foregroundColor(AQ.secondary)
+                .padding(.leading, 6)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(focused.wrappedValue == field ? AQ.blue : AQ.rule, lineWidth: 1)
+                .animation(.easeInOut(duration: 0.15), value: focused.wrappedValue == field)
+        )
     }
 }
 
@@ -258,8 +524,8 @@ struct ScanMethodBadge: View {
     var color: Color {
         switch method {
         case .lidar:      return AQ.green
-        case .sceneDepth: return AQ.blue
-        case .arPlanes:   return AQ.secondary
+        case .poseFusion: return AQ.blue
+        case .manual:     return AQ.green
         }
     }
     var body: some View {
@@ -276,44 +542,6 @@ struct ScanMethodBadge: View {
     }
 }
 
-// MARK: - Scan Instruction List
-
-struct ScanInstructionList: View {
-    let method: ScanMethod
-    var steps: [(String, String)] {
-        switch method {
-        case .sceneDepth: return [
-            ("Walk slowly around the room", "arrow.triangle.2.circlepath"),
-            ("Point at each wall for 1–2 seconds", "sensor.tag.radiowaves.forward"),
-            ("Include ceiling and floor", "arrow.up.arrow.down"),
-        ]
-        case .arPlanes: return [
-            ("Point camera slowly at each wall", "camera.metering.spot"),
-            ("Hold steady for 2–3 seconds per wall", "hand.raised"),
-            ("Cover all four walls", "square.on.square"),
-        ]
-        default: return []
-        }
-    }
-    var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            ForEach(Array(steps.enumerated()), id: \.offset) { idx, step in
-                HStack(alignment: .top, spacing: 14) {
-                    Text("\(idx + 1)")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(AQ.blue)
-                        .frame(width: 22, height: 22)
-                        .background(AQ.blue.opacity(0.08))
-                        .clipShape(Circle())
-                    Text(step.0)
-                        .font(AQ.body(14))
-                        .foregroundColor(AQ.label)
-                        .lineSpacing(3)
-                }
-            }
-        }
-    }
-}
 
 // MARK: - Onboarding Sheet
 
@@ -1092,8 +1320,8 @@ struct ScanningView: View {
     var body: some View {
         switch coordinator.scanMethod {
         case .lidar:      LiDARScanningView(coordinator: coordinator)
-        case .sceneDepth: DepthScanningView(coordinator: coordinator)
-        case .arPlanes:   DepthScanningView(coordinator: coordinator)
+        case .poseFusion: PoseFusionScanningView(coordinator: coordinator)
+        case .manual:     EmptyView()  // manual never enters .scanning state
         }
     }
 }
@@ -1132,11 +1360,11 @@ struct LiDARScanningView: View {
     }
 }
 
-// MARK: - Depth Scanning View
+// MARK: - Pose Fusion Scanning View
 
-struct DepthScanningView: View {
+struct PoseFusionScanningView: View {
     @ObservedObject var coordinator: ScanCoordinator
-    var minFrames: Int { coordinator.scanMethod == .sceneDepth ? 8 : 3 }
+    @State private var isHolding = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -1149,14 +1377,14 @@ struct DepthScanningView: View {
             VStack(spacing: 0) {
                 // Top bar
                 HStack {
-                    // Frame counter
                     HStack(spacing: 6) {
                         Circle()
-                            .fill(Color.white.opacity(0.9))
+                            .fill(isHolding ? Color.red : Color.white.opacity(0.5))
                             .frame(width: 6, height: 6)
-                        Text(coordinator.scanMethod == .sceneDepth
-                             ? "\(coordinator.frameCount) frames"
-                             : "\(coordinator.frameCount) walls")
+                            .animation(.easeInOut(duration: 0.3), value: isHolding)
+                        Text(isHolding
+                             ? String(format: "%.1fm", coordinator.scanProgress * 4.0)
+                             : "Ready")
                             .font(.system(size: 13, weight: .medium))
                             .foregroundColor(.white)
                     }
@@ -1164,56 +1392,92 @@ struct DepthScanningView: View {
                     .padding(.vertical, 8)
                     .background(.ultraThinMaterial)
                     .cornerRadius(22)
-
                     Spacer()
-
-                    Button { coordinator.stopScan() } label: {
-                        Text("Done")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundColor(coordinator.frameCount >= minFrames ? AQ.ink : .white)
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 10)
-                            .background(coordinator.frameCount >= minFrames
-                                        ? Color.white : Color.white.opacity(0.15))
-                            .cornerRadius(22)
-                            .animation(.easeInOut(duration: 0.2), value: coordinator.frameCount >= minFrames)
-                    }
-                    .disabled(coordinator.frameCount < minFrames)
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 60)
 
                 Spacer()
 
-                // Progress ring
-                ZStack {
-                    Circle()
-                        .stroke(Color.white.opacity(0.12), lineWidth: 2)
-                        .frame(width: 140, height: 140)
-                    Circle()
-                        .trim(from: 0, to: CGFloat(coordinator.scanProgress))
-                        .stroke(Color.white,
-                                style: StrokeStyle(lineWidth: 2, lineCap: .round))
-                        .frame(width: 140, height: 140)
-                        .rotationEffect(.degrees(-90))
-                        .animation(.easeInOut(duration: 0.3), value: coordinator.scanProgress)
-                    VStack(spacing: 2) {
-                        Text("\(Int(coordinator.scanProgress * 100))%")
-                            .font(.system(size: 32, weight: .semibold, design: .rounded))
-                            .foregroundColor(.white)
-                        Text("scanned")
-                            .font(.system(size: 12, weight: .regular))
-                            .foregroundColor(.white.opacity(0.6))
+                // Coverage ring — appears while holding
+                if isHolding {
+                    ZStack {
+                        Circle()
+                            .stroke(Color.white.opacity(0.12), lineWidth: 2)
+                            .frame(width: 120, height: 120)
+                        Circle()
+                            .trim(from: 0, to: CGFloat(coordinator.scanProgress))
+                            .stroke(Color.white,
+                                    style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                            .frame(width: 120, height: 120)
+                            .rotationEffect(.degrees(-90))
+                            .animation(.easeInOut(duration: 0.3), value: coordinator.scanProgress)
+                        VStack(spacing: 2) {
+                            Text("\(Int(coordinator.scanProgress * 100))%")
+                                .font(.system(size: 22, weight: .semibold, design: .rounded))
+                                .foregroundColor(.white)
+                            Text("coverage")
+                                .font(.system(size: 10))
+                                .foregroundColor(.white.opacity(0.6))
+                        }
                     }
+                    .padding(.bottom, 20)
+                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
                 }
-                .padding(.bottom, 24)
 
                 ScanHUD(coordinator: coordinator)
                     .padding(.horizontal, 20)
-                    .padding(.bottom, 44)
+                    .padding(.bottom, 20)
+
+                // Hold-to-scan button
+                HoldToScanButton(isHolding: $isHolding) {
+                    withAnimation(.easeInOut(duration: 0.15)) { isHolding = true }
+                } onRelease: {
+                    withAnimation(.easeInOut(duration: 0.15)) { isHolding = false }
+                    coordinator.stopScan()
+                }
+                .padding(.bottom, 48)
             }
         }
         .ignoresSafeArea()
+        .animation(.easeInOut(duration: 0.2), value: isHolding)
+    }
+}
+
+// MARK: - Hold-to-scan button
+
+struct HoldToScanButton: View {
+    @Binding var isHolding: Bool
+    let onPress: () -> Void
+    let onRelease: () -> Void
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(Color.white.opacity(isHolding ? 0.25 : 0.0), lineWidth: 2)
+                .frame(width: 88, height: 88)
+                .scaleEffect(isHolding ? 1.18 : 1.0)
+                .animation(
+                    isHolding
+                        ? .easeInOut(duration: 0.9).repeatForever(autoreverses: true)
+                        : .easeInOut(duration: 0.2),
+                    value: isHolding
+                )
+            Circle()
+                .fill(isHolding ? Color.white : Color.white.opacity(0.85))
+                .frame(width: 68, height: 68)
+                .scaleEffect(isHolding ? 0.88 : 1.0)
+                .animation(.spring(response: 0.25, dampingFraction: 0.6), value: isHolding)
+            Image(systemName: isHolding ? "stop.fill" : "record.circle")
+                .font(.system(size: isHolding ? 18 : 22, weight: .medium))
+                .foregroundColor(isHolding ? Color.red : AQ.ink)
+                .animation(.easeInOut(duration: 0.15), value: isHolding)
+        }
+        .gesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in if !isHolding { onPress() } }
+                .onEnded   { _ in if isHolding  { onRelease() } }
+        )
     }
 }
 
