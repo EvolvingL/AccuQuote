@@ -2612,7 +2612,19 @@ struct QuoteView: View {
         do {
             let bodyData = try JSONSerialization.data(withJSONObject: body)
             request.httpBody = bodyData
-            let (data, _) = try await URLSession.shared.data(for: request)
+            let (data, response) = try await URLSession.shared.data(for: request)
+
+            let httpStatus = (response as? HTTPURLResponse)?.statusCode ?? 0
+            let rawText = String(data: data, encoding: .utf8) ?? "<non-UTF8>"
+            print("[QuoteView] HTTP \(httpStatus) — \(rawText.prefix(500))")
+
+            // Surface API-level errors (auth, rate limit, etc.)
+            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let apiError = json["error"] as? [String: Any],
+               let msg = apiError["message"] as? String {
+                throw NSError(domain: "Anthropic", code: httpStatus,
+                              userInfo: [NSLocalizedDescriptionKey: "API error (\(httpStatus)): \(msg)"])
+            }
 
             if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                let content = json["content"] as? [[String: Any]],
@@ -2628,11 +2640,12 @@ struct QuoteView: View {
                     return
                 }
             }
-            throw URLError(.cannotParseResponse)
+            throw NSError(domain: "QuoteView", code: httpStatus,
+                          userInfo: [NSLocalizedDescriptionKey: "Unexpected response (HTTP \(httpStatus)). Raw: \(rawText.prefix(200))"])
         } catch {
             stepTask.cancel()
             await MainActor.run {
-                errorMessage = "Failed to generate quote. Please check your connection and try again."
+                errorMessage = error.localizedDescription
                 isLoading = false
             }
         }
