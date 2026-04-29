@@ -190,7 +190,25 @@ final class QuestionEngine: ObservableObject {
     }
 
     var answeredCount: Int { questions.filter { $0.isAnswered }.count }
-    var personalisation: Int { min(Int(Double(answeredCount) / 14.0 * 95), 95) }
+
+    /// Personalisation score (0–95).
+    /// Foundation questions (8) bring the score to ~75%.
+    /// Follow-up questions push it toward 95%.
+    /// The unlock threshold is 70%, so completing all foundation questions is sufficient.
+    var personalisation: Int {
+        let foundationTotal = foundationQuestions.count   // 8
+        let foundationAnswered = questions
+            .filter { q in foundationQuestions.contains(where: { $0.id == q.id }) && q.isAnswered }
+            .count
+        let followUpAnswered = max(0, answeredCount - foundationAnswered)
+
+        // Foundation: 0–75% linearly across 8 questions
+        let foundationScore = Double(foundationAnswered) / Double(foundationTotal) * 75.0
+        // Follow-ups: 75–95% asymptotically (each follow-up worth less)
+        let followUpScore = min(Double(followUpAnswered) / 10.0 * 20.0, 20.0)
+
+        return min(Int(foundationScore + followUpScore), 95)
+    }
 
     // MARK: - Answer submission
 
