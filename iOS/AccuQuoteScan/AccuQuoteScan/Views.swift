@@ -2761,7 +2761,6 @@ struct QuoteResultView: View {
     let quote: GeneratedQuote
     let result: RoomDimensions
     let onStartOver: () -> Void
-    @State private var shareText: String?
 
     var body: some View {
         ScrollView {
@@ -2833,10 +2832,7 @@ struct QuoteResultView: View {
 
                 // Actions
                 VStack(spacing: 10) {
-                    // Share as text
-                    Button {
-                        shareText = buildShareText()
-                    } label: {
+                    ShareLink(item: buildShareText()) {
                         HStack(spacing: 8) {
                             Image(systemName: "square.and.arrow.up")
                                 .font(.system(size: 15, weight: .semibold))
@@ -2861,12 +2857,6 @@ struct QuoteResultView: View {
             }
         }
         .background(Color.white)
-        .sheet(item: Binding(
-            get: { shareText.map { ShareContent(text: $0) } },
-            set: { if $0 == nil { shareText = nil } }
-        )) { content in
-            ShareSheet(text: content.text)
-        }
     }
 
     private func formatQty(_ qty: Double) -> String {
@@ -2890,18 +2880,6 @@ struct QuoteResultView: View {
     }
 }
 
-struct ShareContent: Identifiable {
-    let id = UUID()
-    let text: String
-}
-
-struct ShareSheet: UIViewControllerRepresentable {
-    let text: String
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: [text], applicationActivities: nil)
-    }
-    func updateUIViewController(_ vc: UIActivityViewController, context: Context) {}
-}
 
 // MARK: - Quote row components
 
