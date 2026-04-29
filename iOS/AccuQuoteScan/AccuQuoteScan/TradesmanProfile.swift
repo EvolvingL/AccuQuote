@@ -164,8 +164,7 @@ final class QuestionEngine: ObservableObject {
     @Published var isGeneratingMore: Bool = false
     @Published var profile: TradesmanProfile = TradesmanProfile()
 
-    private static let profileKey    = "aq_tradesman_profile"
-    private static let claudeEndpoint = "\(WEB_APP_BASE_URL)/api/claude"
+    private static let profileKey = "aq_tradesman_profile"
 
     private var generationTask: Task<Void, Never>?
     private var generationRound = 0     // tracks how many batches we've generated
@@ -342,10 +341,12 @@ final class QuestionEngine: ObservableObject {
         ]
         """
 
-        guard let url = URL(string: Self.claudeEndpoint) else { return [] }
+        guard let url = URL(string: ANTHROPIC_API_URL) else { return [] }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(ANTHROPIC_API_KEY, forHTTPHeaderField: "x-api-key")
+        request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
         request.timeoutInterval = 30
 
         let body: [String: Any] = [

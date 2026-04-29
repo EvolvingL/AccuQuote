@@ -32,6 +32,10 @@
 	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>AccuQuote Scan uses the camera to measure room dimensions using LiDAR, AI depth, or AR plane detection.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>AccuQuote uses the microphone so you can describe the job by voice — speak naturally and we'll build your quote.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>AccuQuote transcribes your voice description of the job to generate an accurate quote.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
