@@ -2562,10 +2562,7 @@ struct QuoteView: View {
 
         guard let url = URL(string: ANTHROPIC_API_URL) else {
             stepTask.cancel()
-            await MainActor.run {
-                errorMessage = "Could not connect to Anthropic API."
-                isLoading = false
-            }
+            await MainActor.run { errorMessage = "Invalid API URL."; isLoading = false }
             return
         }
 
@@ -2574,64 +2571,79 @@ struct QuoteView: View {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(ANTHROPIC_API_KEY, forHTTPHeaderField: "x-api-key")
         request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
-        request.timeoutInterval = 45
+        request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
+        request.timeoutInterval = 120   // streaming — per-chunk timeout handled by bytes iterator
 
         let body: [String: Any] = [
             "model": "claude-sonnet-4-6",
             "max_tokens": 4096,
+            "stream": true,
             "messages": [["role": "user", "content": prompt]]
         ]
 
         do {
-            let bodyData = try JSONSerialization.data(withJSONObject: body)
-            request.httpBody = bodyData
-            let (data, response) = try await URLSession.shared.data(for: request)
+            request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
+            // ── Streaming via URLSession.bytes ───────────────────────────────
+            let (byteStream, response) = try await URLSession.shared.bytes(for: request)
             let httpStatus = (response as? HTTPURLResponse)?.statusCode ?? 0
-            let rawText = String(data: data, encoding: .utf8) ?? "<non-UTF8>"
-            print("[QuoteView] HTTP \(httpStatus) — \(rawText.prefix(500))")
 
-            // Surface API-level errors (auth, rate limit, etc.)
-            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let apiError = json["error"] as? [String: Any],
-               let msg = apiError["message"] as? String {
+            guard httpStatus == 200 else {
+                // Collect error body
+                var errData = Data()
+                for try await byte in byteStream { errData.append(byte) }
+                let errText = String(data: errData, encoding: .utf8) ?? ""
+                if let j = try? JSONSerialization.jsonObject(with: errData) as? [String: Any],
+                   let e = j["error"] as? [String: Any], let msg = e["message"] as? String {
+                    throw NSError(domain: "Anthropic", code: httpStatus,
+                                  userInfo: [NSLocalizedDescriptionKey: "API error (\(httpStatus)): \(msg)"])
+                }
                 throw NSError(domain: "Anthropic", code: httpStatus,
-                              userInfo: [NSLocalizedDescriptionKey: "API error (\(httpStatus)): \(msg)"])
+                              userInfo: [NSLocalizedDescriptionKey: "HTTP \(httpStatus): \(errText.prefix(200))"])
             }
 
-            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let content = json["content"] as? [[String: Any]],
-               let rawModelText = content.first?["text"] as? String {
-
-                // Strip markdown code fences (```json ... ``` or ``` ... ```)
-                var text = rawModelText
-                if let fenceStart = text.range(of: "```"),
-                   let fenceEnd = text.range(of: "```", options: .backwards),
-                   fenceStart.lowerBound != fenceEnd.lowerBound {
-                    let inner = text[fenceStart.upperBound..<fenceEnd.lowerBound]
-                    // Drop optional language tag on first line (e.g. "json\n")
-                    text = inner.drop(while: { $0 != "\n" }).dropFirst().description.isEmpty
-                        ? String(inner)
-                        : String(inner.drop(while: { $0 != "\n" }).dropFirst())
-                }
-
-                if let jsonStart = text.firstIndex(of: "{"),
-                   let jsonEnd = text.lastIndex(of: "}") {
-                    let slice = String(text[jsonStart...jsonEnd])
-                    if let sliceData = slice.data(using: .utf8),
-                       let parsed = try? JSONSerialization.jsonObject(with: sliceData) as? [String: Any] {
-                        let q = buildQuote(from: parsed)
-                        stepTask.cancel()
-                        await MainActor.run { quote = q; isLoading = false }
-                        return
-                    }
-                    // JSON found but failed to parse — likely truncated
-                    throw NSError(domain: "QuoteView", code: httpStatus,
-                                  userInfo: [NSLocalizedDescriptionKey: "Quote response was cut off mid-way. Try again — the job description may be too long."])
+            // Accumulate SSE text_delta events into fullText
+            var fullText = ""
+            for try await line in byteStream.lines {
+                guard line.hasPrefix("data: ") else { continue }
+                let payload = String(line.dropFirst(6))
+                guard payload != "[DONE]" else { break }
+                if let d = payload.data(using: .utf8),
+                   let j = try? JSONSerialization.jsonObject(with: d) as? [String: Any],
+                   let delta = j["delta"] as? [String: Any],
+                   let t = delta["text"] as? String {
+                    fullText += t
                 }
             }
-            throw NSError(domain: "QuoteView", code: httpStatus,
-                          userInfo: [NSLocalizedDescriptionKey: "Unexpected response (HTTP \(httpStatus)). Raw: \(rawText.prefix(300))"])
+
+            print("[QuoteView] streamed \(fullText.count) chars")
+
+            // Strip markdown fences if present
+            var text = fullText
+            if let fs = text.range(of: "```"), let fe = text.range(of: "```", options: .backwards),
+               fs.lowerBound != fe.lowerBound {
+                let inner = text[fs.upperBound..<fe.lowerBound]
+                text = String(inner.drop(while: { $0 != "\n" }).dropFirst())
+                if text.isEmpty { text = String(inner) }
+            }
+
+            guard let jsonStart = text.firstIndex(of: "{"),
+                  let jsonEnd = text.lastIndex(of: "}") else {
+                throw NSError(domain: "QuoteView", code: 0,
+                              userInfo: [NSLocalizedDescriptionKey: "No JSON found in response. Raw: \(fullText.prefix(200))"])
+            }
+
+            let slice = String(text[jsonStart...jsonEnd])
+            guard let sliceData = slice.data(using: .utf8),
+                  let parsed = try? JSONSerialization.jsonObject(with: sliceData) as? [String: Any] else {
+                throw NSError(domain: "QuoteView", code: 0,
+                              userInfo: [NSLocalizedDescriptionKey: "Quote was cut off. Please try again."])
+            }
+
+            let q = buildQuote(from: parsed)
+            stepTask.cancel()
+            await MainActor.run { quote = q; isLoading = false }
+            return
         } catch {
             stepTask.cancel()
             await MainActor.run {
