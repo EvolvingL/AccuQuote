@@ -117,27 +117,14 @@ struct ProfileGateView: View {
             .padding(.top, 20)
             .padding(.bottom, 4)
 
-            // ── Unlock banner / question card ───────────────────────────────
+            // ── Question area ───────────────────────────────────────────────
             if isUnlocked {
                 UnlockBanner()
                     .padding(.horizontal, 24)
                     .padding(.top, 24)
                     .transition(.scale(scale: 0.92).combined(with: .opacity))
+                Spacer()
             } else {
-                // Why-this-step explainer
-                StepWhyCard(
-                    icon: "sparkles",
-                    color: AQ.blue,
-                    headline: "Step 1 of 3 — Tell your AI about your business",
-                    detail: "Without this, the AI quotes at industry-average rates — which are almost certainly wrong for you. Answer each question so it knows your actual day rate, material markup, VAT status, and how you price different jobs. The scan unlocks at \(profileUnlockThreshold)%."
-                )
-                .padding(.horizontal, 24)
-                .padding(.top, 20)
-                .padding(.bottom, 4)
-            }
-
-            // ── Question / generating ───────────────────────────────────────
-            if !isUnlocked {
                 ScrollView {
                     VStack(spacing: 0) {
                         if engine.answeredCount == 0 {
@@ -174,7 +161,7 @@ struct ProfileGateView: View {
                         } else if engine.isGeneratingMore {
                             VStack(spacing: 14) {
                                 ProgressView().tint(AQ.blue)
-                                Text("Preparing more questions…")
+                                Text("Loading more questions…")
                                     .font(AQ.body(14))
                                     .foregroundColor(AQ.secondary)
                             }
@@ -191,8 +178,6 @@ struct ProfileGateView: View {
                         Color.clear.frame(height: 120)
                     }
                 }
-            } else {
-                Spacer()
             }
 
             // ── Bottom CTA ──────────────────────────────────────────────────
@@ -200,9 +185,8 @@ struct ProfileGateView: View {
                 Divider().background(AQ.rule).padding(.bottom, 16)
 
                 if isUnlocked {
-                    // Unlock button — prominent green
                     Button {
-                        // ContentView watches profileReady — this view disappears automatically
+                        // ContentView watches profileReady — transitions automatically
                     } label: {
                         HStack(spacing: 10) {
                             Image(systemName: "lock.open.fill")
@@ -216,38 +200,27 @@ struct ProfileGateView: View {
                         .background(AQ.green)
                         .cornerRadius(14)
                         .scaleEffect(unlockPulse ? 1.02 : 1.0)
-                        .animation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true),
-                                   value: unlockPulse)
+                        .animation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true), value: unlockPulse)
                     }
                     .padding(.horizontal, 24)
                     .onAppear { unlockPulse = true }
                 } else {
-                    VStack(spacing: 12) {
-                        // Add a document shortcut
+                    // Secondary options beneath the active question
+                    HStack(spacing: 20) {
                         Button { showDocumentSheet = true } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: "doc.badge.plus")
-                                    .font(.system(size: 14, weight: .medium))
-                                Text("Upload a rate card to boost accuracy faster")
-                                    .font(.system(size: 14, weight: .medium))
+                            HStack(spacing: 5) {
+                                Image(systemName: "doc.badge.plus").font(.system(size: 12, weight: .medium))
+                                Text("Upload rate card").font(.system(size: 13, weight: .medium))
                             }
                             .foregroundColor(AQ.blue)
                         }
-
-                        // ── DEMO BUTTON ─────────────────────────────────────
-                        Button {
-                            withAnimation { engine.loadDemoProfile() }
-                        } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: "flask")
-                                    .font(.system(size: 13, weight: .medium))
-                                Text("Use Demo Profile (testing)")
-                                    .font(.system(size: 13, weight: .medium))
+                        Text("·").foregroundColor(AQ.rule)
+                        Button { withAnimation { engine.loadDemoProfile() } } label: {
+                            HStack(spacing: 5) {
+                                Image(systemName: "flask").font(.system(size: 12, weight: .medium))
+                                Text("Use demo").font(.system(size: 13, weight: .medium))
                             }
                             .foregroundColor(AQ.secondary)
-                            .padding(.horizontal, 16).padding(.vertical, 10)
-                            .background(AQ.fill)
-                            .cornerRadius(10)
                         }
                     }
                     .padding(.horizontal, 24)
@@ -454,84 +427,70 @@ struct ReadyView: View {
                                value: pulseIcon)
             }
             .onAppear { pulseIcon = true }
-            .padding(.bottom, 32)
+            .padding(.bottom, 28)
 
-            Text("Measure the Room")
-                .font(.system(size: 36, weight: .bold))
+            Text("Measure the room.")
+                .font(.system(size: 34, weight: .bold))
                 .foregroundColor(AQ.ink)
-                .padding(.bottom, 10)
-
-            ScanMethodBadge(method: coordinator.scanMethod)
-                .padding(.bottom, 18)
+                .padding(.bottom, 8)
 
             Text(isLiDAR
-                 ? "Walk slowly around the room. LiDAR measures every surface in real time."
-                 : "Sweep the camera around every wall or enter measurements manually.")
+                 ? "LiDAR maps every surface. Walk the room, tap Done."
+                 : "No LiDAR? Sweep the camera or type your tape measure readings.")
                 .font(AQ.body(15))
                 .foregroundColor(AQ.secondary)
                 .multilineTextAlignment(.center)
                 .lineSpacing(5)
-                .padding(.horizontal, 44)
-                .padding(.bottom, 16)
+                .padding(.horizontal, 40)
 
-            // Why this step matters
-            StepWhyCard(
-                icon: "cube.transparent",
-                color: AQ.blue,
-                headline: "Step 2 of 3 — Measure the room",
-                detail: "The scan gives the AI the exact floor area, wall area, and ceiling height it needs to calculate how much material and how many labour days your quote should include. No guessing — every dimension feeds directly into the numbers."
-            )
-            .padding(.horizontal, 24)
-
-            // Non-LiDAR: show method options inline
-            if !isLiDAR {
-                NonLiDARMethodCards(
-                    onSweep: { coordinator.startScan() },
-                    onManual: { showManualEntry = true }
-                )
-                .padding(.top, 28)
-                .padding(.horizontal, 24)
-            }
+            ScanMethodBadge(method: coordinator.scanMethod)
+                .padding(.top, 14)
 
             Spacer()
 
             // ── CTA ─────────────────────────────────────────────────────────
-            if isLiDAR {
-                VStack(spacing: 0) {
-                    Divider().background(AQ.rule).padding(.bottom, 20)
-                    Button { coordinator.startScan() } label: {
-                        Text("Start Scan")
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 17)
-                            .background(AQ.blue)
-                            .cornerRadius(14)
-                    }
-                    .padding(.horizontal, 24)
-                    Text("LiDAR · iPhone 12 Pro or later")
-                        .font(AQ.body(12))
-                        .foregroundColor(AQ.secondary.opacity(0.7))
-                        .padding(.top, 12)
-                }
-            }
+            VStack(spacing: 0) {
+                Divider().background(AQ.rule).padding(.bottom, 20)
 
-            // ── DEMO BUTTON ──────────────────────────────────────────────────
-            Button {
-                coordinator.submitManual(length: 4.8, width: 3.6, height: 2.4)
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "flask")
-                        .font(.system(size: 13, weight: .medium))
-                    Text("Use Demo Room (testing)")
-                        .font(.system(size: 13, weight: .medium))
+                // Primary CTA
+                Button { coordinator.startScan() } label: {
+                    Text(isLiDAR ? "Start LiDAR Scan" : "Sweep Room")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 17)
+                        .background(AQ.blue)
+                        .cornerRadius(14)
                 }
-                .foregroundColor(AQ.secondary)
-                .padding(.horizontal, 16).padding(.vertical, 10)
-                .background(AQ.fill)
-                .cornerRadius(10)
+                .padding(.horizontal, 24)
+
+                // Secondary options
+                HStack(spacing: 20) {
+                    if isLiDAR {
+                        // No alternative for LiDAR — just demo
+                    } else {
+                        Button { showManualEntry = true } label: {
+                            HStack(spacing: 5) {
+                                Image(systemName: "ruler").font(.system(size: 12))
+                                Text("Enter manually").font(.system(size: 13, weight: .medium))
+                            }
+                            .foregroundColor(AQ.secondary)
+                        }
+                        Text("·").foregroundColor(AQ.rule)
+                    }
+                    Button {
+                        coordinator.submitManual(length: 4.8, width: 3.6, height: 2.4)
+                    } label: {
+                        HStack(spacing: 5) {
+                            Image(systemName: "flask").font(.system(size: 12))
+                            Text("Use demo").font(.system(size: 13, weight: .medium))
+                        }
+                        .foregroundColor(AQ.secondary)
+                    }
+                }
+                .padding(.top, 16)
+                .padding(.bottom, 36)
             }
-            .padding(.bottom, 36)
         }
         .background(Color.white)
         .sheet(isPresented: $showOnboarding) {
@@ -1209,12 +1168,11 @@ struct WelcomeBanner: View {
             }
             .onAppear { pulse = true }
 
-            VStack(alignment: .leading, spacing: 6) {
-                Text("The more your AI knows, the more money you make per quote.")
+            VStack(alignment: .leading, spacing: 5) {
+                Text("Your rates. Not averages.")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(AQ.ink)
-                    .lineSpacing(3)
-                Text("Every answer trains your AI to use your actual day rate, markup, and terms — not guesses. Tradespeople who complete the profile typically recoup their subscription cost on the very first quote they send.")
+                Text("Every answer locks in your actual day rate, markup, and terms. Quotes land closer to your real price — every time.")
                     .font(AQ.body(13))
                     .foregroundColor(AQ.secondary)
                     .lineSpacing(4)
@@ -2112,22 +2070,13 @@ struct JobDescriptionView: View {
                         .background(AQ.blue.opacity(0.07)).cornerRadius(20)
                         .padding(.horizontal, 24).padding(.top, 24).padding(.bottom, 28)
 
-                        Text("What needs doing?")
-                            .font(.system(size: 28, weight: .bold)).foregroundColor(AQ.ink)
-                            .padding(.horizontal, 24).padding(.bottom, 8)
+                        Text("What's the job?")
+                            .font(.system(size: 32, weight: .bold)).foregroundColor(AQ.ink)
+                            .padding(.horizontal, 24).padding(.bottom, 6)
 
-                        Text("Describe the job by voice. The more detail, the more accurate the quote.")
+                        Text("Speak it. The more specific, the tighter the quote.")
                             .font(AQ.body(15)).foregroundColor(AQ.secondary)
-                            .lineSpacing(4).padding(.horizontal, 24).padding(.bottom, 16)
-
-                        // Why this step matters
-                        StepWhyCard(
-                            icon: "waveform",
-                            color: AQ.blue,
-                            headline: "Step 3 of 3 — Describe the job",
-                            detail: "The AI uses your description to figure out scope: how many labour days, which materials, whether there's prep or waste removal. Say things like 'full bathroom refit, remove old suite, tile floor and walls' — the more specific you are, the tighter the numbers."
-                        )
-                        .padding(.horizontal, 24).padding(.bottom, 28)
+                            .lineSpacing(4).padding(.horizontal, 24).padding(.bottom, 24)
 
                         // ── Voice waveform / transcript area ─────────────────
                         VoiceInputCard(
@@ -2135,24 +2084,6 @@ struct JobDescriptionView: View {
                             transcript: $jobDescription
                         )
                         .padding(.horizontal, 24).padding(.bottom, 20)
-
-                        // ── DEMO BUTTON ──────────────────────────────────────
-                        Button {
-                            jobDescription = "Full rewire of a 3-bed semi. Strip out all old wiring, first and second fix throughout. 14 double sockets, 10 single sockets, 12 LED downlights in kitchen and bathrooms, new consumer unit with RCDs, outside socket and PIR flood light. Old plaster in good condition — no re-plastering needed. Customer has already cleared the rooms."
-                            showTypeInput = true
-                        } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: "flask")
-                                    .font(.system(size: 13, weight: .medium))
-                                Text("Use Demo Description (testing)")
-                                    .font(.system(size: 13, weight: .medium))
-                            }
-                            .foregroundColor(AQ.secondary)
-                            .padding(.horizontal, 16).padding(.vertical, 10)
-                            .background(AQ.fill)
-                            .cornerRadius(10)
-                        }
-                        .padding(.horizontal, 24).padding(.bottom, 12)
 
                         // ── Typed fallback ───────────────────────────────────
                         if showTypeInput || !jobDescription.isEmpty {
@@ -2193,42 +2124,54 @@ struct JobDescriptionView: View {
                 // ── Bottom bar ───────────────────────────────────────────────
                 VStack(spacing: 0) {
                     Divider().background(AQ.rule)
-                    HStack(spacing: 12) {
-                        // Keyboard toggle
+
+                    // Primary CTA
+                    Button {
+                        typeFocused = false
+                        showQuote = true
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 15, weight: .semibold))
+                            Text("Generate Quote")
+                                .font(.system(size: 17, weight: .semibold))
+                        }
+                        .foregroundColor(canProceed ? .white : AQ.secondary)
+                        .frame(maxWidth: .infinity).padding(.vertical, 16)
+                        .background(canProceed ? AQ.blue : AQ.fill)
+                        .cornerRadius(14)
+                        .animation(.easeInOut(duration: 0.15), value: canProceed)
+                    }
+                    .disabled(!canProceed)
+                    .padding(.horizontal, 24).padding(.top, 14)
+
+                    // Secondary options
+                    HStack(spacing: 20) {
                         Button {
                             showTypeInput.toggle()
                             if showTypeInput { typeFocused = true }
                         } label: {
-                            Image(systemName: showTypeInput ? "keyboard.chevron.compact.down" : "keyboard")
-                                .font(.system(size: 18, weight: .medium))
-                                .foregroundColor(showTypeInput ? AQ.blue : AQ.secondary)
-                                .frame(width: 48, height: 48)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(showTypeInput ? AQ.blue.opacity(0.4) : AQ.rule, lineWidth: 1)
-                                )
-                        }
-
-                        // Generate quote
-                        Button {
-                            typeFocused = false
-                            showQuote = true
-                        } label: {
-                            HStack(spacing: 8) {
-                                Image(systemName: "sparkles")
-                                    .font(.system(size: 15, weight: .semibold))
-                                Text("Generate Quote")
-                                    .font(.system(size: 17, weight: .semibold))
+                            HStack(spacing: 5) {
+                                Image(systemName: showTypeInput ? "keyboard.chevron.compact.down" : "keyboard")
+                                    .font(.system(size: 12))
+                                Text(showTypeInput ? "Hide keyboard" : "Type instead")
+                                    .font(.system(size: 13, weight: .medium))
                             }
-                            .foregroundColor(canProceed ? .white : AQ.secondary)
-                            .frame(maxWidth: .infinity).padding(.vertical, 14)
-                            .background(canProceed ? AQ.blue : AQ.fill)
-                            .cornerRadius(12)
-                            .animation(.easeInOut(duration: 0.15), value: canProceed)
+                            .foregroundColor(showTypeInput ? AQ.blue : AQ.secondary)
                         }
-                        .disabled(!canProceed)
+                        Text("·").foregroundColor(AQ.rule)
+                        Button {
+                            jobDescription = "Full rewire of a 3-bed semi. Strip out all old wiring, first and second fix throughout. 14 double sockets, 10 single sockets, 12 LED downlights in kitchen and bathrooms, new consumer unit with RCDs, outside socket and PIR flood light. Old plaster in good condition — no re-plastering needed. Customer has already cleared the rooms."
+                            showTypeInput = true
+                        } label: {
+                            HStack(spacing: 5) {
+                                Image(systemName: "flask").font(.system(size: 12))
+                                Text("Use demo").font(.system(size: 13, weight: .medium))
+                            }
+                            .foregroundColor(AQ.secondary)
+                        }
                     }
-                    .padding(.horizontal, 24).padding(.vertical, 14)
+                    .padding(.top, 12).padding(.bottom, 28)
                     .background(Color.white)
                 }
             }
@@ -2506,13 +2449,19 @@ struct QuoteView: View {
     @State private var errorMessage: String?
     @State private var loadingStep = 0
 
-    private let loadingSteps = [
-        "Reading room dimensions…",
-        "Analysing job description…",
-        "Calculating materials…",
-        "Applying your rates…",
-        "Building quote…",
-    ]
+    private var supplierName: String {
+        questionEngine.profile.answers.first(where: { $0.id == "supplier" })?.answer
+            .components(separatedBy: ",").first?.trimmingCharacters(in: .whitespaces) ?? "your supplier"
+    }
+
+    private var loadingSteps: [String] { [
+        "Reading room — \(result.floorAreaStr)m² floor, \(String(format: "%.1f", result.wallArea))m² walls",
+        "Scoping the job…",
+        "Matching products on \(supplierName)…",
+        "Pulling live prices…",
+        "Applying your rates & markup…",
+        "Writing your quote…",
+    ] }
 
     var body: some View {
         NavigationView {
@@ -2554,7 +2503,7 @@ struct QuoteView: View {
         // Animate through loading steps
         let stepTask = Task {
             for i in 0..<loadingSteps.count {
-                try? await Task.sleep(nanoseconds: 700_000_000)
+                try? await Task.sleep(nanoseconds: 550_000_000)
                 await MainActor.run { loadingStep = i }
             }
         }
@@ -2716,32 +2665,73 @@ struct QuoteLoadingView: View {
     let step: Int
     let steps: [String]
     @State private var pulse = false
+    @State private var orbRotate = false
 
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
 
+            // Orb
             ZStack {
-                Circle().fill(AQ.blue.opacity(0.07)).frame(width: 100, height: 100)
-                    .scaleEffect(pulse ? 1.2 : 1.0)
-                    .animation(.easeInOut(duration: 1.4).repeatForever(autoreverses: true), value: pulse)
-                Circle().fill(AQ.blue.opacity(0.13)).frame(width: 72, height: 72)
+                Circle().fill(AQ.blue.opacity(0.06)).frame(width: 110, height: 110)
+                    .scaleEffect(pulse ? 1.18 : 1.0)
+                    .animation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true), value: pulse)
+                Circle().fill(AQ.blue.opacity(0.11)).frame(width: 78, height: 78)
+                // Spinning arc
+                Circle()
+                    .trim(from: 0, to: 0.28)
+                    .stroke(AQ.blue.opacity(0.45), style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
+                    .frame(width: 60, height: 60)
+                    .rotationEffect(.degrees(orbRotate ? 360 : 0))
+                    .animation(.linear(duration: 1.8).repeatForever(autoreverses: false), value: orbRotate)
                 Image(systemName: "sparkles")
-                    .font(.system(size: 26, weight: .light))
+                    .font(.system(size: 22, weight: .light))
                     .foregroundColor(AQ.blue)
             }
-            .onAppear { pulse = true }
-            .padding(.bottom, 36)
+            .onAppear { pulse = true; orbRotate = true }
+            .padding(.bottom, 32)
 
             Text("Building your quote")
-                .font(.system(size: 22, weight: .semibold))
+                .font(.system(size: 24, weight: .bold))
                 .foregroundColor(AQ.ink)
-                .padding(.bottom, 10)
+                .padding(.bottom, 6)
 
-            Text(step < steps.count ? steps[step] : "Almost done…")
-                .font(AQ.body(15))
+            Text("Pricing live from your supplier catalogue")
+                .font(.system(size: 13))
                 .foregroundColor(AQ.secondary)
-                .animation(.easeInOut(duration: 0.3), value: step)
+                .padding(.bottom, 36)
+
+            // Step checklist
+            VStack(alignment: .leading, spacing: 14) {
+                ForEach(Array(steps.enumerated()), id: \.offset) { i, label in
+                    HStack(spacing: 12) {
+                        ZStack {
+                            Circle()
+                                .fill(i < step ? AQ.green : (i == step ? AQ.blue.opacity(0.12) : AQ.fill))
+                                .frame(width: 22, height: 22)
+                            if i < step {
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundColor(.white)
+                            } else if i == step {
+                                ProgressView()
+                                    .scaleEffect(0.5)
+                                    .tint(AQ.blue)
+                                    .frame(width: 22, height: 22)
+                            } else {
+                                Circle()
+                                    .fill(AQ.secondary.opacity(0.2))
+                                    .frame(width: 7, height: 7)
+                            }
+                        }
+                        Text(label)
+                            .font(.system(size: 14, weight: i <= step ? .medium : .regular))
+                            .foregroundColor(i < step ? AQ.green : (i == step ? AQ.ink : AQ.secondary.opacity(0.5)))
+                            .animation(.easeInOut(duration: 0.25), value: step)
+                    }
+                }
+            }
+            .padding(.horizontal, 48)
 
             Spacer()
         }
