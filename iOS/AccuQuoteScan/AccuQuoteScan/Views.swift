@@ -2578,7 +2578,7 @@ struct QuoteView: View {
 
         let body: [String: Any] = [
             "model": "claude-sonnet-4-6",
-            "max_tokens": 2048,
+            "max_tokens": 4096,
             "messages": [["role": "user", "content": prompt]]
         ]
 
@@ -2601,20 +2601,37 @@ struct QuoteView: View {
 
             if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                let content = json["content"] as? [[String: Any]],
-               let text = content.first?["text"] as? String,
-               let jsonStart = text.firstIndex(of: "{"),
-               let jsonEnd = text.lastIndex(of: "}") {
-                let slice = String(text[jsonStart...jsonEnd])
-                if let sliceData = slice.data(using: .utf8),
-                   let parsed = try? JSONSerialization.jsonObject(with: sliceData) as? [String: Any] {
-                    let q = buildQuote(from: parsed)
-                    stepTask.cancel()
-                    await MainActor.run { quote = q; isLoading = false }
-                    return
+               let rawModelText = content.first?["text"] as? String {
+
+                // Strip markdown code fences (```json ... ``` or ``` ... ```)
+                var text = rawModelText
+                if let fenceStart = text.range(of: "```"),
+                   let fenceEnd = text.range(of: "```", options: .backwards),
+                   fenceStart.lowerBound != fenceEnd.lowerBound {
+                    let inner = text[fenceStart.upperBound..<fenceEnd.lowerBound]
+                    // Drop optional language tag on first line (e.g. "json\n")
+                    text = inner.drop(while: { $0 != "\n" }).dropFirst().description.isEmpty
+                        ? String(inner)
+                        : String(inner.drop(while: { $0 != "\n" }).dropFirst())
+                }
+
+                if let jsonStart = text.firstIndex(of: "{"),
+                   let jsonEnd = text.lastIndex(of: "}") {
+                    let slice = String(text[jsonStart...jsonEnd])
+                    if let sliceData = slice.data(using: .utf8),
+                       let parsed = try? JSONSerialization.jsonObject(with: sliceData) as? [String: Any] {
+                        let q = buildQuote(from: parsed)
+                        stepTask.cancel()
+                        await MainActor.run { quote = q; isLoading = false }
+                        return
+                    }
+                    // JSON found but failed to parse — likely truncated
+                    throw NSError(domain: "QuoteView", code: httpStatus,
+                                  userInfo: [NSLocalizedDescriptionKey: "Quote response was cut off mid-way. Try again — the job description may be too long."])
                 }
             }
             throw NSError(domain: "QuoteView", code: httpStatus,
-                          userInfo: [NSLocalizedDescriptionKey: "Unexpected response (HTTP \(httpStatus)). Raw: \(rawText.prefix(200))"])
+                          userInfo: [NSLocalizedDescriptionKey: "Unexpected response (HTTP \(httpStatus)). Raw: \(rawText.prefix(300))"])
         } catch {
             stepTask.cancel()
             await MainActor.run {
