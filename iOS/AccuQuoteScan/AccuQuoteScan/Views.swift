@@ -2541,23 +2541,10 @@ struct QuoteView: View {
         - If you are not confident of the exact SKU, use the closest real product \
           and note it with a "~" prefix on the SKU
 
-        Respond with ONLY valid JSON, no markdown:
-        {
-          "labourDays": 2.0,
-          "labourRate": 280.0,
-          "items": [
-            {
-              "description": "Exact product name from supplier",
-              "qty": 1.0,
-              "unit": "each",
-              "unitPrice": 12.50,
-              "sku": "123456",
-              "supplier": "\(preferredSupplier)"
-            }
-          ],
-          "vatRate": 20,
-          "notes": "Any important notes, inclusions, exclusions"
-        }
+        OUTPUT: Return ONLY a single raw JSON object — no markdown, no prose before or after. \
+        Max 12 line items. Keep descriptions concise (under 60 chars).
+        Schema:
+        {"labourDays":2.0,"labourRate":280.0,"items":[{"description":"...","qty":1.0,"unit":"each","unitPrice":12.50,"sku":"123456","supplier":"..."}],"vatRate":20,"notes":"..."}
         """
 
         guard let url = URL(string: ANTHROPIC_API_URL) else {
@@ -2576,7 +2563,7 @@ struct QuoteView: View {
 
         let body: [String: Any] = [
             "model": "claude-sonnet-4-6",
-            "max_tokens": 4096,
+            "max_tokens": 8192,
             "stream": true,
             "messages": [["role": "user", "content": prompt]]
         ]
@@ -2634,10 +2621,14 @@ struct QuoteView: View {
             }
 
             let slice = String(text[jsonStart...jsonEnd])
-            guard let sliceData = slice.data(using: .utf8),
-                  let parsed = try? JSONSerialization.jsonObject(with: sliceData) as? [String: Any] else {
+            guard let sliceData = slice.data(using: .utf8) else {
                 throw NSError(domain: "QuoteView", code: 0,
-                              userInfo: [NSLocalizedDescriptionKey: "Quote was cut off. Please try again."])
+                              userInfo: [NSLocalizedDescriptionKey: "Could not encode response. Raw: \(text.prefix(300))"])
+            }
+            guard let parsed = try? JSONSerialization.jsonObject(with: sliceData) as? [String: Any] else {
+                print("[QuoteView] JSON parse failed. slice=\(slice.prefix(500))")
+                throw NSError(domain: "QuoteView", code: 0,
+                              userInfo: [NSLocalizedDescriptionKey: "Response was truncated — quote too large. Try a simpler job description."])
             }
 
             let q = buildQuote(from: parsed)
