@@ -150,6 +150,27 @@ let foundationQuestions: [OnboardingQuestion] = [
         category: "scope",
         quoteImpact: "Often £200–£800 per job if missed"
     ),
+    OnboardingQuestion(
+        id: "supplier",
+        text: "Which trade supplier do you mainly buy materials from?",
+        hint: "e.g. Screwfix, Toolstation, CEF, Plumb Center, Jewson, Travis Perkins, local merchant…",
+        category: "materials",
+        quoteImpact: "Lets the AI match products and SKUs to your actual supplier's catalogue"
+    ),
+    OnboardingQuestion(
+        id: "business_name",
+        text: "What is your business or trading name?",
+        hint: "e.g. Smith Electrical Ltd, J. Smith Plumbing & Heating…",
+        category: "admin",
+        quoteImpact: "Appears on every quote you send to customers"
+    ),
+    OnboardingQuestion(
+        id: "business_contact",
+        text: "What contact details should appear on your quotes?",
+        hint: "e.g. 07700 900000 · john@smithelectrical.co.uk",
+        category: "admin",
+        quoteImpact: "Printed on the PDF quote sent to your customer"
+    ),
 ]
 
 // MARK: - Question Engine
@@ -232,14 +253,17 @@ final class QuestionEngine: ObservableObject {
     /// Use during testing to bypass the question flow instantly.
     func loadDemoProfile() {
         let demoAnswers: [String: String] = [
-            "trade":            "Electrician",
-            "region":           "Manchester",
-            "day_rate":         "£320/day, £45/hour for callouts",
-            "team_size":        "Just me, occasionally me + 1 apprentice on larger jobs",
-            "material_markup":  "20% on all materials",
-            "vat":              "Yes — VAT registered, 20% added to all quotes",
-            "what_included":    "Labour and materials included unless stated otherwise",
-            "waste_disposal":   "I include disposal for small jobs; skip hire charged separately on large refurbs",
+            "trade":             "Electrician",
+            "region":            "Manchester",
+            "day_rate":          "£320/day, £45/hour for callouts",
+            "team_size":         "Just me, occasionally me + 1 apprentice on larger jobs",
+            "material_markup":   "20% on all materials",
+            "vat":               "Yes — VAT registered, 20% added to all quotes",
+            "what_included":     "Labour and materials included unless stated otherwise",
+            "waste_disposal":    "I include disposal for small jobs; skip hire charged separately on large refurbs",
+            "supplier":          "Screwfix",
+            "business_name":     "Demo Electrical Ltd",
+            "business_contact":  "07700 900000 · demo@demoelectrical.co.uk",
         ]
         for i in questions.indices {
             if let ans = demoAnswers[questions[i].id] {

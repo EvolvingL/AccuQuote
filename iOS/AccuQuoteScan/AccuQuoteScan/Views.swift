@@ -2471,6 +2471,8 @@ struct QuoteLineItem: Identifiable {
     let qty: Double
     let unit: String
     let unitPrice: Double
+    let sku: String        // supplier SKU / product code — empty if unknown
+    let supplier: String   // e.g. "Screwfix", "Toolstation"
     var total: Double { qty * unitPrice }
 }
 
@@ -2561,6 +2563,10 @@ struct QuoteView: View {
         let floorArea = result.floorArea
         let wallArea  = result.wallArea
 
+        let supplierAnswer = questionEngine.profile.answers
+            .first(where: { $0.id == "supplier" })?.answer ?? ""
+        let preferredSupplier = supplierAnswer.isEmpty ? "Screwfix or Toolstation" : supplierAnswer
+
         let prompt = """
         You are an expert quoting assistant for a UK tradesperson.
 
@@ -2573,14 +2579,32 @@ struct QuoteView: View {
 
         JOB DESCRIPTION: \(jobDescription)
 
-        Produce a detailed, accurate quote. Use the tradesperson's actual rates from their profile above if available, otherwise use realistic UK market rates.
+        PREFERRED SUPPLIER: \(preferredSupplier)
+
+        Produce a detailed, accurate quote. Use the tradesperson's actual rates from \
+        their profile above if available, otherwise use realistic UK market rates.
+
+        For every material or product line item:
+        - Match it to a REAL product sold by \(preferredSupplier)
+        - Include the supplier's exact product name as the description
+        - Include the supplier's SKU / product code in the "sku" field
+        - Use a realistic current price for that specific product
+        - If you are not confident of the exact SKU, use the closest real product \
+          and note it with a "~" prefix on the SKU
 
         Respond with ONLY valid JSON, no markdown:
         {
           "labourDays": 2.0,
           "labourRate": 280.0,
           "items": [
-            { "description": "Item name", "qty": 1.0, "unit": "each", "unitPrice": 12.50 }
+            {
+              "description": "Exact product name from supplier",
+              "qty": 1.0,
+              "unit": "each",
+              "unitPrice": 12.50,
+              "sku": "123456",
+              "supplier": "\(preferredSupplier)"
+            }
           ],
           "vatRate": 20,
           "notes": "Any important notes, inclusions, exclusions"
@@ -2661,11 +2685,14 @@ struct QuoteView: View {
         var items: [QuoteLineItem] = []
         if let rawItems = json["items"] as? [[String: Any]] {
             for raw in rawItems {
-                let desc  = (raw["description"] as? String) ?? "Item"
-                let qty   = (raw["qty"] as? Double) ?? 1.0
-                let unit  = (raw["unit"] as? String) ?? "each"
-                let price = (raw["unitPrice"] as? Double) ?? 0.0
-                items.append(QuoteLineItem(description: desc, qty: qty, unit: unit, unitPrice: price))
+                let desc     = (raw["description"] as? String) ?? "Item"
+                let qty      = (raw["qty"] as? Double) ?? 1.0
+                let unit     = (raw["unit"] as? String) ?? "each"
+                let price    = (raw["unitPrice"] as? Double) ?? 0.0
+                let sku      = (raw["sku"] as? String) ?? ""
+                let supplier = (raw["supplier"] as? String) ?? ""
+                items.append(QuoteLineItem(description: desc, qty: qty, unit: unit,
+                                           unitPrice: price, sku: sku, supplier: supplier))
             }
         }
 
@@ -2761,6 +2788,8 @@ struct QuoteResultView: View {
     let quote: GeneratedQuote
     let result: RoomDimensions
     let onStartOver: () -> Void
+    @EnvironmentObject var questionEngine: QuestionEngine
+    @State private var pdfURL: URL?
 
     var body: some View {
         ScrollView {
@@ -2799,12 +2828,38 @@ struct QuoteResultView: View {
                 if !quote.items.isEmpty {
                     QuoteSectionHeader(title: "Materials & Items")
                     ForEach(quote.items) { item in
-                        QuoteRow(
-                            label: "\(item.description)\n\(formatQty(item.qty)) \(item.unit) × £\(String(format: "%.2f", item.unitPrice))",
-                            value: "£\(String(format: "%.2f", item.total))",
-                            bold: false,
-                            multiline: true
-                        )
+                        VStack(alignment: .leading, spacing: 0) {
+                            QuoteRow(
+                                label: item.description,
+                                value: "£\(String(format: "%.2f", item.total))",
+                                bold: false,
+                                multiline: false
+                            )
+                            HStack(spacing: 8) {
+                                Text("\(formatQty(item.qty)) \(item.unit) × £\(String(format: "%.2f", item.unitPrice))")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(AQ.secondary)
+                                if !item.sku.isEmpty {
+                                    Text("·")
+                                        .foregroundColor(AQ.rule)
+                                    HStack(spacing: 3) {
+                                        if !item.supplier.isEmpty {
+                                            Text(item.supplier)
+                                                .font(.system(size: 11, weight: .medium))
+                                                .foregroundColor(AQ.blue)
+                                        }
+                                        Text("SKU \(item.sku)")
+                                            .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                                            .foregroundColor(AQ.blue)
+                                    }
+                                    .padding(.horizontal, 7).padding(.vertical, 3)
+                                    .background(AQ.blue.opacity(0.07))
+                                    .cornerRadius(5)
+                                }
+                            }
+                            .padding(.horizontal, 24)
+                            .padding(.bottom, 12)
+                        }
                         Divider().background(AQ.rule).padding(.leading, 24)
                     }
                 }
@@ -2832,11 +2887,14 @@ struct QuoteResultView: View {
 
                 // Actions
                 VStack(spacing: 10) {
-                    ShareLink(item: buildShareText()) {
+                    Button {
+                        let url = buildPDF()
+                        pdfURL = url
+                    } label: {
                         HStack(spacing: 8) {
                             Image(systemName: "square.and.arrow.up")
                                 .font(.system(size: 15, weight: .semibold))
-                            Text("Share Quote")
+                            Text("Share Quote PDF")
                                 .font(.system(size: 17, weight: .semibold))
                         }
                         .foregroundColor(.white)
@@ -2857,29 +2915,256 @@ struct QuoteResultView: View {
             }
         }
         .background(Color.white)
+        .sheet(item: $pdfURL) { url in
+            ShareSheet(url: url)
+        }
     }
 
     private func formatQty(_ qty: Double) -> String {
         qty == qty.rounded() ? "\(Int(qty))" : String(format: "%.1f", qty)
     }
 
-    private func buildShareText() -> String {
-        var lines = ["QUOTE — AccuQuote"]
-        if !quote.customerName.isEmpty { lines.append("Customer: \(quote.customerName)") }
-        lines.append("Room: \(result.roomType.capitalized) \(result.lengthStr)×\(result.widthStr)×\(result.heightStr)m")
-        lines.append("Work: \(quote.jobDescription)")
-        lines.append("")
-        lines.append("Labour: £\(Int(quote.labourTotal))")
-        lines.append("Materials: £\(Int(quote.materialsTotal))")
-        lines.append("Subtotal: £\(Int(quote.subtotal))")
-        lines.append("VAT (\(Int(quote.vatRate))%): £\(String(format: "%.2f", quote.vatAmount))")
-        lines.append("TOTAL: £\(Int(quote.grandTotal)) inc. VAT")
-        if !quote.notes.isEmpty { lines.append("\nNotes: \(quote.notes)") }
-        lines.append("\nGenerated by AccuQuote")
-        return lines.joined(separator: "\n")
+    // MARK: - PDF Generation
+
+    private func buildPDF() -> URL {
+        let profile = questionEngine.profile
+        let businessName    = profile.answers.first(where: { $0.id == "business_name" })?.answer ?? "AccuQuote"
+        let businessContact = profile.answers.first(where: { $0.id == "business_contact" })?.answer ?? ""
+        let traderName      = profile.answers.first(where: { $0.id == "trade" })?.answer ?? ""
+        let region          = profile.answers.first(where: { $0.id == "region" })?.answer ?? ""
+
+        let pageW: CGFloat = 595   // A4 points
+        let pageH: CGFloat = 842
+        let margin: CGFloat = 48
+        let col2: CGFloat = pageW - margin   // right edge
+
+        let fmt = UIGraphicsPDFRendererFormat()
+        fmt.documentInfo = [
+            kCGPDFContextTitle as String:  "Quote — \(businessName)",
+            kCGPDFContextAuthor as String: businessName,
+        ]
+
+        let renderer = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: pageW, height: pageH), format: fmt)
+
+        let tmpURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("AccuQuote-\(UUID().uuidString.prefix(8)).pdf")
+
+        let dateStr = DateFormatter.localizedString(from: Date(), dateStyle: .long, timeStyle: .none)
+
+        try? renderer.writePDF(to: tmpURL) { ctx in
+            ctx.beginPage()
+            var y: CGFloat = margin
+
+            // ── Header bar ──────────────────────────────────────────────────
+            let headerRect = CGRect(x: 0, y: 0, width: pageW, height: 80)
+            UIColor(AQ.ink).setFill(); UIRectFill(headerRect)
+
+            let bizAttrs: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 18, weight: .bold),
+                .foregroundColor: UIColor.white,
+            ]
+            let subAttrs: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 11),
+                .foregroundColor: UIColor.white.withAlphaComponent(0.65),
+            ]
+            businessName.draw(at: CGPoint(x: margin, y: 20), withAttributes: bizAttrs)
+            let subLine = [traderName, region].filter { !$0.isEmpty }.joined(separator: " · ")
+            if !subLine.isEmpty {
+                subLine.draw(at: CGPoint(x: margin, y: 43), withAttributes: subAttrs)
+            }
+            if !businessContact.isEmpty {
+                businessContact.draw(at: CGPoint(x: margin, y: 57), withAttributes: subAttrs)
+            }
+            // Date right-aligned
+            let dateAttrs: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 11),
+                .foregroundColor: UIColor.white.withAlphaComponent(0.65),
+            ]
+            let dateSize = dateStr.size(withAttributes: dateAttrs)
+            dateStr.draw(at: CGPoint(x: col2 - dateSize.width, y: 57), withAttributes: dateAttrs)
+
+            y = 100
+
+            // ── QUOTE title + total ──────────────────────────────────────────
+            let quoteLabel = "QUOTE"
+            let labelAttrs: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 10, weight: .semibold),
+                .foregroundColor: UIColor(AQ.secondary),
+                .kern: 2.0,
+            ]
+            quoteLabel.draw(at: CGPoint(x: margin, y: y), withAttributes: labelAttrs)
+            y += 18
+
+            // Customer
+            if !quote.customerName.isEmpty {
+                let custAttrs: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.systemFont(ofSize: 15, weight: .semibold),
+                    .foregroundColor: UIColor(AQ.ink),
+                ]
+                quote.customerName.draw(at: CGPoint(x: margin, y: y), withAttributes: custAttrs)
+                y += 22
+            }
+
+            // Grand total right block
+            let totalStr = "£\(Int(quote.grandTotal).formatted())"
+            let totalAttrs: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 36, weight: .bold),
+                .foregroundColor: UIColor(AQ.ink),
+            ]
+            let totalSize = totalStr.size(withAttributes: totalAttrs)
+            totalStr.draw(at: CGPoint(x: col2 - totalSize.width, y: y - 10), withAttributes: totalAttrs)
+            let incVATAttrs: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 10),
+                .foregroundColor: UIColor(AQ.secondary),
+            ]
+            "inc. VAT".draw(at: CGPoint(x: col2 - 42, y: y + 30), withAttributes: incVATAttrs)
+
+            y += 52
+
+            // ── Divider ──────────────────────────────────────────────────────
+            func drawRule(_ yPos: CGFloat) {
+                UIColor(AQ.rule).setStroke()
+                let path = UIBezierPath()
+                path.move(to: CGPoint(x: margin, y: yPos))
+                path.addLine(to: CGPoint(x: col2, y: yPos))
+                path.lineWidth = 0.5; path.stroke()
+            }
+            drawRule(y); y += 16
+
+            // ── Section header helper ────────────────────────────────────────
+            func sectionHeader(_ title: String) {
+                let a: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.systemFont(ofSize: 9, weight: .semibold),
+                    .foregroundColor: UIColor(AQ.secondary),
+                    .kern: 1.2,
+                ]
+                title.uppercased().draw(at: CGPoint(x: margin, y: y), withAttributes: a)
+                y += 16
+            }
+
+            // ── Row helper ───────────────────────────────────────────────────
+            func row(left: String, right: String, bold: Bool = false, secondary: String = "") {
+                let lAttrs: [NSAttributedString.Key: Any] = [
+                    .font: bold ? UIFont.systemFont(ofSize: 13, weight: .semibold)
+                                : UIFont.systemFont(ofSize: 13),
+                    .foregroundColor: UIColor(AQ.ink),
+                ]
+                let rAttrs: [NSAttributedString.Key: Any] = [
+                    .font: bold ? UIFont.systemFont(ofSize: 13, weight: .semibold)
+                                : UIFont.systemFont(ofSize: 13),
+                    .foregroundColor: UIColor(bold ? AQ.ink : AQ.ink),
+                ]
+                left.draw(at: CGPoint(x: margin, y: y), withAttributes: lAttrs)
+                let rSize = right.size(withAttributes: rAttrs)
+                right.draw(at: CGPoint(x: col2 - rSize.width, y: y), withAttributes: rAttrs)
+                y += 18
+                if !secondary.isEmpty {
+                    let sAttrs: [NSAttributedString.Key: Any] = [
+                        .font: UIFont.systemFont(ofSize: 10),
+                        .foregroundColor: UIColor(AQ.secondary),
+                    ]
+                    secondary.draw(at: CGPoint(x: margin, y: y), withAttributes: sAttrs)
+                    y += 14
+                }
+                y += 4
+                drawRule(y); y += 10
+            }
+
+            // ── Labour ───────────────────────────────────────────────────────
+            sectionHeader("Labour")
+            let labourLabel = "\(String(format: "%.1f", quote.labourDays)) day\(quote.labourDays == 1 ? "" : "s") @ £\(Int(quote.labourRate))/day"
+            row(left: labourLabel, right: "£\(Int(quote.labourTotal).formatted())")
+
+            // ── Materials ────────────────────────────────────────────────────
+            if !quote.items.isEmpty {
+                y += 6
+                sectionHeader("Materials & Items")
+                for item in quote.items {
+                    var meta = "\(formatQty(item.qty)) \(item.unit) × £\(String(format: "%.2f", item.unitPrice))"
+                    if !item.sku.isEmpty {
+                        let sup = item.supplier.isEmpty ? "" : "\(item.supplier) "
+                        meta += "   \(sup)SKU \(item.sku)"
+                    }
+                    // Wrap long descriptions
+                    let maxDescWidth = pageW - margin * 2 - 80
+                    let descAttrs: [NSAttributedString.Key: Any] = [.font: UIFont.systemFont(ofSize: 13)]
+                    let descWidth = item.description.size(withAttributes: descAttrs).width
+                    if descWidth > maxDescWidth {
+                        // truncate with ellipsis
+                        row(left: String(item.description.prefix(55)) + "…",
+                            right: "£\(String(format: "%.2f", item.total))",
+                            secondary: meta)
+                    } else {
+                        row(left: item.description,
+                            right: "£\(String(format: "%.2f", item.total))",
+                            secondary: meta)
+                    }
+                }
+            }
+
+            // ── Summary ──────────────────────────────────────────────────────
+            y += 6
+            sectionHeader("Summary")
+            row(left: "Subtotal",               right: "£\(Int(quote.subtotal).formatted())")
+            row(left: "VAT (\(Int(quote.vatRate))%)", right: "£\(String(format: "%.2f", quote.vatAmount))")
+            row(left: "Total",                  right: "£\(Int(quote.grandTotal).formatted())", bold: true)
+
+            // ── Notes ────────────────────────────────────────────────────────
+            if !quote.notes.isEmpty {
+                y += 10
+                sectionHeader("Notes & Inclusions")
+                let notesAttrs: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.systemFont(ofSize: 12),
+                    .foregroundColor: UIColor(AQ.secondary),
+                ]
+                let maxW = pageW - margin * 2
+                let notesRect = CGRect(x: margin, y: y, width: maxW, height: 200)
+                quote.notes.draw(in: notesRect, withAttributes: notesAttrs)
+                let estimatedLines = max(1, Int(ceil(Double(quote.notes.count) / 90)))
+                y += CGFloat(estimatedLines) * 16 + 16
+            }
+
+            // ── Job description ──────────────────────────────────────────────
+            y += 6
+            sectionHeader("Job Description")
+            let jobAttrs: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 12),
+                .foregroundColor: UIColor(AQ.secondary),
+            ]
+            let jobRect = CGRect(x: margin, y: y, width: pageW - margin * 2, height: 150)
+            quote.jobDescription.draw(in: jobRect, withAttributes: jobAttrs)
+
+            // ── Footer ───────────────────────────────────────────────────────
+            let footerY: CGFloat = pageH - 36
+            drawRule(footerY - 8)
+            let footerAttrs: [NSAttributedString.Key: Any] = [
+                .font: UIFont.systemFont(ofSize: 9),
+                .foregroundColor: UIColor(AQ.secondary),
+            ]
+            "Generated by AccuQuote".draw(at: CGPoint(x: margin, y: footerY), withAttributes: footerAttrs)
+            let footerDate = "Quote date: \(dateStr)"
+            let fdSize = footerDate.size(withAttributes: footerAttrs)
+            footerDate.draw(at: CGPoint(x: col2 - fdSize.width, y: footerY), withAttributes: footerAttrs)
+        }
+
+        return tmpURL
     }
 }
 
+
+// MARK: - PDF Share Sheet
+
+extension URL: @retroactive Identifiable {
+    public var id: String { absoluteString }
+}
+
+struct ShareSheet: UIViewControllerRepresentable {
+    let url: URL
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: [url], applicationActivities: nil)
+    }
+    func updateUIViewController(_ vc: UIActivityViewController, context: Context) {}
+}
 
 // MARK: - Quote row components
 
