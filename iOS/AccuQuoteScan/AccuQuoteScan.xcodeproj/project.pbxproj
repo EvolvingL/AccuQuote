@@ -15,6 +15,7 @@
 		A110 /* TradesmanProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A012 /* TradesmanProfile.swift */; };
 		A111 /* APIKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = A013 /* APIKeys.swift */; };
 		A112 /* accuquote-logo.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = A014 /* accuquote-logo.jpeg */; };
+		A113 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A015 /* Assets.xcassets */; };
 		A105 /* RoomPlan.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A005 /* RoomPlan.framework */; };
 		A106 /* RealityKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A007 /* RealityKit.framework */; };
 		A107 /* ARKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A008 /* ARKit.framework */; };
@@ -35,6 +36,7 @@
 		A012 /* TradesmanProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TradesmanProfile.swift; sourceTree = "<group>"; };
 		A013 /* APIKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIKeys.swift; sourceTree = "<group>"; };
 		A014 /* accuquote-logo.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "accuquote-logo.jpeg"; sourceTree = "<group>"; };
+		A015 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A010 /* AccuQuoteScan.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AccuQuoteScan.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -73,6 +75,7 @@
 				A012 /* TradesmanProfile.swift */,
 				A013 /* APIKeys.swift */,
 				A014 /* accuquote-logo.jpeg */,
+				A015 /* Assets.xcassets */,
 				A006 /* Info.plist */,
 			);
 			path = AccuQuoteScan;
@@ -156,6 +159,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A112 /* accuquote-logo.jpeg in Resources */,
+				A113 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

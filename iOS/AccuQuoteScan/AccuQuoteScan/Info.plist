@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en-GB</string>
 	<key>CFBundleDisplayName</key>
-	<string>AccuQuote Scan</string>
+	<string>AccuQuote</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -43,6 +43,21 @@
 	</dict>
 	<key>UILaunchScreen</key>
 	<dict/>
+	<!-- App Store: no proprietary encryption used -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+
+	<!-- App Store: privacy manifest keys -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>AccuQuote uses your location to suggest the nearest trade supplier branch for your materials order.</string>
+
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>AccuQuote can save your PDF quote to Photos so you can share it easily.</string>
+
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>AccuQuote saves generated quote PDFs to your photo library.</string>
+
+	<!-- App Store Connect: minimum iOS 16, LiDAR optional (not required — app falls back gracefully) -->
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
 		<string>arm64</string>
