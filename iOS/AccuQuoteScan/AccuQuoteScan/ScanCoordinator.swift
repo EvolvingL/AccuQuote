@@ -150,6 +150,38 @@ final class ScanCoordinator: ObservableObject {
         state = .complete(result)
     }
 
+    /// Submit a custom polygon floor shape defined by vertices in metres.
+    /// Uses the shoelace formula for area; bounding box for length/width.
+    func submitCustomShape(vertices: [CGPoint], scale: Double, height: Double) {
+        // Shoelace formula for polygon area (vertices in metres)
+        let n = vertices.count
+        guard n >= 3 else { return }
+        var shoelace: Double = 0
+        for i in 0..<n {
+            let j = (i + 1) % n
+            shoelace += Double(vertices[i].x) * Double(vertices[j].y)
+            shoelace -= Double(vertices[j].x) * Double(vertices[i].y)
+        }
+        let area = abs(shoelace) / 2.0 * scale * scale
+
+        // Bounding box for length/width approximation
+        let xs = vertices.map { Double($0.x) * scale }
+        let ys = vertices.map { Double($0.y) * scale }
+        let length = (xs.max()! - xs.min()!).rounded(to: 2)
+        let width  = (ys.max()! - ys.min()!).rounded(to: 2)
+
+        let result = RoomDimensions(
+            length: length, width: width,
+            height: height.rounded(to: 2),
+            floorArea: (area * 100).rounded() / 100,
+            wallCount: n,
+            doorCount: 1, windowCount: 1,
+            roomType: ScanCoordinator.guessRoomType(area: area, windows: 1),
+            scanMethod: .manual
+        )
+        state = .complete(result)
+    }
+
     func reset() {
         lidarSession?.stop(); lidarSession = nil; bridge = nil; captureView = nil
         sweepTimer?.invalidate(); sweepTimer = nil
