@@ -14,6 +14,7 @@
 		A109 /* PhotogrammetryAssetManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A011 /* PhotogrammetryAssetManager.swift */; };
 		A110 /* TradesmanProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A012 /* TradesmanProfile.swift */; };
 		A111 /* APIKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = A013 /* APIKeys.swift */; };
+		A112 /* accuquote-logo.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = A014 /* accuquote-logo.jpeg */; };
 		A105 /* RoomPlan.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A005 /* RoomPlan.framework */; };
 		A106 /* RealityKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A007 /* RealityKit.framework */; };
 		A107 /* ARKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A008 /* ARKit.framework */; };
@@ -33,6 +34,7 @@
 		A011 /* PhotogrammetryAssetManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotogrammetryAssetManager.swift; sourceTree = "<group>"; };
 		A012 /* TradesmanProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TradesmanProfile.swift; sourceTree = "<group>"; };
 		A013 /* APIKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIKeys.swift; sourceTree = "<group>"; };
+		A014 /* accuquote-logo.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "accuquote-logo.jpeg"; sourceTree = "<group>"; };
 		A010 /* AccuQuoteScan.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AccuQuoteScan.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -70,6 +72,7 @@
 				A011 /* PhotogrammetryAssetManager.swift */,
 				A012 /* TradesmanProfile.swift */,
 				A013 /* APIKeys.swift */,
+				A014 /* accuquote-logo.jpeg */,
 				A006 /* Info.plist */,
 			);
 			path = AccuQuoteScan;
@@ -103,6 +106,7 @@
 			buildPhases = (
 				B001 /* Frameworks */,
 				B002 /* Sources */,
+				B003 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -145,6 +149,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		B003 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A112 /* accuquote-logo.jpeg in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		B002 /* Sources */ = {

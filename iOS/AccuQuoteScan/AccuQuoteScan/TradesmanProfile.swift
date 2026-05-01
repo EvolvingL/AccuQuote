@@ -158,6 +158,13 @@ let foundationQuestions: [OnboardingQuestion] = [
         quoteImpact: "Lets the AI match products and SKUs to your actual supplier's catalogue"
     ),
     OnboardingQuestion(
+        id: "usual_items",
+        text: "What products or materials do you order most often from your supplier?",
+        hint: "e.g. 2.5mm twin & earth cable, 3x2 timber, 12.5mm plasterboard, PVCu conduit, sand & cement…",
+        category: "materials",
+        quoteImpact: "Pins the BOM to your exact products — no generic substitutes"
+    ),
+    OnboardingQuestion(
         id: "business_name",
         text: "What is your business or trading name?",
         hint: "e.g. Smith Electrical Ltd, J. Smith Plumbing & Heating…",
@@ -262,6 +269,7 @@ final class QuestionEngine: ObservableObject {
             "what_included":     "Labour and materials included unless stated otherwise",
             "waste_disposal":    "I include disposal for small jobs; skip hire charged separately on large refurbs",
             "supplier":          "Screwfix",
+            "usual_items":       "2.5mm twin & earth cable, 1.5mm twin & earth cable, 20mm white PVCu conduit, 13A unswitched spur, double socket outlets (white), 6A MCBs, consumer unit blanks, 3×2 timber frame, cable clips",
             "business_name":     "Demo Electrical Ltd",
             "business_contact":  "07700 900000 · demo@demoelectrical.co.uk",
         ]

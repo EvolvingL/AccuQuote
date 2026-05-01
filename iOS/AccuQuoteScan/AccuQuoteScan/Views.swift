@@ -34,6 +34,31 @@ private enum AQ {
     }
 }
 
+// MARK: - Logo component
+// Displays the AccuQuote horizontal logo on a dark pill so the JPEG renders correctly
+// against the app's white background.
+
+struct AQLogoView: View {
+    var height: CGFloat = 22
+    var body: some View {
+        if let uiImage = UIImage(named: "accuquote-logo") {
+            Image(uiImage: uiImage)
+                .resizable()
+                .scaledToFit()
+                .frame(height: height)
+                .clipShape(RoundedRectangle(cornerRadius: height * 0.2))
+                .padding(.horizontal, 6)
+                .padding(.vertical, 3)
+                .background(Color(red: 0.06, green: 0.07, blue: 0.13))
+                .clipShape(RoundedRectangle(cornerRadius: height * 0.3))
+        } else {
+            Text("AccuQuote")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundColor(AQ.ink)
+        }
+    }
+}
+
 // MARK: - Profile Gate View
 // Shown until personalisation reaches profileUnlockThreshold (70%).
 // The scan cannot be started until the AI profile is green.
@@ -55,10 +80,8 @@ struct ProfileGateView: View {
 
             // ── Top bar ─────────────────────────────────────────────────────
             HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("AccuQuote")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(AQ.ink)
+                VStack(alignment: .leading, spacing: 4) {
+                    AQLogoView()
                     Text("AI Profile Setup")
                         .font(.system(size: 12, weight: .regular))
                         .foregroundColor(AQ.secondary)
@@ -375,10 +398,8 @@ struct ReadyView: View {
 
             // ── Navigation bar ──────────────────────────────────────────────
             HStack(alignment: .center) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("AccuQuote")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(AQ.ink)
+                VStack(alignment: .leading, spacing: 4) {
+                    AQLogoView()
                     Text("Room Scanner")
                         .font(.system(size: 12, weight: .regular))
                         .foregroundColor(AQ.secondary)
@@ -1914,10 +1935,8 @@ struct ResultView: View {
 
             // Header
             HStack(alignment: .center) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("AccuQuote")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(AQ.ink)
+                VStack(alignment: .leading, spacing: 4) {
+                    AQLogoView()
                     Text("Room measured")
                         .font(.system(size: 12))
                         .foregroundColor(AQ.green)
@@ -2515,6 +2534,8 @@ struct QuoteView: View {
         let supplierAnswer = questionEngine.profile.answers
             .first(where: { $0.id == "supplier" })?.answer ?? ""
         let preferredSupplier = supplierAnswer.isEmpty ? "Screwfix or Toolstation" : supplierAnswer
+        let usualItemsAnswer = questionEngine.profile.answers
+            .first(where: { $0.id == "usual_items" })?.answer ?? ""
 
         let prompt = """
         You are an expert quoting assistant for a UK tradesperson.
@@ -2529,12 +2550,15 @@ struct QuoteView: View {
         JOB DESCRIPTION: \(jobDescription)
 
         PREFERRED SUPPLIER: \(preferredSupplier)
+        \(usualItemsAnswer.isEmpty ? "" : "PRODUCTS THEY REGULARLY ORDER: \(usualItemsAnswer)")
 
         Produce a detailed, accurate quote. Use the tradesperson's actual rates from \
         their profile above if available, otherwise use realistic UK market rates.
 
         For every material or product line item:
-        - Match it to a REAL product sold by \(preferredSupplier)
+        - Prioritise the products listed under PRODUCTS THEY REGULARLY ORDER above — \
+          use those exact product names and find their SKU at \(preferredSupplier)
+        - Match all items to REAL products sold by \(preferredSupplier)
         - Include the supplier's exact product name as the description
         - Include the supplier's SKU / product code in the "sku" field
         - Use a realistic current price for that specific product
