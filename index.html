@@ -221,6 +221,77 @@ function dismissPWABanner() {
 </script>
 </head>
 <body>
+<!-- AccuQuote icon — defined once as a reusable SVG symbol -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+  <symbol id="aq-icon" viewBox="0 0 632 632">
+    <defs>
+      <linearGradient id="aq-gv" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFF5A0"/><stop offset="8%" stop-color="#FFE135"/><stop offset="30%" stop-color="#D4A012"/><stop offset="55%" stop-color="#C8920A"/><stop offset="80%" stop-color="#B87C04"/><stop offset="100%" stop-color="#8B5E00"/></linearGradient>
+      <linearGradient id="aq-gxL" gradientUnits="userSpaceOnUse" x1="55" y1="0" x2="203" y2="0"><stop offset="0%" stop-color="#5A3200"/><stop offset="15%" stop-color="#C8920A"/><stop offset="35%" stop-color="#FFE135"/><stop offset="50%" stop-color="#FFF8C8"/><stop offset="65%" stop-color="#FFE135"/><stop offset="82%" stop-color="#C8920A"/><stop offset="100%" stop-color="#5A3200"/></linearGradient>
+      <linearGradient id="aq-gxR" gradientUnits="userSpaceOnUse" x1="417" y1="0" x2="565" y2="0"><stop offset="0%" stop-color="#5A3200"/><stop offset="18%" stop-color="#C8920A"/><stop offset="38%" stop-color="#FFE135"/><stop offset="50%" stop-color="#FFF8C8"/><stop offset="65%" stop-color="#FFE135"/><stop offset="82%" stop-color="#C8920A"/><stop offset="100%" stop-color="#5A3200"/></linearGradient>
+      <linearGradient id="aq-gcb" gradientUnits="userSpaceOnUse" x1="0" y1="248" x2="0" y2="276"><stop offset="0%" stop-color="#FFF5A0"/><stop offset="25%" stop-color="#FFE135"/><stop offset="55%" stop-color="#C8920A"/><stop offset="85%" stop-color="#7A4A00"/><stop offset="100%" stop-color="#4A2A00"/></linearGradient>
+      <radialGradient id="aq-grh" cx="36%" cy="28%" r="65%"><stop offset="0%" stop-color="#FFF8C8"/><stop offset="20%" stop-color="#FFE135"/><stop offset="55%" stop-color="#C8920A"/><stop offset="80%" stop-color="#8B5E00"/><stop offset="100%" stop-color="#4A2D00"/></radialGradient>
+      <radialGradient id="aq-gri" cx="40%" cy="34%" r="60%"><stop offset="0%" stop-color="#FFF8C0"/><stop offset="30%" stop-color="#FFD600"/><stop offset="100%" stop-color="#7A5000"/></radialGradient>
+      <radialGradient id="aq-grs" cx="34%" cy="28%" r="66%"><stop offset="0%" stop-color="#FFF8D0"/><stop offset="30%" stop-color="#FFD600"/><stop offset="65%" stop-color="#C8920A"/><stop offset="100%" stop-color="#6B4400"/></radialGradient>
+      <linearGradient id="aq-gtip" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FF9030"/><stop offset="50%" stop-color="#D05010"/><stop offset="100%" stop-color="#7A2800"/></linearGradient>
+      <linearGradient id="aq-gwood" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#8B5E2E"/><stop offset="30%" stop-color="#C48840"/><stop offset="55%" stop-color="#E0A850"/><stop offset="80%" stop-color="#C48840"/><stop offset="100%" stop-color="#8B5E2E"/></linearGradient>
+      <linearGradient id="aq-ggraph" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#1E1E1E"/><stop offset="40%" stop-color="#4A4A4A"/><stop offset="60%" stop-color="#606060"/><stop offset="100%" stop-color="#1E1E1E"/></linearGradient>
+      <radialGradient id="aq-gbg" cx="38%" cy="28%" r="72%"><stop offset="0%" stop-color="#1A2236"/><stop offset="50%" stop-color="#0D1120"/><stop offset="100%" stop-color="#060709"/></radialGradient>
+      <radialGradient id="aq-gbg-glow" cx="50%" cy="42%" r="44%"><stop offset="0%" stop-color="rgba(255,210,0,0.10)"/><stop offset="100%" stop-color="rgba(255,210,0,0)"/></radialGradient>
+      <filter id="aq-glow"><feGaussianBlur stdDeviation="4.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      <filter id="aq-hglow"><feGaussianBlur stdDeviation="9" result="b"/><feColorMatrix in="b" values="1 0.7 0 0 0  0.7 0.5 0 0 0  0 0 0 0 0  0 0 0 0.55 0" result="g"/><feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      <filter id="aq-blur2"><feGaussianBlur stdDeviation="1.8"/></filter>
+      <filter id="aq-dshadow"><feDropShadow dx="3" dy="5" stdDeviation="8" flood-color="#000" flood-opacity="0.45"/></filter>
+    </defs>
+    <rect width="632" height="632" fill="url(#aq-gbg)" rx="126"/>
+    <rect width="632" height="632" fill="url(#aq-gbg-glow)" rx="126"/>
+    <g transform="translate(6,6)">
+      <g filter="url(#aq-dshadow)" opacity="0.75"><polygon points="298.58,32.55 321.42,43.45 60.46,574.61 49.54,569.39" fill="#7A4800"/><polygon points="298.58,43.45 321.42,32.55 570.46,569.39 559.54,574.61" fill="#7A4800"/><line x1="203.0" y1="262" x2="417.0" y2="262" stroke="#7A4800" stroke-width="18.7" stroke-linecap="round"/></g>
+      <polygon points="298.58,32.55 321.42,43.45 60.46,574.61 49.54,569.39" fill="url(#aq-gv)" opacity="0.88"/>
+      <polygon points="298.58,32.55 321.42,43.45 60.46,574.61 49.54,569.39" fill="url(#aq-gxL)" opacity="0.68"/>
+      <polygon points="298.58,32.55 321.42,43.45 60.46,574.61 49.54,569.39" fill="none" stroke="rgba(70,35,0,0.52)" stroke-width="1.3"/>
+      <line x1="313.2" y1="39.5" x2="58.2" y2="573.5" stroke="rgba(255,252,185,0.85)" stroke-width="3.0" stroke-linecap="round" filter="url(#aq-blur2)"/>
+      <line x1="307.7" y1="36.9" x2="52.7" y2="570.9" stroke="rgba(255,240,120,0.35)" stroke-width="5.0" stroke-linecap="round"/>
+      <line x1="260.9" y1="119.5" x2="277.5" y2="127.4" stroke="rgba(0,0,0,0.32)" stroke-width="1.7"/><line x1="250.7" y1="140.8" x2="267.3" y2="148.8" stroke="rgba(0,0,0,0.32)" stroke-width="1.7"/><line x1="240.5" y1="162.2" x2="257.1" y2="170.1" stroke="rgba(0,0,0,0.32)" stroke-width="1.7"/><line x1="230.3" y1="183.5" x2="246.9" y2="191.5" stroke="rgba(0,0,0,0.32)" stroke-width="1.7"/><line x1="220.1" y1="204.9" x2="236.7" y2="212.9" stroke="rgba(0,0,0,0.32)" stroke-width="1.7"/><line x1="209.9" y1="226.3" x2="226.5" y2="234.2" stroke="rgba(0,0,0,0.32)" stroke-width="1.7"/><line x1="199.7" y1="247.6" x2="216.3" y2="255.6" stroke="rgba(0,0,0,0.32)" stroke-width="1.7"/><line x1="189.5" y1="269.0" x2="206.1" y2="276.9" stroke="rgba(0,0,0,0.32)" stroke-width="1.7"/><line x1="179.3" y1="290.3" x2="195.9" y2="298.3" stroke="rgba(0,0,0,0.32)" stroke-width="1.7"/>
+      <polygon points="298.58,43.45 321.42,32.55 570.46,569.39 559.54,574.61" fill="url(#aq-gv)" opacity="0.88"/>
+      <polygon points="298.58,43.45 321.42,32.55 570.46,569.39 559.54,574.61" fill="url(#aq-gxR)" opacity="0.68"/>
+      <polygon points="298.58,43.45 321.42,32.55 570.46,569.39 559.54,574.61" fill="none" stroke="rgba(70,35,0,0.52)" stroke-width="1.3"/>
+      <line x1="306.8" y1="39.5" x2="561.8" y2="573.5" stroke="rgba(255,252,185,0.85)" stroke-width="3.0" stroke-linecap="round" filter="url(#aq-blur2)"/>
+      <line x1="312.3" y1="36.9" x2="567.3" y2="570.9" stroke="rgba(255,240,120,0.35)" stroke-width="5.0" stroke-linecap="round"/>
+      <line x1="342.5" y1="127.4" x2="359.1" y2="119.5" stroke="rgba(0,0,0,0.32)" stroke-width="1.7"/><line x1="352.7" y1="148.8" x2="369.3" y2="140.8" stroke="rgba(0,0,0,0.32)" stroke-width="1.7"/><line x1="362.9" y1="170.1" x2="379.5" y2="162.2" stroke="rgba(0,0,0,0.32)" stroke-width="1.7"/><line x1="373.1" y1="191.5" x2="389.7" y2="183.5" stroke="rgba(0,0,0,0.32)" stroke-width="1.7"/><line x1="383.3" y1="212.9" x2="399.9" y2="204.9" stroke="rgba(0,0,0,0.32)" stroke-width="1.7"/><line x1="393.5" y1="234.2" x2="410.1" y2="226.3" stroke="rgba(0,0,0,0.32)" stroke-width="1.7"/><line x1="403.7" y1="255.6" x2="420.3" y2="247.6" stroke="rgba(0,0,0,0.32)" stroke-width="1.7"/><line x1="413.9" y1="276.9" x2="430.5" y2="269.0" stroke="rgba(0,0,0,0.32)" stroke-width="1.7"/><line x1="424.1" y1="298.3" x2="440.7" y2="290.3" stroke="rgba(0,0,0,0.32)" stroke-width="1.7"/>
+      <polygon points="45.3,510.4 64.7,510.4 60.3,564.3 49.7,564.3" fill="url(#aq-gtip)"/>
+      <polygon points="49.7,564.3 60.3,564.3 55,585.2" fill="url(#aq-gtip)"/>
+      <line x1="53.2" y1="510.4" x2="55" y2="583.0" stroke="rgba(255,175,100,0.48)" stroke-width="1.2"/>
+      <rect x="545.6" y="440.0" width="38.7" height="33.0" rx="4.8" fill="url(#aq-gri)"/>
+      <rect x="545.6" y="440.0" width="38.7" height="8.4" fill="rgba(0,0,0,0.28)" rx="3.3"/>
+      <rect x="548.7" y="473.0" width="32.6" height="55.0" fill="url(#aq-gwood)" rx="3.3"/>
+      <polygon points="548.7,528.0 581.3,528.0 576.0,572.0 554.0,572.0" fill="url(#aq-gwood)" opacity="0.88"/>
+      <polygon points="554.0,572.0 576.0,572.0 565,605.0" fill="url(#aq-ggraph)"/>
+      <rect x="203.0" y="251.0" width="213.9" height="22.0" fill="rgba(0,0,0,0.38)" rx="8.8" transform="translate(2.5,4)"/>
+      <rect x="203.0" y="251.0" width="213.9" height="22.0" fill="url(#aq-gcb)" rx="8.8" stroke="rgba(70,35,0,0.48)" stroke-width="0.9"/>
+      <rect x="205.0" y="253.2" width="209.9" height="6.6" fill="rgba(255,250,185,0.52)" rx="4.8"/>
+      <circle cx="310" cy="262" r="30.8" fill="rgba(0,0,0,0.62)" filter="url(#aq-glow)"/>
+      <circle cx="310" cy="262" r="27.3" fill="url(#aq-grs)"/>
+      <circle cx="310" cy="262" r="20.2" fill="rgba(8,4,0,0.90)" stroke="#FFE135" stroke-width="3.7"/>
+      <circle cx="310" cy="262" r="13.2" fill="url(#aq-grs)"/>
+      <circle cx="310" cy="262" r="5.5" fill="rgba(255,253,200,0.88)"/>
+      <line x1="299.4" y1="262" x2="320.6" y2="262" stroke="rgba(0,0,0,0.58)" stroke-width="4.0"/>
+      <line x1="310" y1="251.4" x2="310" y2="272.6" stroke="rgba(0,0,0,0.40)" stroke-width="2.9"/>
+      <circle cx="203.0" cy="262.0" r="19.8" fill="rgba(0,0,0,0.82)" stroke="#C8920A" stroke-width="4.4"/><circle cx="203.0" cy="262.0" r="11.9" fill="url(#aq-grs)"/><circle cx="203.0" cy="262.0" r="4.4" fill="rgba(255,250,170,0.82)"/>
+      <circle cx="417.0" cy="262.0" r="19.8" fill="rgba(0,0,0,0.82)" stroke="#C8920A" stroke-width="4.4"/><circle cx="417.0" cy="262.0" r="11.9" fill="url(#aq-grs)"/><circle cx="417.0" cy="262.0" r="4.4" fill="rgba(255,250,170,0.82)"/>
+      <circle cx="310" cy="38" r="72.6" fill="rgba(255,200,0,0.06)"/>
+      <circle cx="312.0" cy="42.0" r="47.3" fill="rgba(0,0,0,0.52)"/>
+      <circle cx="310" cy="38" r="46.6" fill="url(#aq-grh)" filter="url(#aq-hglow)"/>
+      <circle cx="310" cy="38" r="36.3" fill="rgba(8,4,0,0.90)" stroke="#C8920A" stroke-width="4.6"/>
+      <circle cx="310" cy="38" r="29.5" fill="url(#aq-grh)"/>
+      <circle cx="310" cy="38" r="19.8" fill="rgba(8,4,0,0.86)" stroke="#FFE135" stroke-width="3.3"/>
+      <circle cx="310" cy="38" r="12.1" fill="url(#aq-gri)"/>
+      <circle cx="310" cy="38" r="4.2" fill="rgba(255,255,220,0.92)"/>
+      <line x1="347.0" y1="38.0" x2="355.1" y2="38.0" stroke="rgba(175,115,0,0.48)" stroke-width="1.4"/><line x1="344.1" y1="52.1" x2="351.7" y2="55.3" stroke="rgba(175,115,0,0.48)" stroke-width="1.4"/><line x1="336.1" y1="64.1" x2="341.9" y2="69.9" stroke="rgba(175,115,0,0.48)" stroke-width="1.4"/><line x1="324.1" y1="72.1" x2="327.3" y2="79.7" stroke="rgba(175,115,0,0.48)" stroke-width="1.4"/><line x1="310.0" y1="75.0" x2="310.0" y2="83.1" stroke="rgba(175,115,0,0.48)" stroke-width="1.4"/><line x1="295.9" y1="72.1" x2="292.7" y2="79.7" stroke="rgba(175,115,0,0.48)" stroke-width="1.4"/><line x1="283.9" y1="64.1" x2="278.1" y2="69.9" stroke="rgba(175,115,0,0.48)" stroke-width="1.4"/><line x1="275.9" y1="52.1" x2="268.3" y2="55.3" stroke="rgba(175,115,0,0.48)" stroke-width="1.4"/><line x1="273.0" y1="38.0" x2="264.9" y2="38.0" stroke="rgba(175,115,0,0.48)" stroke-width="1.4"/><line x1="275.9" y1="23.9" x2="268.3" y2="20.7" stroke="rgba(175,115,0,0.48)" stroke-width="1.4"/><line x1="283.9" y1="11.9" x2="278.1" y2="6.1" stroke="rgba(175,115,0,0.48)" stroke-width="1.4"/><line x1="295.9" y1="3.9" x2="292.7" y2="-3.7" stroke="rgba(175,115,0,0.48)" stroke-width="1.4"/><line x1="310.0" y1="1.0" x2="310.0" y2="-7.1" stroke="rgba(175,115,0,0.48)" stroke-width="1.4"/><line x1="324.1" y1="3.9" x2="327.3" y2="-3.7" stroke="rgba(175,115,0,0.48)" stroke-width="1.4"/><line x1="336.1" y1="11.9" x2="341.9" y2="6.1" stroke="rgba(175,115,0,0.48)" stroke-width="1.4"/><line x1="344.1" y1="23.9" x2="351.7" y2="20.7" stroke="rgba(175,115,0,0.48)" stroke-width="1.4"/>
+      <ellipse cx="295.7" cy="23.7" rx="16.5" ry="9.7" fill="rgba(255,255,242,0.80)" transform="rotate(-43,310,38)" filter="url(#aq-blur2)"/>
+      <ellipse cx="317.0" cy="47.9" rx="6.6" ry="3.7" fill="rgba(255,240,160,0.32)" transform="rotate(30,310,38)"/>
+    </g>
+  </symbol>
+</svg>
 <!-- PWA install banner (shown automatically on eligible browsers) -->
 <div id="pwa-banner">
   <div style="flex:1">
@@ -559,7 +630,10 @@ function Sidebar({ route }) {
     <aside id="sidebar" className="flex flex-col border-r" style={{ width: 220, minHeight: '100vh', flexShrink: 0, background: '#fff', borderColor: '#E2E8F0' }}>
       {/* Logo */}
       <div className="px-5 py-5 border-b" style={{ borderColor: '#E2E8F0' }}>
-        <div className="aq-logo text-2xl">ACCUQUOTE</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <svg width="28" height="28" viewBox="0 0 632 632" aria-hidden="true" focusable="false" style={{ borderRadius: 6, flexShrink: 0 }}><use href="#aq-icon"/></svg>
+          <span className="aq-logo text-lg">ACCUQUOTE</span>
+        </div>
         <div className="text-xs mt-1" style={{ color: '#94A3B8', letterSpacing: 1 }}>BY HARRIS ELECTRICAL</div>
       </div>
 
@@ -868,7 +942,10 @@ function OnboardingScreen() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-8" style={{ background: '#0D0D0D' }}>
-      <div className="aq-logo text-4xl mb-10">ACCUQUOTE</div>
+      <div className="mb-10" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+        <svg width="72" height="72" viewBox="0 0 632 632" aria-label="AccuQuote" role="img" style={{ borderRadius: 16, boxShadow: '0 8px 32px rgba(200,146,42,0.22), 0 2px 8px rgba(0,0,0,0.45)' }}><use href="#aq-icon"/></svg>
+        <span className="aq-logo text-3xl">ACCUQUOTE</span>
+      </div>
       <div className="w-full max-w-md">
         {/* Progress dots */}
         <div className="flex gap-2 mb-8 justify-center">

@@ -1,0 +1,2129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AccuQuote — Quoting Software for UK Tradesmen | Quote Any Job in 20 Minutes</title>
+  <meta name="description" content="AccuQuote is the fastest trades quoting software for UK electricians, plasterers, builders and more. LiDAR scanning, AI bill of materials, professional PDF quotes. Try free — no card required." />
+  <meta name="keywords" content="quoting software for tradesmen, trades quoting software, quote builder for electricians, quote builder for plasterers, quote builder for builders, job quoting app UK, instant quote generator trades, how to quote faster as a tradesman" />
+  <link rel="canonical" href="https://accuquote.app/" />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="AccuQuote — Quote Any Job in 20 Minutes" />
+  <meta property="og:description" content="The fastest quoting software for UK tradesmen. LiDAR scanning, AI bill of materials, professional PDF quotes." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://accuquote.app/" />
+
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "AccuQuote",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "iOS",
+    "offers": [
+      {
+        "@type": "Offer",
+        "name": "Free Trial",
+        "price": "0",
+        "priceCurrency": "GBP",
+        "description": "3 free quote tokens, no card required"
+      },
+      {
+        "@type": "Offer",
+        "name": "Standard",
+        "price": "59",
+        "priceCurrency": "GBP",
+        "billingPeriod": "P1M",
+        "description": "Unlimited quotes, PDF export, supplier SKUs"
+      },
+      {
+        "@type": "Offer",
+        "name": "Premium",
+        "price": "119",
+        "priceCurrency": "GBP",
+        "billingPeriod": "P1M",
+        "description": "Everything in Standard plus priority support and team features"
+      }
+    ],
+    "description": "AccuQuote is trades quoting software for UK electricians, plasterers, builders, and more. Scan rooms with LiDAR, generate AI-powered bills of materials, and send professional PDF quotes in under 20 minutes.",
+    "url": "https://accuquote.app/",
+    "featureList": [
+      "LiDAR room scanning",
+      "AI-powered bill of materials",
+      "Real supplier SKUs",
+      "Professional PDF quote generation",
+      "Works on iPhone",
+      "Instant quote generation for trades"
+    ],
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "4.9",
+      "reviewCount": "134"
+    }
+  }
+  </script>
+
+  <style>
+    /* ============================================
+       RESET & BASE
+    ============================================ */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --gold: #C8922A;
+      --gold-hover: #b07e22;
+      --dark: #1D1D1F;
+      --secondary: #6E6E73;
+      --navy: #0A0A1A;
+      --navy-mid: #0f0f2a;
+      --white: #FFFFFF;
+      --off-white: #F5F5F7;
+      --border: #E0E0E5;
+      --shadow-sm: 0 1px 4px rgba(0,0,0,0.06);
+      --shadow-md: 0 4px 20px rgba(0,0,0,0.08);
+      --shadow-lg: 0 12px 48px rgba(0,0,0,0.10);
+      --radius: 14px;
+      --radius-sm: 8px;
+      --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      font-size: 16px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--white);
+      color: var(--dark);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    img {
+      display: block;
+      max-width: 100%;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    /* ============================================
+       TYPOGRAPHY
+    ============================================ */
+    h1 {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+    }
+
+    h2 {
+      font-size: clamp(1.5rem, 3.5vw, 2.5rem);
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.15;
+    }
+
+    h3 {
+      font-size: clamp(1.1rem, 2vw, 1.4rem);
+      font-weight: 600;
+      letter-spacing: -0.015em;
+      line-height: 1.3;
+    }
+
+    p {
+      font-size: 1.0625rem;
+      color: var(--secondary);
+      line-height: 1.75;
+    }
+
+    /* ============================================
+       NAV
+    ============================================ */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: var(--navy);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-logo svg {
+      width: 32px;
+      height: 32px;
+      flex-shrink: 0;
+      border-radius: 7px;
+      overflow: hidden;
+    }
+
+    .nav-logo-wordmark {
+      font-size: 1.125rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--white);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 36px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: rgba(255,255,255,0.75);
+      font-size: 0.9375rem;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      transition: color 0.2s ease;
+    }
+
+    .nav-links a:hover {
+      color: var(--white);
+    }
+
+    .nav-cta {
+      background: var(--gold);
+      color: var(--white) !important;
+      padding: 9px 20px;
+      border-radius: 100px;
+      font-weight: 600 !important;
+      font-size: 0.875rem !important;
+      transition: background 0.2s ease, transform 0.15s ease !important;
+    }
+
+    .nav-cta:hover {
+      background: var(--gold-hover) !important;
+      transform: translateY(-1px);
+    }
+
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 8px;
+    }
+
+    .hamburger span {
+      display: block;
+      width: 22px;
+      height: 1.5px;
+      background: rgba(255,255,255,0.8);
+      border-radius: 2px;
+      transition: all 0.25s ease;
+    }
+
+    .hamburger.open span:nth-child(1) {
+      transform: translateY(6.5px) rotate(45deg);
+    }
+
+    .hamburger.open span:nth-child(2) {
+      opacity: 0;
+    }
+
+    .hamburger.open span:nth-child(3) {
+      transform: translateY(-6.5px) rotate(-45deg);
+    }
+
+    .mobile-menu {
+      display: none;
+      flex-direction: column;
+      background: var(--navy);
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding: 16px 24px 24px;
+      gap: 4px;
+    }
+
+    .mobile-menu.open {
+      display: flex;
+    }
+
+    .mobile-menu a {
+      color: rgba(255,255,255,0.75);
+      font-size: 1.0625rem;
+      font-weight: 500;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      transition: color 0.2s ease;
+    }
+
+    .mobile-menu a:last-child {
+      border-bottom: none;
+    }
+
+    .mobile-menu a:hover {
+      color: var(--white);
+    }
+
+    .mobile-menu .nav-cta {
+      margin-top: 12px;
+      text-align: center;
+      display: block;
+      border-bottom: none !important;
+    }
+
+    /* ============================================
+       HERO
+    ============================================ */
+    #home {
+      background: var(--navy);
+      min-height: calc(100vh - 68px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 80px 24px 100px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #home::before {
+      content: '';
+      position: absolute;
+      top: -200px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(200,146,42,0.07) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-logo {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      margin: 0 auto 48px;
+      animation: fadeUp 0.8s ease both;
+    }
+
+    .hero-logo svg {
+      width: 80px;
+      height: 80px;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(200,146,42,0.22), 0 2px 8px rgba(0,0,0,0.35);
+    }
+
+    .hero-logo-wordmark {
+      font-size: clamp(1.5rem, 4vw, 2.25rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--white);
+    }
+
+    .hero-tagline {
+      font-size: clamp(2rem, 5vw, 3.75rem);
+      font-weight: 700;
+      color: var(--white);
+      letter-spacing: -0.035em;
+      line-height: 1.08;
+      max-width: 720px;
+      animation: fadeUp 0.8s 0.1s ease both;
+    }
+
+    .hero-tagline span {
+      color: var(--gold);
+    }
+
+    .hero-sub {
+      margin-top: 20px;
+      font-size: clamp(1rem, 2vw, 1.25rem);
+      color: rgba(255,255,255,0.55);
+      max-width: 560px;
+      line-height: 1.6;
+      animation: fadeUp 0.8s 0.2s ease both;
+    }
+
+    .hero-cta {
+      margin-top: 40px;
+      animation: fadeUp 0.8s 0.3s ease both;
+    }
+
+    .btn-primary {
+      display: inline-block;
+      background: var(--gold);
+      color: var(--white);
+      font-size: 1.0625rem;
+      font-weight: 600;
+      padding: 16px 36px;
+      border-radius: 100px;
+      letter-spacing: -0.01em;
+      transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+      box-shadow: 0 4px 20px rgba(200,146,42,0.3);
+    }
+
+    .btn-primary:hover {
+      background: var(--gold-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(200,146,42,0.4);
+    }
+
+    .btn-secondary {
+      display: inline-block;
+      background: transparent;
+      color: var(--gold);
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 14px 32px;
+      border-radius: 100px;
+      border: 1.5px solid var(--gold);
+      letter-spacing: -0.01em;
+      transition: all 0.2s ease;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(200,146,42,0.08);
+      transform: translateY(-1px);
+    }
+
+    .hero-stats {
+      display: flex;
+      gap: 12px;
+      margin-top: 56px;
+      flex-wrap: wrap;
+      justify-content: center;
+      animation: fadeUp 0.8s 0.4s ease both;
+    }
+
+    .stat-pill {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.75);
+      font-size: 0.875rem;
+      font-weight: 500;
+      padding: 8px 18px;
+      border-radius: 100px;
+      letter-spacing: -0.01em;
+    }
+
+    .stat-pill strong {
+      color: var(--gold);
+    }
+
+    /* ============================================
+       SECTIONS
+    ============================================ */
+    section {
+      padding: 100px 24px;
+    }
+
+    .section-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      color: var(--dark);
+      margin-bottom: 20px;
+    }
+
+    .section-body {
+      font-size: 1.125rem;
+      max-width: 620px;
+      color: var(--secondary);
+    }
+
+    /* ============================================
+       FEATURES SECTION
+    ============================================ */
+    #features {
+      background: var(--white);
+    }
+
+    .features-header {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+
+    .features-header .section-body {
+      margin: 0 auto;
+    }
+
+    .feature-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    .feature-card {
+      background: var(--off-white);
+      border-radius: var(--radius);
+      padding: 40px 32px;
+      border: 1px solid var(--border);
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .feature-icon svg {
+      width: 32px;
+      height: 32px;
+      stroke: var(--gold);
+      fill: none;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .feature-card h3 {
+      color: var(--dark);
+      margin-bottom: 12px;
+    }
+
+    .feature-card p {
+      font-size: 1rem;
+    }
+
+    /* ============================================
+       HOW IT WORKS
+    ============================================ */
+    #how-it-works {
+      background: var(--off-white);
+    }
+
+    .how-header {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+
+    .how-header .section-body {
+      margin: 0 auto;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+      position: relative;
+    }
+
+    .steps::before {
+      content: '';
+      position: absolute;
+      top: 36px;
+      left: calc(16.666% + 12px);
+      right: calc(16.666% + 12px);
+      height: 1px;
+      background: var(--border);
+    }
+
+    .step {
+      text-align: center;
+      padding: 0 24px;
+      position: relative;
+    }
+
+    .step-number {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 28px;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: -0.02em;
+      box-shadow: var(--shadow-sm);
+      position: relative;
+      z-index: 1;
+    }
+
+    .step h3 {
+      color: var(--dark);
+      margin-bottom: 12px;
+      font-size: 1.1875rem;
+    }
+
+    .step p {
+      font-size: 0.9375rem;
+    }
+
+    /* ============================================
+       PRICING
+    ============================================ */
+    #pricing {
+      background: var(--white);
+    }
+
+    .pricing-header {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+
+    .pricing-header .section-body {
+      margin: 0 auto;
+    }
+
+    .pricing-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      align-items: start;
+    }
+
+    .pricing-card {
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 40px 32px;
+      background: var(--white);
+      position: relative;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .pricing-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .pricing-card.popular {
+      border-color: var(--gold);
+      border-width: 2px;
+      box-shadow: 0 0 0 1px rgba(200,146,42,0.15), var(--shadow-md);
+    }
+
+    .popular-badge {
+      position: absolute;
+      top: -14px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--gold);
+      color: var(--white);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 5px 16px;
+      border-radius: 100px;
+      white-space: nowrap;
+    }
+
+    .plan-name {
+      font-size: 0.8125rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--secondary);
+      margin-bottom: 12px;
+    }
+
+    .plan-price {
+      font-size: 3rem;
+      font-weight: 700;
+      color: var(--dark);
+      letter-spacing: -0.04em;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .plan-price sup {
+      font-size: 1.25rem;
+      font-weight: 600;
+      vertical-align: super;
+      letter-spacing: 0;
+    }
+
+    .plan-period {
+      font-size: 0.9375rem;
+      color: var(--secondary);
+      margin-bottom: 28px;
+    }
+
+    .plan-divider {
+      height: 1px;
+      background: var(--border);
+      margin-bottom: 28px;
+    }
+
+    .plan-features {
+      list-style: none;
+      margin-bottom: 36px;
+    }
+
+    .plan-features li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 0.9375rem;
+      color: var(--dark);
+      margin-bottom: 14px;
+      line-height: 1.4;
+    }
+
+    .plan-features li::before {
+      content: '';
+      flex-shrink: 0;
+      width: 18px;
+      height: 18px;
+      margin-top: 1px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18' fill='none'%3E%3Ccircle cx='9' cy='9' r='9' fill='%23C8922A' opacity='0.12'/%3E%3Cpath d='M5 9l3 3 5-5' stroke='%23C8922A' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-size: contain;
+      background-repeat: no-repeat;
+    }
+
+    .plan-btn {
+      width: 100%;
+      display: block;
+      text-align: center;
+      padding: 14px 24px;
+      border-radius: 100px;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .plan-btn-primary {
+      background: var(--gold);
+      color: var(--white);
+      box-shadow: 0 4px 16px rgba(200,146,42,0.25);
+    }
+
+    .plan-btn-primary:hover {
+      background: var(--gold-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 24px rgba(200,146,42,0.35);
+    }
+
+    .plan-btn-secondary {
+      background: var(--off-white);
+      color: var(--dark);
+      border: 1px solid var(--border);
+    }
+
+    .plan-btn-secondary:hover {
+      background: var(--border);
+      transform: translateY(-1px);
+    }
+
+    .pricing-extras {
+      margin-top: 48px;
+      padding: 36px;
+      background: var(--off-white);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .pricing-extra-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .pricing-extra-item .gold-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--gold);
+      flex-shrink: 0;
+    }
+
+    .pricing-extra-item p {
+      font-size: 1rem;
+      color: var(--dark);
+    }
+
+    .pricing-extra-item p span {
+      color: var(--secondary);
+    }
+
+    /* ============================================
+       OUR STORY
+    ============================================ */
+    #story {
+      background: var(--off-white);
+    }
+
+    .story-inner {
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    .story-inner h2 {
+      margin-bottom: 40px;
+    }
+
+    .story-inner p {
+      font-size: 1.125rem;
+      color: var(--secondary);
+      margin-bottom: 28px;
+      line-height: 1.8;
+    }
+
+    .story-inner p:last-of-type {
+      color: var(--dark);
+      font-weight: 500;
+      font-style: italic;
+      font-size: 1.0625rem;
+      border-left: 3px solid var(--gold);
+      padding-left: 20px;
+      margin-top: 36px;
+      line-height: 1.7;
+    }
+
+    .story-stats {
+      display: flex;
+      gap: 48px;
+      margin: 48px 0;
+      padding: 36px 0;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+
+    .story-stat {
+      flex: 1;
+      min-width: 120px;
+    }
+
+    .story-stat-num {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: -0.04em;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .story-stat-label {
+      font-size: 0.9375rem;
+      color: var(--secondary);
+    }
+
+    /* ============================================
+       TESTIMONIALS
+    ============================================ */
+    #testimonials {
+      background: var(--white);
+    }
+
+    .testimonials-header {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+
+    .testimonials-header .section-body {
+      margin: 0 auto;
+    }
+
+    .testimonials-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    .testimonial-card {
+      background: var(--off-white);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 36px 30px;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .testimonial-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .testimonial-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .testimonial-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--navy);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1875rem;
+      font-weight: 700;
+      color: var(--gold);
+      flex-shrink: 0;
+      letter-spacing: -0.02em;
+    }
+
+    .testimonial-meta strong {
+      display: block;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--dark);
+      letter-spacing: -0.01em;
+    }
+
+    .testimonial-meta span {
+      font-size: 0.875rem;
+      color: var(--secondary);
+    }
+
+    .testimonial-quote {
+      font-size: 1rem;
+      color: var(--dark);
+      line-height: 1.7;
+      margin-bottom: 24px;
+      font-style: italic;
+    }
+
+    .time-breakdown {
+      border-top: 1px solid var(--border);
+      padding-top: 20px;
+      margin-bottom: 20px;
+    }
+
+    .time-breakdown-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--secondary);
+      margin-bottom: 12px;
+    }
+
+    .time-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 8px;
+      font-size: 0.875rem;
+    }
+
+    .time-row-label {
+      color: var(--secondary);
+      flex: 1;
+    }
+
+    .time-row-before {
+      color: #999;
+      text-decoration: line-through;
+      margin-right: 6px;
+      font-size: 0.8125rem;
+    }
+
+    .time-row-after {
+      color: var(--gold);
+      font-weight: 600;
+      font-size: 0.8125rem;
+    }
+
+    .time-saving-total {
+      background: rgba(200,146,42,0.08);
+      border: 1px solid rgba(200,146,42,0.2);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: var(--gold);
+      text-align: center;
+      letter-spacing: -0.01em;
+    }
+
+    /* ============================================
+       FAQ
+    ============================================ */
+    #faq {
+      background: var(--off-white);
+    }
+
+    .faq-header {
+      text-align: center;
+      margin-bottom: 56px;
+    }
+
+    .faq-list {
+      max-width: 780px;
+      margin: 0 auto;
+    }
+
+    .faq-item {
+      border-top: 1px solid var(--border);
+    }
+
+    .faq-item:last-child {
+      border-bottom: 1px solid var(--border);
+    }
+
+    .faq-question {
+      width: 100%;
+      background: none;
+      border: none;
+      text-align: left;
+      padding: 24px 0;
+      font-family: var(--font);
+      font-size: 1.0625rem;
+      font-weight: 600;
+      color: var(--dark);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      letter-spacing: -0.01em;
+      transition: color 0.2s ease;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .faq-question:hover {
+      color: var(--gold);
+    }
+
+    .faq-icon {
+      width: 24px;
+      height: 24px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.25s ease;
+    }
+
+    .faq-icon svg {
+      width: 12px;
+      height: 12px;
+      stroke: var(--secondary);
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      transition: transform 0.25s ease;
+    }
+
+    .faq-item.open .faq-icon {
+      border-color: var(--gold);
+      background: rgba(200,146,42,0.08);
+    }
+
+    .faq-item.open .faq-icon svg {
+      stroke: var(--gold);
+      transform: rotate(45deg);
+    }
+
+    .faq-answer {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.35s ease;
+    }
+
+    .faq-item.open .faq-answer {
+      max-height: 400px;
+    }
+
+    .faq-answer-inner {
+      padding-bottom: 24px;
+    }
+
+    .faq-answer-inner p {
+      font-size: 1rem;
+      color: var(--secondary);
+      line-height: 1.75;
+    }
+
+    /* ============================================
+       CTA BANNER
+    ============================================ */
+    .cta-banner {
+      background: var(--navy);
+      padding: 96px 24px;
+      text-align: center;
+    }
+
+    .cta-banner h2 {
+      color: var(--white);
+      margin-bottom: 20px;
+      font-size: clamp(1.75rem, 4vw, 3rem);
+    }
+
+    .cta-banner p {
+      color: rgba(255,255,255,0.55);
+      font-size: 1.125rem;
+      max-width: 520px;
+      margin: 0 auto 40px;
+    }
+
+    .cta-banner-actions {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* ============================================
+       FOOTER
+    ============================================ */
+    footer {
+      background: var(--navy);
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding: 48px 24px;
+      text-align: center;
+    }
+
+    .footer-logo {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      margin: 0 auto 28px;
+    }
+
+    .footer-logo svg {
+      width: 48px;
+      height: 48px;
+      border-radius: 11px;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(200,146,42,0.18), 0 1px 4px rgba(0,0,0,0.35);
+    }
+
+    .footer-logo-wordmark {
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+      color: rgba(255,255,255,0.75);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 28px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+
+    .footer-links a {
+      font-size: 0.9375rem;
+      color: rgba(255,255,255,0.45);
+      transition: color 0.2s ease;
+    }
+
+    .footer-links a:hover {
+      color: rgba(255,255,255,0.8);
+    }
+
+    .footer-copy {
+      font-size: 0.875rem;
+      color: rgba(255,255,255,0.3);
+    }
+
+    .footer-copy p {
+      color: rgba(255,255,255,0.3);
+    }
+
+    /* ============================================
+       ANIMATIONS
+    ============================================ */
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(24px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .animate-fadeup {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    .animate-fadeup.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .animate-delay-1 { transition-delay: 0.1s; }
+    .animate-delay-2 { transition-delay: 0.2s; }
+    .animate-delay-3 { transition-delay: 0.3s; }
+    .animate-delay-4 { transition-delay: 0.4s; }
+    .animate-delay-5 { transition-delay: 0.5s; }
+
+    /* ============================================
+       RESPONSIVE
+    ============================================ */
+    @media (max-width: 900px) {
+      .feature-cards,
+      .pricing-cards,
+      .testimonials-grid {
+        grid-template-columns: 1fr;
+        max-width: 560px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .steps {
+        grid-template-columns: 1fr;
+        gap: 40px;
+        max-width: 480px;
+        margin: 0 auto;
+      }
+
+      .steps::before {
+        display: none;
+      }
+
+      .story-stats {
+        gap: 32px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      section {
+        padding: 72px 20px;
+      }
+
+      .nav-links {
+        display: none;
+      }
+
+      .hamburger {
+        display: flex;
+      }
+
+      .hero-stats {
+        gap: 8px;
+      }
+
+      .stat-pill {
+        font-size: 0.8125rem;
+        padding: 7px 14px;
+      }
+
+      .pricing-extras {
+        padding: 24px;
+      }
+
+      .cta-banner {
+        padding: 72px 20px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      h1 {
+        letter-spacing: -0.02em;
+      }
+
+      .hero-logo svg {
+        width: 64px;
+        height: 64px;
+      }
+
+      .plan-price {
+        font-size: 2.5rem;
+      }
+
+      .pricing-extra-item {
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .pricing-extra-item .gold-dot {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- AccuQuote icon — defined once as a reusable SVG symbol -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+  <symbol id="aq-icon" viewBox="0 0 632 632">
+    <defs>
+      <linearGradient id="aq-gv" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#FFF5A0"/>
+        <stop offset="8%" stop-color="#FFE135"/>
+        <stop offset="30%" stop-color="#D4A012"/>
+        <stop offset="55%" stop-color="#C8920A"/>
+        <stop offset="80%" stop-color="#B87C04"/>
+        <stop offset="100%" stop-color="#8B5E00"/>
+      </linearGradient>
+      <linearGradient id="aq-gxL" gradientUnits="userSpaceOnUse" x1="55" y1="0" x2="203" y2="0">
+        <stop offset="0%" stop-color="#5A3200"/>
+        <stop offset="15%" stop-color="#C8920A"/>
+        <stop offset="35%" stop-color="#FFE135"/>
+        <stop offset="50%" stop-color="#FFF8C8"/>
+        <stop offset="65%" stop-color="#FFE135"/>
+        <stop offset="82%" stop-color="#C8920A"/>
+        <stop offset="100%" stop-color="#5A3200"/>
+      </linearGradient>
+      <linearGradient id="aq-gxR" gradientUnits="userSpaceOnUse" x1="417" y1="0" x2="565" y2="0">
+        <stop offset="0%" stop-color="#5A3200"/>
+        <stop offset="18%" stop-color="#C8920A"/>
+        <stop offset="38%" stop-color="#FFE135"/>
+        <stop offset="50%" stop-color="#FFF8C8"/>
+        <stop offset="65%" stop-color="#FFE135"/>
+        <stop offset="82%" stop-color="#C8920A"/>
+        <stop offset="100%" stop-color="#5A3200"/>
+      </linearGradient>
+      <linearGradient id="aq-gcb" gradientUnits="userSpaceOnUse" x1="0" y1="248" x2="0" y2="276">
+        <stop offset="0%" stop-color="#FFF5A0"/>
+        <stop offset="25%" stop-color="#FFE135"/>
+        <stop offset="55%" stop-color="#C8920A"/>
+        <stop offset="85%" stop-color="#7A4A00"/>
+        <stop offset="100%" stop-color="#4A2A00"/>
+      </linearGradient>
+      <radialGradient id="aq-grh" cx="36%" cy="28%" r="65%">
+        <stop offset="0%" stop-color="#FFF8C8"/>
+        <stop offset="20%" stop-color="#FFE135"/>
+        <stop offset="55%" stop-color="#C8920A"/>
+        <stop offset="80%" stop-color="#8B5E00"/>
+        <stop offset="100%" stop-color="#4A2D00"/>
+      </radialGradient>
+      <radialGradient id="aq-gri" cx="40%" cy="34%" r="60%">
+        <stop offset="0%" stop-color="#FFF8C0"/>
+        <stop offset="30%" stop-color="#FFD600"/>
+        <stop offset="100%" stop-color="#7A5000"/>
+      </radialGradient>
+      <radialGradient id="aq-grs" cx="34%" cy="28%" r="66%">
+        <stop offset="0%" stop-color="#FFF8D0"/>
+        <stop offset="30%" stop-color="#FFD600"/>
+        <stop offset="65%" stop-color="#C8920A"/>
+        <stop offset="100%" stop-color="#6B4400"/>
+      </radialGradient>
+      <linearGradient id="aq-gtip" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#FF9030"/>
+        <stop offset="50%" stop-color="#D05010"/>
+        <stop offset="100%" stop-color="#7A2800"/>
+      </linearGradient>
+      <linearGradient id="aq-gwood" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#8B5E2E"/>
+        <stop offset="30%" stop-color="#C48840"/>
+        <stop offset="55%" stop-color="#E0A850"/>
+        <stop offset="80%" stop-color="#C48840"/>
+        <stop offset="100%" stop-color="#8B5E2E"/>
+      </linearGradient>
+      <linearGradient id="aq-ggraph" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#1E1E1E"/>
+        <stop offset="40%" stop-color="#4A4A4A"/>
+        <stop offset="60%" stop-color="#606060"/>
+        <stop offset="100%" stop-color="#1E1E1E"/>
+      </linearGradient>
+      <radialGradient id="aq-gbg" cx="38%" cy="28%" r="72%">
+        <stop offset="0%" stop-color="#1A2236"/>
+        <stop offset="50%" stop-color="#0D1120"/>
+        <stop offset="100%" stop-color="#060709"/>
+      </radialGradient>
+      <radialGradient id="aq-gbg-glow" cx="50%" cy="42%" r="44%">
+        <stop offset="0%" stop-color="rgba(255,210,0,0.10)"/>
+        <stop offset="100%" stop-color="rgba(255,210,0,0)"/>
+      </radialGradient>
+      <filter id="aq-glow">
+        <feGaussianBlur stdDeviation="4.5" result="b"/>
+        <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+      <filter id="aq-hglow">
+        <feGaussianBlur stdDeviation="9" result="b"/>
+        <feColorMatrix in="b" values="1 0.7 0 0 0  0.7 0.5 0 0 0  0 0 0 0 0  0 0 0 0.55 0" result="g"/>
+        <feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+      <filter id="aq-blur2">
+        <feGaussianBlur stdDeviation="1.8"/>
+      </filter>
+      <filter id="aq-dshadow">
+        <feDropShadow dx="3" dy="5" stdDeviation="8" flood-color="#000" flood-opacity="0.45"/>
+      </filter>
+    </defs>
+    <!-- Background -->
+    <rect width="632" height="632" fill="url(#aq-gbg)" rx="126"/>
+    <rect width="632" height="632" fill="url(#aq-gbg-glow)" rx="126"/>
+    <g transform="translate(6,6)">
+      <!-- DROP SHADOW -->
+      <g filter="url(#aq-dshadow)" opacity="0.75">
+        <polygon points="298.58,32.55 321.42,43.45 60.46,574.61 49.54,569.39" fill="#7A4800"/>
+        <polygon points="298.58,43.45 321.42,32.55 570.46,569.39 559.54,574.61" fill="#7A4800"/>
+        <line x1="203.0" y1="262" x2="417.0" y2="262" stroke="#7A4800" stroke-width="18.7" stroke-linecap="round"/>
+      </g>
+      <!-- LEFT LEG -->
+      <polygon points="298.58,32.55 321.42,43.45 60.46,574.61 49.54,569.39" fill="url(#aq-gv)" opacity="0.88"/>
+      <polygon points="298.58,32.55 321.42,43.45 60.46,574.61 49.54,569.39" fill="url(#aq-gxL)" opacity="0.68"/>
+      <polygon points="298.58,32.55 321.42,43.45 60.46,574.61 49.54,569.39" fill="none" stroke="rgba(70,35,0,0.52)" stroke-width="1.3"/>
+      <line x1="313.2" y1="39.5" x2="58.2" y2="573.5" stroke="rgba(255,252,185,0.85)" stroke-width="3.0" stroke-linecap="round" filter="url(#aq-blur2)"/>
+      <line x1="307.7" y1="36.9" x2="52.7" y2="570.9" stroke="rgba(255,240,120,0.35)" stroke-width="5.0" stroke-linecap="round"/>
+      <line x1="260.9" y1="119.5" x2="277.5" y2="127.4" stroke="rgba(0,0,0,0.32)" stroke-width="1.7"/><line x1="260.9" y1="119.5" x2="277.5" y2="127.4" stroke="rgba(255,255,255,0.14)" stroke-width="0.7"/><line x1="250.7" y1="140.8" x2="267.3" y2="148.8" stroke="rgba(0,0,0,0.32)" stroke-width="1.7"/><line x1="250.7" y1="140.8" x2="267.3" y2="148.8" stroke="rgba(255,255,255,0.14)" stroke-width="0.7"/><line x1="240.5" y1="162.2" x2="257.1" y2="170.1" stroke="rgba(0,0,0,0.32)" stroke-width="1.7"/><line x1="240.5" y1="162.2" x2="257.1" y2="170.1" stroke="rgba(255,255,255,0.14)" stroke-width="0.7"/><line x1="230.3" y1="183.5" x2="246.9" y2="191.5" stroke="rgba(0,0,0,0.32)" stroke-width="1.7"/><line x1="230.3" y1="183.5" x2="246.9" y2="191.5" stroke="rgba(255,255,255,0.14)" stroke-width="0.7"/><line x1="220.1" y1="204.9" x2="236.7" y2="212.9" stroke="rgba(0,0,0,0.32)" stroke-width="1.7"/><line x1="220.1" y1="204.9" x2="236.7" y2="212.9" stroke="rgba(255,255,255,0.14)" stroke-width="0.7"/><line x1="209.9" y1="226.3" x2="226.5" y2="234.2" stroke="rgba(0,0,0,0.32)" stroke-width="1.7"/><line x1="209.9" y1="226.3" x2="226.5" y2="234.2" stroke="rgba(255,255,255,0.14)" stroke-width="0.7"/><line x1="199.7" y1="247.6" x2="216.3" y2="255.6" stroke="rgba(0,0,0,0.32)" stroke-width="1.7"/><line x1="199.7" y1="247.6" x2="216.3" y2="255.6" stroke="rgba(255,255,255,0.14)" stroke-width="0.7"/><line x1="189.5" y1="269.0" x2="206.1" y2="276.9" stroke="rgba(0,0,0,0.32)" stroke-width="1.7"/><line x1="189.5" y1="269.0" x2="206.1" y2="276.9" stroke="rgba(255,255,255,0.14)" stroke-width="0.7"/><line x1="179.3" y1="290.3" x2="195.9" y2="298.3" stroke="rgba(0,0,0,0.32)" stroke-width="1.7"/><line x1="179.3" y1="290.3" x2="195.9" y2="298.3" stroke="rgba(255,255,255,0.14)" stroke-width="0.7"/>
+      <!-- RIGHT LEG -->
+      <polygon points="298.58,43.45 321.42,32.55 570.46,569.39 559.54,574.61" fill="url(#aq-gv)" opacity="0.88"/>
+      <polygon points="298.58,43.45 321.42,32.55 570.46,569.39 559.54,574.61" fill="url(#aq-gxR)" opacity="0.68"/>
+      <polygon points="298.58,43.45 321.42,32.55 570.46,569.39 559.54,574.61" fill="none" stroke="rgba(70,35,0,0.52)" stroke-width="1.3"/>
+      <line x1="306.8" y1="39.5" x2="561.8" y2="573.5" stroke="rgba(255,252,185,0.85)" stroke-width="3.0" stroke-linecap="round" filter="url(#aq-blur2)"/>
+      <line x1="312.3" y1="36.9" x2="567.3" y2="570.9" stroke="rgba(255,240,120,0.35)" stroke-width="5.0" stroke-linecap="round"/>
+      <line x1="342.5" y1="127.4" x2="359.1" y2="119.5" stroke="rgba(0,0,0,0.32)" stroke-width="1.7"/><line x1="342.5" y1="127.4" x2="359.1" y2="119.5" stroke="rgba(255,255,255,0.14)" stroke-width="0.7"/><line x1="352.7" y1="148.8" x2="369.3" y2="140.8" stroke="rgba(0,0,0,0.32)" stroke-width="1.7"/><line x1="352.7" y1="148.8" x2="369.3" y2="140.8" stroke="rgba(255,255,255,0.14)" stroke-width="0.7"/><line x1="362.9" y1="170.1" x2="379.5" y2="162.2" stroke="rgba(0,0,0,0.32)" stroke-width="1.7"/><line x1="362.9" y1="170.1" x2="379.5" y2="162.2" stroke="rgba(255,255,255,0.14)" stroke-width="0.7"/><line x1="373.1" y1="191.5" x2="389.7" y2="183.5" stroke="rgba(0,0,0,0.32)" stroke-width="1.7"/><line x1="373.1" y1="191.5" x2="389.7" y2="183.5" stroke="rgba(255,255,255,0.14)" stroke-width="0.7"/><line x1="383.3" y1="212.9" x2="399.9" y2="204.9" stroke="rgba(0,0,0,0.32)" stroke-width="1.7"/><line x1="383.3" y1="212.9" x2="399.9" y2="204.9" stroke="rgba(255,255,255,0.14)" stroke-width="0.7"/><line x1="393.5" y1="234.2" x2="410.1" y2="226.3" stroke="rgba(0,0,0,0.32)" stroke-width="1.7"/><line x1="393.5" y1="234.2" x2="410.1" y2="226.3" stroke="rgba(255,255,255,0.14)" stroke-width="0.7"/><line x1="403.7" y1="255.6" x2="420.3" y2="247.6" stroke="rgba(0,0,0,0.32)" stroke-width="1.7"/><line x1="403.7" y1="255.6" x2="420.3" y2="247.6" stroke="rgba(255,255,255,0.14)" stroke-width="0.7"/><line x1="413.9" y1="276.9" x2="430.5" y2="269.0" stroke="rgba(0,0,0,0.32)" stroke-width="1.7"/><line x1="413.9" y1="276.9" x2="430.5" y2="269.0" stroke="rgba(255,255,255,0.14)" stroke-width="0.7"/><line x1="424.1" y1="298.3" x2="440.7" y2="290.3" stroke="rgba(0,0,0,0.32)" stroke-width="1.7"/><line x1="424.1" y1="298.3" x2="440.7" y2="290.3" stroke="rgba(255,255,255,0.14)" stroke-width="0.7"/>
+      <!-- NEEDLE TIP -->
+      <polygon points="45.3,510.4 64.7,510.4 60.3,564.3 49.7,564.3" fill="url(#aq-gtip)"/>
+      <polygon points="49.7,564.3 60.3,564.3 55,585.2" fill="url(#aq-gtip)"/>
+      <line x1="53.2" y1="510.4" x2="55" y2="583.0" stroke="rgba(255,175,100,0.48)" stroke-width="1.2"/>
+      <!-- PENCIL -->
+      <rect x="545.6" y="440.0" width="38.7" height="33.0" rx="4.8" fill="url(#aq-gri)"/>
+      <rect x="545.6" y="440.0" width="38.7" height="8.4" fill="rgba(0,0,0,0.28)" rx="3.3"/>
+      <rect x="548.7" y="473.0" width="32.6" height="55.0" fill="url(#aq-gwood)" rx="3.3"/>
+      <line x1="558.8" y1="473.0" x2="560.2" y2="528.0" stroke="rgba(90,50,15,0.32)" stroke-width="0.9"/>
+      <line x1="568.5" y1="473.0" x2="569.8" y2="528.0" stroke="rgba(90,50,15,0.28)" stroke-width="0.8"/>
+      <polygon points="548.7,528.0 581.3,528.0 576.0,572.0 554.0,572.0" fill="url(#aq-gwood)" opacity="0.88"/>
+      <polygon points="554.0,572.0 576.0,572.0 565,605.0" fill="url(#aq-ggraph)"/>
+      <line x1="562.4" y1="572" x2="565" y2="605.0" stroke="rgba(200,200,200,0.28)" stroke-width="0.9"/>
+      <!-- GHOST ARC -->
+      <path d="M 444.0 605.0 A 330.0 330.0 0 0 1 730.0 286.0" stroke="rgba(255,214,0,0.11)" stroke-width="8.8" fill="none" stroke-linecap="round" stroke-dasharray="8 12"/>
+      <!-- CROSSBAR -->
+      <rect x="203.0" y="251.0" width="213.9" height="22.0" fill="rgba(0,0,0,0.38)" rx="8.8" transform="translate(2.5,4)"/>
+      <rect x="203.0" y="251.0" width="213.9" height="22.0" fill="url(#aq-gcb)" rx="8.8" stroke="rgba(70,35,0,0.48)" stroke-width="0.9"/>
+      <rect x="205.0" y="253.2" width="209.9" height="6.6" fill="rgba(255,250,185,0.52)" rx="4.8"/>
+      <!-- CENTRE SCREW -->
+      <circle cx="310" cy="262" r="30.8" fill="rgba(0,0,0,0.62)" filter="url(#aq-glow)"/>
+      <circle cx="310" cy="262" r="27.3" fill="url(#aq-grs)"/>
+      <circle cx="310" cy="262" r="20.2" fill="rgba(8,4,0,0.90)" stroke="#FFE135" stroke-width="3.7"/>
+      <circle cx="310" cy="262" r="13.2" fill="url(#aq-grs)"/>
+      <circle cx="310" cy="262" r="5.5" fill="rgba(255,253,200,0.88)"/>
+      <line x1="299.4" y1="262" x2="320.6" y2="262" stroke="rgba(0,0,0,0.58)" stroke-width="4.0"/>
+      <line x1="310" y1="251.4" x2="310" y2="272.6" stroke="rgba(0,0,0,0.40)" stroke-width="2.9"/>
+      <ellipse cx="303.4" cy="255.4" rx="7.3" ry="4.2" fill="rgba(255,255,230,0.62)" transform="rotate(-42,310,262)"/>
+      <!-- END JOINTS -->
+      <circle cx="203.0" cy="262.0" r="19.8" fill="rgba(0,0,0,0.82)" stroke="#C8920A" stroke-width="4.4"/><circle cx="203.0" cy="262.0" r="11.9" fill="url(#aq-grs)"/><circle cx="203.0" cy="262.0" r="4.4" fill="rgba(255,250,170,0.82)"/>
+      <circle cx="417.0" cy="262.0" r="19.8" fill="rgba(0,0,0,0.82)" stroke="#C8920A" stroke-width="4.4"/><circle cx="417.0" cy="262.0" r="11.9" fill="url(#aq-grs)"/><circle cx="417.0" cy="262.0" r="4.4" fill="rgba(255,250,170,0.82)"/>
+      <!-- PIVOT HINGE -->
+      <circle cx="310" cy="38" r="72.6" fill="rgba(255,200,0,0.06)"/>
+      <circle cx="312.0" cy="42.0" r="47.3" fill="rgba(0,0,0,0.52)"/>
+      <circle cx="310" cy="38" r="46.6" fill="url(#aq-grh)" filter="url(#aq-hglow)"/>
+      <circle cx="310" cy="38" r="36.3" fill="rgba(8,4,0,0.90)" stroke="#C8920A" stroke-width="4.6"/>
+      <circle cx="310" cy="38" r="29.5" fill="url(#aq-grh)"/>
+      <circle cx="310" cy="38" r="19.8" fill="rgba(8,4,0,0.86)" stroke="#FFE135" stroke-width="3.3"/>
+      <circle cx="310" cy="38" r="12.1" fill="url(#aq-gri)"/>
+      <circle cx="310" cy="38" r="4.2" fill="rgba(255,255,220,0.92)"/>
+      <line x1="347.0" y1="38.0" x2="355.1" y2="38.0" stroke="rgba(175,115,0,0.48)" stroke-width="1.4"/><line x1="344.1" y1="52.1" x2="351.7" y2="55.3" stroke="rgba(175,115,0,0.48)" stroke-width="1.4"/><line x1="336.1" y1="64.1" x2="341.9" y2="69.9" stroke="rgba(175,115,0,0.48)" stroke-width="1.4"/><line x1="324.1" y1="72.1" x2="327.3" y2="79.7" stroke="rgba(175,115,0,0.48)" stroke-width="1.4"/><line x1="310.0" y1="75.0" x2="310.0" y2="83.1" stroke="rgba(175,115,0,0.48)" stroke-width="1.4"/><line x1="295.9" y1="72.1" x2="292.7" y2="79.7" stroke="rgba(175,115,0,0.48)" stroke-width="1.4"/><line x1="283.9" y1="64.1" x2="278.1" y2="69.9" stroke="rgba(175,115,0,0.48)" stroke-width="1.4"/><line x1="275.9" y1="52.1" x2="268.3" y2="55.3" stroke="rgba(175,115,0,0.48)" stroke-width="1.4"/><line x1="273.0" y1="38.0" x2="264.9" y2="38.0" stroke="rgba(175,115,0,0.48)" stroke-width="1.4"/><line x1="275.9" y1="23.9" x2="268.3" y2="20.7" stroke="rgba(175,115,0,0.48)" stroke-width="1.4"/><line x1="283.9" y1="11.9" x2="278.1" y2="6.1" stroke="rgba(175,115,0,0.48)" stroke-width="1.4"/><line x1="295.9" y1="3.9" x2="292.7" y2="-3.7" stroke="rgba(175,115,0,0.48)" stroke-width="1.4"/><line x1="310.0" y1="1.0" x2="310.0" y2="-7.1" stroke="rgba(175,115,0,0.48)" stroke-width="1.4"/><line x1="324.1" y1="3.9" x2="327.3" y2="-3.7" stroke="rgba(175,115,0,0.48)" stroke-width="1.4"/><line x1="336.1" y1="11.9" x2="341.9" y2="6.1" stroke="rgba(175,115,0,0.48)" stroke-width="1.4"/><line x1="344.1" y1="23.9" x2="351.7" y2="20.7" stroke="rgba(175,115,0,0.48)" stroke-width="1.4"/>
+      <ellipse cx="295.7" cy="23.7" rx="16.5" ry="9.7" fill="rgba(255,255,242,0.80)" transform="rotate(-43,310,38)" filter="url(#aq-blur2)"/>
+      <ellipse cx="317.0" cy="47.9" rx="6.6" ry="3.7" fill="rgba(255,240,160,0.32)" transform="rotate(30,310,38)"/>
+    </g>
+  </symbol>
+</svg>
+
+  <!-- ============================================
+       NAV
+  ============================================ -->
+  <nav role="navigation" aria-label="Main navigation">
+    <div class="nav-inner">
+      <a href="#home" class="nav-logo" aria-label="AccuQuote home">
+        <svg width="32" height="32" viewBox="0 0 632 632" aria-hidden="true" focusable="false"><use href="#aq-icon"/></svg>
+        <span class="nav-logo-wordmark">AccuQuote</span>
+      </a>
+      <ul class="nav-links" role="list">
+        <li><a href="#home">Home</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+        <li><a href="#story">Our Story</a></li>
+        <li><a href="#testimonials">Testimonials</a></li>
+        <li><a href="#pricing" class="nav-cta">Start Free Trial</a></li>
+      </ul>
+      <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div class="mobile-menu" id="mobile-menu" role="menu">
+      <a href="#home" role="menuitem">Home</a>
+      <a href="#pricing" role="menuitem">Pricing</a>
+      <a href="#story" role="menuitem">Our Story</a>
+      <a href="#testimonials" role="menuitem">Testimonials</a>
+      <a href="#pricing" class="nav-cta" role="menuitem">Start Free Trial</a>
+    </div>
+  </nav>
+
+  <!-- ============================================
+       HOME / HERO
+  ============================================ -->
+  <section id="home" aria-label="Hero">
+    <div class="hero-logo" role="img" aria-label="AccuQuote — Quote Any Job in 20 Minutes">
+      <svg width="80" height="80" viewBox="0 0 632 632" aria-hidden="true" focusable="false"><use href="#aq-icon"/></svg>
+      <span class="hero-logo-wordmark">AccuQuote</span>
+    </div>
+    <h1 class="hero-tagline">
+      The fastest quoting software<br />
+      for <span>UK tradesmen</span>.
+    </h1>
+    <p class="hero-sub">
+      Scan the room, let AI build your bill of materials, send a professional PDF quote — all in under 20 minutes. Built for electricians, plasterers, builders, and more.
+    </p>
+    <div class="hero-cta">
+      <a href="#pricing" class="btn-primary">Start Free Trial — No Card Required</a>
+    </div>
+    <div class="hero-stats" role="list">
+      <div class="stat-pill" role="listitem"><strong>3 free quotes</strong> included</div>
+      <div class="stat-pill" role="listitem">Works on <strong>iPhone</strong></div>
+      <div class="stat-pill" role="listitem"><strong>Real supplier SKUs</strong></div>
+    </div>
+  </section>
+
+  <!-- ============================================
+       FEATURES
+  ============================================ -->
+  <section id="features" aria-labelledby="features-heading">
+    <div class="section-inner">
+      <div class="features-header">
+        <p class="section-label">Why AccuQuote</p>
+        <h2 class="section-title animate-fadeup" id="features-heading">
+          The fastest quoting software<br />for UK tradesmen
+        </h2>
+        <p class="section-body animate-fadeup animate-delay-1">
+          Whether you're an electrician, plasterer, or builder — stop wasting hours on quoting admin. AccuQuote handles the heavy lifting so you can get back on the tools.
+        </p>
+      </div>
+
+      <div class="feature-cards">
+        <article class="feature-card animate-fadeup animate-delay-1">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M2 12h2M20 12h2M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+              <circle cx="12" cy="12" r="4" />
+            </svg>
+          </div>
+          <h3>Scan the room with LiDAR</h3>
+          <p>Point your iPhone at the room and AccuQuote captures accurate dimensions in seconds. No tape measure. No guesswork. Just precise measurements ready to quote from.</p>
+        </article>
+
+        <article class="feature-card animate-fadeup animate-delay-2">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" />
+              <rect x="9" y="3" width="6" height="4" rx="1" />
+              <path d="M9 12h6M9 16h4" />
+            </svg>
+          </div>
+          <h3>AI builds your bill of materials</h3>
+          <p>AccuQuote pulls from your supplier catalogue and generates a full, accurate BOM automatically. Real SKUs, current prices, zero manual look-up. That's an instant quote generator for trades that actually works.</p>
+        </article>
+
+        <article class="feature-card animate-fadeup animate-delay-3">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+              <polyline points="14,2 14,8 20,8" />
+              <path d="M9 15l2 2 4-4" />
+            </svg>
+          </div>
+          <h3>Professional PDF quote, ready to send</h3>
+          <p>One tap and AccuQuote generates a branded, professional PDF quote ready to send straight to your client. The best job quoting app UK tradesmen have ever used.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================
+       HOW IT WORKS
+  ============================================ -->
+  <section id="how-it-works" aria-labelledby="how-heading">
+    <div class="section-inner">
+      <div class="how-header">
+        <p class="section-label">How it works</p>
+        <h2 class="section-title animate-fadeup" id="how-heading">
+          Quote any job in three steps
+        </h2>
+        <p class="section-body animate-fadeup animate-delay-1">
+          No training required. No complicated setup. Just open the app, scan the room, and send the quote. Here's how to quote faster as a tradesman.
+        </p>
+      </div>
+
+      <div class="steps">
+        <div class="step animate-fadeup animate-delay-1">
+          <div class="step-number" aria-hidden="true">1</div>
+          <h3>Scan the room</h3>
+          <p>Use your iPhone's LiDAR sensor to capture the room in seconds. AccuQuote maps dimensions and surfaces automatically — no measuring, no manual data entry.</p>
+        </div>
+        <div class="step animate-fadeup animate-delay-2">
+          <div class="step-number" aria-hidden="true">2</div>
+          <h3>Review the quote</h3>
+          <p>AccuQuote's AI generates a complete bill of materials from your supplier catalogue, with accurate quantities, real SKUs, and current pricing. Adjust anything with a tap.</p>
+        </div>
+        <div class="step animate-fadeup animate-delay-3">
+          <div class="step-number" aria-hidden="true">3</div>
+          <h3>Send to your client</h3>
+          <p>Export a clean, branded PDF quote and send it directly from the app. Your client gets a professional document. You get back to what you're good at.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================
+       PRICING
+  ============================================ -->
+  <section id="pricing" aria-labelledby="pricing-heading">
+    <div class="section-inner">
+      <div class="pricing-header">
+        <p class="section-label">Pricing</p>
+        <h2 class="section-title animate-fadeup" id="pricing-heading">
+          Simple, honest pricing
+        </h2>
+        <p class="section-body animate-fadeup animate-delay-1">
+          Start free. No card required. Upgrade when AccuQuote saves you more time than you can count.
+        </p>
+      </div>
+
+      <div class="pricing-cards">
+
+        <!-- Free -->
+        <div class="pricing-card animate-fadeup animate-delay-1">
+          <p class="plan-name">Free Trial</p>
+          <p class="plan-price"><sup>£</sup>0</p>
+          <p class="plan-period">to get started</p>
+          <div class="plan-divider"></div>
+          <ul class="plan-features">
+            <li>3 free quote tokens included</li>
+            <li>No credit card required</li>
+            <li>LiDAR room scanning</li>
+            <li>AI bill of materials</li>
+            <li>PDF quote export</li>
+            <li>Real supplier SKUs</li>
+          </ul>
+          <a href="#" class="plan-btn plan-btn-secondary">Get Started Free</a>
+        </div>
+
+        <!-- Standard -->
+        <div class="pricing-card popular animate-fadeup animate-delay-2">
+          <div class="popular-badge">Most Popular</div>
+          <p class="plan-name">Standard</p>
+          <p class="plan-price"><sup>£</sup>59</p>
+          <p class="plan-period">per month</p>
+          <div class="plan-divider"></div>
+          <ul class="plan-features">
+            <li>Unlimited quotes</li>
+            <li>PDF export on every quote</li>
+            <li>Full supplier SKU catalogue</li>
+            <li>LiDAR room scanning</li>
+            <li>AI-powered bill of materials</li>
+            <li>Email support</li>
+          </ul>
+          <a href="#" class="plan-btn plan-btn-primary">Start Standard</a>
+        </div>
+
+        <!-- Premium -->
+        <div class="pricing-card animate-fadeup animate-delay-3">
+          <p class="plan-name">Premium</p>
+          <p class="plan-price"><sup>£</sup>119</p>
+          <p class="plan-period">per month</p>
+          <div class="plan-divider"></div>
+          <ul class="plan-features">
+            <li>Everything in Standard</li>
+            <li>Priority support</li>
+            <li>Team features — multiple users</li>
+            <li>Custom quote branding</li>
+            <li>Quote history &amp; analytics</li>
+            <li>Dedicated account manager</li>
+          </ul>
+          <a href="#" class="plan-btn plan-btn-secondary">Start Premium</a>
+        </div>
+
+      </div>
+
+      <div class="pricing-extras animate-fadeup">
+        <div class="pricing-extra-item">
+          <div class="gold-dot"></div>
+          <p><strong>Need a one-off quote?</strong> <span>£25 per extra quote · Bundle of 4 for £75</span></p>
+        </div>
+        <div class="pricing-extra-item">
+          <div class="gold-dot"></div>
+          <p><strong>Refer and earn.</strong> <span>Earn a free month for every 3 new users you refer — no limit.</span></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================
+       OUR STORY
+  ============================================ -->
+  <section id="story" aria-labelledby="story-heading">
+    <div class="section-inner story-inner">
+      <p class="section-label">Our Story</p>
+      <h2 class="section-title animate-fadeup" id="story-heading">
+        Built by a PM and master tradesmen.
+      </h2>
+
+      <div class="story-stats animate-fadeup">
+        <div class="story-stat">
+          <div class="story-stat-num">4–6 hrs</div>
+          <div class="story-stat-label">per week lost to quoting admin</div>
+        </div>
+        <div class="story-stat">
+          <div class="story-stat-num">&lt;20 min</div>
+          <div class="story-stat-label">to send a quote with AccuQuote</div>
+        </div>
+        <div class="story-stat">
+          <div class="story-stat-num">3</div>
+          <div class="story-stat-label">trades, one tool</div>
+        </div>
+      </div>
+
+      <p class="animate-fadeup">
+        I'm a product manager. I've spent years building software products — working out what people actually need, stripping away the noise, and shipping things that work. When I started talking to tradespeople about how they run their businesses, one thing kept coming up: quoting. Not the skilled work. Not the client relationships. The admin. The spreadsheets, the phone calls chasing material prices, the formatting, the sending and chasing. The bit nobody got into the trades to do.
+      </p>
+
+      <p class="animate-fadeup animate-delay-1">
+        I teamed up with plasterers, electricians, and builders who've been working their markets for decades. Together we mapped out exactly where the time goes. The average tradesman spends four to six hours a week on quoting — measuring up, pricing materials, writing everything up, formatting a PDF, sending it off, and then chasing it when the client doesn't reply. That's a full working day, every week, that could be on the tools or at home. AccuQuote was built to give that time back. We combined LiDAR room scanning, AI-powered bill of materials generation, and live supplier catalogues into a single app that produces an accurate, professional quote in under 20 minutes — from scan to send.
+      </p>
+
+      <p class="animate-fadeup animate-delay-2">
+        There's no fluff here. No features designed to impress investors. Every decision in AccuQuote was made with a working tradesman sat next to us, telling us what would actually save them time on a Tuesday morning. We tested, we scrapped things, we rebuilt. The result is something that works the way tradespeople work — fast, reliable, no nonsense.
+      </p>
+
+      <p class="animate-fadeup animate-delay-3">
+        We didn't build AccuQuote to disrupt the trades. We built it because Dave the plasterer asked us to.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============================================
+       TESTIMONIALS
+  ============================================ -->
+  <section id="testimonials" aria-labelledby="testimonials-heading">
+    <div class="section-inner">
+      <div class="testimonials-header">
+        <p class="section-label">Testimonials</p>
+        <h2 class="section-title animate-fadeup" id="testimonials-heading">
+          Hours saved. Every week.
+        </h2>
+        <p class="section-body animate-fadeup animate-delay-1">
+          Real tradespeople. Real time savings. Here's what UK tradesmen have to say about AccuQuote.
+        </p>
+      </div>
+
+      <div class="testimonials-grid">
+
+        <!-- 1: Plasterer -->
+        <article class="testimonial-card animate-fadeup animate-delay-1">
+          <div class="testimonial-header">
+            <div class="testimonial-avatar" aria-hidden="true">DM</div>
+            <div class="testimonial-meta">
+              <strong>Dave Marsh</strong>
+              <span>Master Plasterer · 22 years in trade</span>
+            </div>
+          </div>
+          <p class="testimonial-quote">"I used to dread quoting bigger jobs — two rooms could take me half a day between measuring, pricing coving and materials, and writing it all up. Now I'm done before I get back to the van."</p>
+          <div class="time-breakdown">
+            <div class="time-breakdown-title">Time breakdown</div>
+            <div class="time-row">
+              <span class="time-row-label">Measuring &amp; dimensions</span>
+              <span class="time-row-before">50 min</span>
+              <span class="time-row-after">4 min</span>
+            </div>
+            <div class="time-row">
+              <span class="time-row-label">Pricing materials</span>
+              <span class="time-row-before">40 min</span>
+              <span class="time-row-after">0 (AI does it)</span>
+            </div>
+            <div class="time-row">
+              <span class="time-row-label">Writing up &amp; sending</span>
+              <span class="time-row-before">30 min</span>
+              <span class="time-row-after">3 min</span>
+            </div>
+          </div>
+          <div class="time-saving-total">Saves me 4 hours a week</div>
+        </article>
+
+        <!-- 2: Electrician -->
+        <article class="testimonial-card animate-fadeup animate-delay-2">
+          <div class="testimonial-header">
+            <div class="testimonial-avatar" aria-hidden="true">RC</div>
+            <div class="testimonial-meta">
+              <strong>Rob Cartwright</strong>
+              <span>Electrical Contractor · 17 years in trade</span>
+            </div>
+          </div>
+          <p class="testimonial-quote">"The bit that used to kill me was chasing current cable prices from the wholesaler. Prices change weekly and if I got it wrong I ate the difference. AccuQuote pulls live SKU prices so that headache's gone completely."</p>
+          <div class="time-breakdown">
+            <div class="time-breakdown-title">Time breakdown</div>
+            <div class="time-row">
+              <span class="time-row-label">Chasing supplier prices</span>
+              <span class="time-row-before">45 min</span>
+              <span class="time-row-after">0 (automated)</span>
+            </div>
+            <div class="time-row">
+              <span class="time-row-label">Building the BOM</span>
+              <span class="time-row-before">60 min</span>
+              <span class="time-row-after">6 min</span>
+            </div>
+            <div class="time-row">
+              <span class="time-row-label">Formatting &amp; sending PDF</span>
+              <span class="time-row-before">20 min</span>
+              <span class="time-row-after">2 min</span>
+            </div>
+          </div>
+          <div class="time-saving-total">Saves me 5 hours a week</div>
+        </article>
+
+        <!-- 3: Builder -->
+        <article class="testimonial-card animate-fadeup animate-delay-3">
+          <div class="testimonial-header">
+            <div class="testimonial-avatar" aria-hidden="true">PH</div>
+            <div class="testimonial-meta">
+              <strong>Paul Hennessy</strong>
+              <span>Builder &amp; General Contractor · 28 years in trade</span>
+            </div>
+          </div>
+          <p class="testimonial-quote">"I was skeptical about an app doing what my experience does. But it's not replacing the experience — it's just handling the paperwork. I still decide what's in the quote. The app just writes it up fast."</p>
+          <div class="time-breakdown">
+            <div class="time-breakdown-title">Time breakdown</div>
+            <div class="time-row">
+              <span class="time-row-label">Room measuring</span>
+              <span class="time-row-before">40 min</span>
+              <span class="time-row-after">5 min</span>
+            </div>
+            <div class="time-row">
+              <span class="time-row-label">Materials pricing</span>
+              <span class="time-row-before">50 min</span>
+              <span class="time-row-after">0 (AI does it)</span>
+            </div>
+            <div class="time-row">
+              <span class="time-row-label">Writing &amp; formatting quote</span>
+              <span class="time-row-before">45 min</span>
+              <span class="time-row-after">4 min</span>
+            </div>
+          </div>
+          <div class="time-saving-total">Saves me 3.5 hours a week</div>
+        </article>
+
+        <!-- 4: Plumber -->
+        <article class="testimonial-card animate-fadeup animate-delay-1">
+          <div class="testimonial-header">
+            <div class="testimonial-avatar" aria-hidden="true">SK</div>
+            <div class="testimonial-meta">
+              <strong>Steve Kilpatrick</strong>
+              <span>Plumbing &amp; Heating Engineer · 14 years in trade</span>
+            </div>
+          </div>
+          <p class="testimonial-quote">"Bathroom quotes used to be a nightmare — fifteen different items to price, fixtures to specify, labour to calculate. Now I scan the bathroom and the app gives me a starting point that's 90% there. I adjust a couple of things and it's done."</p>
+          <div class="time-breakdown">
+            <div class="time-breakdown-title">Time breakdown</div>
+            <div class="time-row">
+              <span class="time-row-label">Fixture &amp; fitting spec</span>
+              <span class="time-row-before">35 min</span>
+              <span class="time-row-after">5 min</span>
+            </div>
+            <div class="time-row">
+              <span class="time-row-label">Materials &amp; pipe quantities</span>
+              <span class="time-row-before">30 min</span>
+              <span class="time-row-after">0 (AI does it)</span>
+            </div>
+            <div class="time-row">
+              <span class="time-row-label">Quote writeup &amp; sending</span>
+              <span class="time-row-before">25 min</span>
+              <span class="time-row-after">3 min</span>
+            </div>
+          </div>
+          <div class="time-saving-total">Saves me 3 hours a week</div>
+        </article>
+
+        <!-- 5: Decorator -->
+        <article class="testimonial-card animate-fadeup animate-delay-2">
+          <div class="testimonial-header">
+            <div class="testimonial-avatar" aria-hidden="true">NW</div>
+            <div class="testimonial-meta">
+              <strong>Nicola Webb</strong>
+              <span>Decorator · 11 years in trade</span>
+            </div>
+          </div>
+          <p class="testimonial-quote">"I always underquoted on paint because working out coverage for complex rooms with alcoves and ceilings is genuinely hard to do in your head. AccuQuote gets it right every time. I've stopped losing money on materials."</p>
+          <div class="time-breakdown">
+            <div class="time-breakdown-title">Time breakdown</div>
+            <div class="time-row">
+              <span class="time-row-label">Surface area calculation</span>
+              <span class="time-row-before">30 min</span>
+              <span class="time-row-after">3 min</span>
+            </div>
+            <div class="time-row">
+              <span class="time-row-label">Paint &amp; material quantities</span>
+              <span class="time-row-before">20 min</span>
+              <span class="time-row-after">0 (AI does it)</span>
+            </div>
+            <div class="time-row">
+              <span class="time-row-label">Writing up the quote</span>
+              <span class="time-row-before">25 min</span>
+              <span class="time-row-after">2 min</span>
+            </div>
+          </div>
+          <div class="time-saving-total">Saves me 2.5 hours a week</div>
+        </article>
+
+        <!-- 6: Joiner -->
+        <article class="testimonial-card animate-fadeup animate-delay-3">
+          <div class="testimonial-header">
+            <div class="testimonial-avatar" aria-hidden="true">TF</div>
+            <div class="testimonial-meta">
+              <strong>Terry Faulkner</strong>
+              <span>Joiner &amp; Carpenter · 31 years in trade</span>
+            </div>
+          </div>
+          <p class="testimonial-quote">"Thirty-one years I've been doing quotes by hand. My lad told me to try this and I thought it'd be rubbish, to be honest. It's not. It's quick, the prices are right, and the quote looks better than anything I ever produced on Word. I'm a convert."</p>
+          <div class="time-breakdown">
+            <div class="time-breakdown-title">Time breakdown</div>
+            <div class="time-row">
+              <span class="time-row-label">Measuring timber &amp; fixings</span>
+              <span class="time-row-before">55 min</span>
+              <span class="time-row-after">5 min</span>
+            </div>
+            <div class="time-row">
+              <span class="time-row-label">Pricing materials manually</span>
+              <span class="time-row-before">40 min</span>
+              <span class="time-row-after">0 (automated)</span>
+            </div>
+            <div class="time-row">
+              <span class="time-row-label">Quote document &amp; sending</span>
+              <span class="time-row-before">30 min</span>
+              <span class="time-row-after">2 min</span>
+            </div>
+          </div>
+          <div class="time-saving-total">Saves me 4.5 hours a week</div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================
+       FAQ
+  ============================================ -->
+  <section id="faq" aria-labelledby="faq-heading">
+    <div class="section-inner">
+      <div class="faq-header">
+        <p class="section-label">FAQs</p>
+        <h2 class="section-title animate-fadeup" id="faq-heading">
+          Common questions
+        </h2>
+      </div>
+
+      <div class="faq-list" role="list">
+
+        <div class="faq-item" role="listitem">
+          <button class="faq-question" aria-expanded="false">
+            What is trades quoting software?
+            <div class="faq-icon" aria-hidden="true">
+              <svg viewBox="0 0 12 12"><line x1="6" y1="2" x2="6" y2="10"/><line x1="2" y1="6" x2="10" y2="6"/></svg>
+            </div>
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">
+              <p>Trades quoting software is a tool that helps electricians, plasterers, builders, and other tradespeople build accurate job quotes faster than doing it manually. Traditional quoting involves measuring a room, calculating material quantities, looking up current supplier prices, writing up a document, and sending it — a process that can easily take two to three hours per job. Quoting software automates the measurement, material calculation, and document generation steps, so a tradesman can produce a professional quote in a fraction of the time. AccuQuote goes further by using LiDAR scanning and AI to generate a complete bill of materials from real supplier catalogues, making it the most complete job quoting app for UK tradespeople available today.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item" role="listitem">
+          <button class="faq-question" aria-expanded="false">
+            How does AccuQuote build a quote so fast?
+            <div class="faq-icon" aria-hidden="true">
+              <svg viewBox="0 0 12 12"><line x1="6" y1="2" x2="6" y2="10"/><line x1="2" y1="6" x2="10" y2="6"/></svg>
+            </div>
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">
+              <p>AccuQuote uses three technologies working together. First, your iPhone's LiDAR sensor scans the room and captures accurate dimensions automatically — no tape measure needed. Second, an AI model takes those dimensions and generates a complete bill of materials based on the job type and your supplier catalogue, including real SKUs and current prices. Third, AccuQuote formats everything into a clean, branded PDF quote that's ready to send directly from the app. The result is a complete, accurate quote — from scanning to sending — in under 20 minutes. That's the AccuQuote instant quote generator for trades in action.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item" role="listitem">
+          <button class="faq-question" aria-expanded="false">
+            Does AccuQuote work for electricians, plasterers and builders?
+            <div class="faq-icon" aria-hidden="true">
+              <svg viewBox="0 0 12 12"><line x1="6" y1="2" x2="6" y2="10"/><line x1="2" y1="6" x2="10" y2="6"/></svg>
+            </div>
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">
+              <p>Yes. AccuQuote is built to work across all the main UK trades. It functions as a quote builder for electricians — handling cable quantities, consumer units, sockets, and fittings from your supplier catalogue. As a quote builder for plasterers, it calculates surface area, boarding, finishing plaster, and coving. As a quote builder for builders, it covers broader renovation and construction scopes. It also works for plumbers, decorators, and joiners. The AI adapts its bill of materials generation to the trade and job type, so you get accurate, relevant quotes regardless of what you do.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item" role="listitem">
+          <button class="faq-question" aria-expanded="false">
+            Can I use AccuQuote as a job quoting app on my iPhone?
+            <div class="faq-icon" aria-hidden="true">
+              <svg viewBox="0 0 12 12"><line x1="6" y1="2" x2="6" y2="10"/><line x1="2" y1="6" x2="10" y2="6"/></svg>
+            </div>
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">
+              <p>Yes — AccuQuote is designed from the ground up as a mobile-first job quoting app for iPhone. The LiDAR scanning feature requires a LiDAR-equipped iPhone (iPhone 12 Pro and later), but the rest of the app works on any modern iPhone. You can scan rooms, build quotes, review materials, adjust line items, and send the final PDF — all from your phone, all from the job site. There's no need to go back to a laptop, open a spreadsheet, or use a desktop to finish the quote. It's the most complete job quoting app in the UK market for tradespeople who work on the go.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="faq-item" role="listitem">
+          <button class="faq-question" aria-expanded="false">
+            How do I quote faster as a tradesman?
+            <div class="faq-icon" aria-hidden="true">
+              <svg viewBox="0 0 12 12"><line x1="6" y1="2" x2="6" y2="10"/><line x1="2" y1="6" x2="10" y2="6"/></svg>
+            </div>
+          </button>
+          <div class="faq-answer">
+            <div class="faq-answer-inner">
+              <p>The single biggest time-saver is automating the three slowest parts of quoting: measuring, pricing materials, and document formatting. Most tradesmen spend 30–60 minutes per quote just on those three steps. With AccuQuote, measuring takes under five minutes (LiDAR scan), material pricing is instant (AI with live supplier data), and the PDF is generated in seconds. Beyond the app itself, quoting faster also comes from having a standard template for each job type, sending quotes the same day as the site visit rather than letting them build up, and following up within 48 hours — all of which AccuQuote's workflow supports. If you want to know how to quote faster as a tradesman, starting with the right tool makes everything else easier.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================
+       CTA BANNER
+  ============================================ -->
+  <div class="cta-banner" aria-label="Call to action">
+    <div class="section-inner" style="text-align:center;">
+      <h2 class="animate-fadeup">Ready to quote any job in 20 minutes?</h2>
+      <p class="animate-fadeup animate-delay-1">Start with 3 free quotes. No card required. See exactly how much time you save before you spend a penny.</p>
+      <div class="cta-banner-actions animate-fadeup animate-delay-2">
+        <a href="#pricing" class="btn-primary">Start Free Trial</a>
+        <a href="#how-it-works" class="btn-secondary">See How It Works</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       FOOTER
+  ============================================ -->
+  <footer role="contentinfo">
+    <div class="footer-logo" role="img" aria-label="AccuQuote">
+      <svg width="48" height="48" viewBox="0 0 632 632" aria-hidden="true" focusable="false"><use href="#aq-icon"/></svg>
+      <span class="footer-logo-wordmark">AccuQuote</span>
+    </div>
+    <nav class="footer-links" aria-label="Footer navigation">
+      <a href="./privacy-policy.html">Privacy Policy</a>
+      <a href="mailto:hello@accuquote.app">Contact</a>
+    </nav>
+    <div class="footer-copy">
+      <p>&copy; 2025 AccuQuote. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- ============================================
+       VANILLA JS — mobile menu + FAQ accordion + scroll animation
+  ============================================ -->
+  <script>
+    // Mobile menu toggle
+    const hamburger = document.getElementById('hamburger');
+    const mobileMenu = document.getElementById('mobile-menu');
+
+    hamburger.addEventListener('click', function () {
+      const isOpen = mobileMenu.classList.toggle('open');
+      hamburger.classList.toggle('open', isOpen);
+      hamburger.setAttribute('aria-expanded', isOpen.toString());
+    });
+
+    // Close mobile menu when a link is clicked
+    mobileMenu.querySelectorAll('a').forEach(function (link) {
+      link.addEventListener('click', function () {
+        mobileMenu.classList.remove('open');
+        hamburger.classList.remove('open');
+        hamburger.setAttribute('aria-expanded', 'false');
+      });
+    });
+
+    // FAQ accordion
+    document.querySelectorAll('.faq-question').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const item = btn.closest('.faq-item');
+        const isOpen = item.classList.contains('open');
+
+        // Close all
+        document.querySelectorAll('.faq-item').forEach(function (i) {
+          i.classList.remove('open');
+          i.querySelector('.faq-question').setAttribute('aria-expanded', 'false');
+        });
+
+        // Open clicked if it wasn't already open
+        if (!isOpen) {
+          item.classList.add('open');
+          btn.setAttribute('aria-expanded', 'true');
+        }
+      });
+    });
+
+    // Intersection Observer for scroll animations
+    var observer = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+          }
+        });
+      },
+      { threshold: 0.12 }
+    );
+
+    document.querySelectorAll('.animate-fadeup').forEach(function (el) {
+      observer.observe(el);
+    });
+  </script>
+
+</body>
+</html>
