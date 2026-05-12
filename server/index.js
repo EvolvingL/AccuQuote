@@ -114,9 +114,14 @@ app.use(express.static(ROOT, {
   },
 }));
 
-// SPA fallback — all unmatched routes serve index.html
+// Root — serve website.html as the homepage
+app.get('/', (req, res) => {
+  res.sendFile(join(ROOT, 'website.html'));
+});
+
+// SPA fallback — all other unmatched routes serve website.html
 app.get('*', (req, res) => {
-  res.sendFile(join(ROOT, 'index.html'));
+  res.sendFile(join(ROOT, 'website.html'));
 });
 
 app.listen(PORT, () => {
