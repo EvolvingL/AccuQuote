@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quoting Software for Plasterers | AccuQuote</title>
+  <meta name="description" content="Quoting software built for plasterers in the UK. Stop underquoting — price bags of plaster, beading, plasterboard and day rates correctly every time." />
+  <link rel="canonical" href="https://accuquote.app/blog/quoting-software-for-plasterers.html" />
+
+  <meta property="og:title" content="Quoting Software for Plasterers | AccuQuote" />
+  <meta property="og:description" content="Why plasterers underquote — and how to stop. A practical guide to pricing plastering work correctly." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://accuquote.app/blog/quoting-software-for-plasterers.html" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "Quoting Software for Plasterers: Stop Underquoting and Start Winning the Right Jobs",
+    "description": "Why plasterers underquote — and how to stop. A practical guide to pricing plastering work so you get paid what the job is actually worth.",
+    "author": { "@type": "Organization", "name": "AccuQuote Team" },
+    "publisher": { "@type": "Organization", "name": "AccuQuote", "url": "https://accuquote.app" },
+    "datePublished": "2025-02-18",
+    "dateModified": "2025-02-18",
+    "mainEntityOfPage": "https://accuquote.app/blog/quoting-software-for-plasterers.html"
+  }
+  </script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --gold: #C8922A; --gold-hover: #b07e22; --dark: #1D1D1F; --secondary: #6E6E73;
+      --navy: #0A0A1A; --navy-mid: #0f0f2a; --white: #FFFFFF; --off-white: #F5F5F7;
+      --border: #E0E0E5; --radius: 14px; --radius-sm: 8px;
+      --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+    }
+    html { scroll-behavior: smooth; font-size: 16px; -webkit-font-smoothing: antialiased; }
+    body { font-family: var(--font); background: var(--white); color: var(--dark); line-height: 1.6; overflow-x: hidden; }
+    a { color: inherit; text-decoration: none; }
+
+    nav { position: sticky; top: 0; z-index: 1000; background: var(--navy); border-bottom: 1px solid rgba(255,255,255,0.06); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+    .nav-inner { max-width: 1200px; margin: 0 auto; padding: 0 24px; height: 68px; display: flex; align-items: center; justify-content: space-between; }
+    .nav-logo { display: flex; align-items: center; gap: 10px; }
+    .nav-logo svg { width: 32px; height: 32px; flex-shrink: 0; border-radius: 7px; overflow: hidden; }
+    .nav-logo-wordmark { font-size: 1.125rem; font-weight: 700; letter-spacing: -0.02em; color: var(--white); }
+    .nav-links { display: flex; align-items: center; gap: 32px; list-style: none; }
+    .nav-links a { color: rgba(255,255,255,0.75); font-size: 0.9375rem; font-weight: 500; letter-spacing: -0.01em; transition: color 0.2s ease; }
+    .nav-links a:hover, .nav-links a.active { color: var(--white); }
+    .nav-cta { background: var(--gold); color: var(--white) !important; padding: 9px 20px; border-radius: 100px; font-weight: 600 !important; transition: background 0.2s ease !important; }
+    .nav-cta:hover { background: var(--gold-hover) !important; }
+    .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 4px; background: none; border: none; }
+    .hamburger span { display: block; width: 24px; height: 2px; background: rgba(255,255,255,0.8); border-radius: 2px; transition: all 0.25s ease; }
+    .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity: 0; }
+    .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+    .mobile-menu { display: none; flex-direction: column; background: var(--navy-mid); border-top: 1px solid rgba(255,255,255,0.06); padding: 8px 0 16px; }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a { padding: 13px 24px; color: rgba(255,255,255,0.8); font-size: 1rem; font-weight: 500; }
+    .mobile-menu a.nav-cta { margin: 12px 24px 0; text-align: center; border-radius: 10px; }
+
+    .breadcrumb-bar { background: var(--off-white); border-bottom: 1px solid var(--border); padding: 12px 24px; }
+    .breadcrumb { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; gap: 8px; font-size: 0.8125rem; color: var(--secondary); }
+    .breadcrumb a { color: var(--secondary); transition: color 0.15s ease; }
+    .breadcrumb a:hover { color: var(--gold); }
+    .breadcrumb-sep { color: var(--border); }
+    .breadcrumb-current { color: var(--dark); font-weight: 500; }
+
+    .article-outer { max-width: 1200px; margin: 0 auto; padding: 48px 24px 80px; display: grid; grid-template-columns: 1fr 320px; gap: 56px; align-items: start; }
+
+    .article-header { margin-bottom: 40px; }
+    .article-tag { display: inline-block; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold); background: rgba(200,146,42,0.1); border-radius: 100px; padding: 4px 10px; margin-bottom: 16px; }
+    .article-header h1 { font-size: clamp(1.75rem, 4vw, 2.625rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.15; color: var(--dark); margin-bottom: 16px; }
+    .article-meta { display: flex; align-items: center; gap: 20px; font-size: 0.875rem; color: var(--secondary); }
+    .article-meta-dot { color: var(--border); }
+
+    .article-body { max-width: 760px; }
+    .article-body p { font-size: 1.0625rem; color: #3a3a3c; line-height: 1.8; margin-bottom: 20px; }
+    .article-body h2 { font-size: clamp(1.25rem, 2.5vw, 1.625rem); font-weight: 700; letter-spacing: -0.025em; color: var(--dark); margin: 44px 0 16px; line-height: 1.25; }
+    .article-body h3 { font-size: 1.125rem; font-weight: 600; letter-spacing: -0.015em; color: var(--dark); margin: 28px 0 10px; line-height: 1.3; }
+    .article-body ul, .article-body ol { margin: 0 0 20px 20px; }
+    .article-body li { font-size: 1.0625rem; color: #3a3a3c; line-height: 1.8; margin-bottom: 6px; }
+    .article-body strong { color: var(--dark); font-weight: 600; }
+
+    .callout-box { background: rgba(200,146,42,0.07); border-left: 3px solid var(--gold); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding: 20px 24px; margin: 28px 0; }
+    .callout-box p { margin-bottom: 0; color: var(--dark); }
+    .wound-callout { background: #fff8e6; border: 1.5px solid var(--gold); border-radius: 10px; padding: 18px 22px; margin-bottom: 28px; font-size: 1rem; line-height: 1.6; color: var(--dark); }
+    .wound-callout strong { color: #7a4800; }
+    .referral-box { background: var(--navy); border: 1.5px solid var(--gold); border-radius: 10px; padding: 18px 22px; margin: 28px 0; font-size: 0.9375rem; color: var(--white); line-height: 1.6; }
+    .referral-box strong { color: var(--gold); display: block; margin-bottom: 4px; font-size: 1rem; }
+
+    .faq-item { border-bottom: 1px solid var(--border); padding: 20px 0; }
+    .faq-item:last-child { border-bottom: none; }
+    .faq-q { font-size: 1.0625rem; font-weight: 600; color: var(--dark); margin-bottom: 8px; }
+    .faq-a { font-size: 1.0625rem; color: #3a3a3c; line-height: 1.8; }
+
+    .quote-table { width: 100%; border-collapse: collapse; margin: 28px 0; font-size: 0.9375rem; }
+    .quote-table th { text-align: left; padding: 10px 14px; background: var(--off-white); font-weight: 600; color: var(--dark); border-bottom: 2px solid var(--border); font-size: 0.875rem; }
+    .quote-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: #3a3a3c; vertical-align: top; }
+    .quote-table tr:last-child td { border-bottom: none; }
+    .quote-table .total-row td { font-weight: 700; color: var(--dark); border-top: 2px solid var(--border); border-bottom: none; }
+
+    .article-sidebar { position: sticky; top: 88px; }
+    .sidebar-cta { background: linear-gradient(140deg, var(--navy) 0%, #1a0f05 100%); border-radius: var(--radius); padding: 28px 24px; margin-bottom: 24px; }
+    .sidebar-cta h3 { font-size: 1.0625rem; font-weight: 700; letter-spacing: -0.015em; color: var(--white); margin-bottom: 10px; }
+    .sidebar-cta p { font-size: 0.9rem; color: rgba(255,255,255,0.6); margin-bottom: 20px; line-height: 1.6; }
+    .sidebar-cta-btn { display: block; background: var(--gold); color: var(--white); text-align: center; font-size: 0.9375rem; font-weight: 600; padding: 12px 20px; border-radius: 100px; transition: background 0.2s ease; }
+    .sidebar-cta-btn:hover { background: var(--gold-hover); }
+    .sidebar-related { background: var(--off-white); border-radius: var(--radius); padding: 24px; }
+    .sidebar-related h3 { font-size: 0.8125rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--secondary); margin-bottom: 16px; }
+    .related-link { display: block; font-size: 0.9rem; font-weight: 500; color: var(--dark); padding: 10px 0; border-bottom: 1px solid var(--border); transition: color 0.15s ease; line-height: 1.4; }
+    .related-link:last-child { border-bottom: none; padding-bottom: 0; }
+    .related-link:hover { color: var(--gold); }
+
+    .related-row { max-width: 1200px; margin: 0 auto; padding: 0 24px 80px; }
+    .related-row h2 { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; color: var(--dark); margin-bottom: 24px; }
+    .related-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+    .related-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+    .related-card:hover { border-color: rgba(200,146,42,0.35); box-shadow: 0 6px 24px rgba(0,0,0,0.07); }
+    .related-card-tag { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
+    .related-card h3 { font-size: 1rem; font-weight: 700; letter-spacing: -0.015em; color: var(--dark); margin-bottom: 8px; line-height: 1.3; }
+    .related-card p { font-size: 0.875rem; color: var(--secondary); line-height: 1.6; margin-bottom: 12px; }
+    .related-card-link { font-size: 0.875rem; font-weight: 600; color: var(--gold); }
+
+    footer { background: var(--navy); border-top: 1px solid rgba(255,255,255,0.06); padding: 48px 24px; text-align: center; }
+    .footer-logo { display: flex; flex-direction: column; align-items: center; gap: 12px; margin: 0 auto 28px; }
+    .footer-logo svg { width: 48px; height: 48px; border-radius: 11px; overflow: hidden; box-shadow: 0 4px 16px rgba(200,146,42,0.18), 0 1px 4px rgba(0,0,0,0.35); }
+    .footer-logo-wordmark { font-size: 1rem; font-weight: 700; letter-spacing: -0.015em; color: rgba(255,255,255,0.75); }
+    .footer-links { display: flex; gap: 28px; justify-content: center; flex-wrap: wrap; margin-bottom: 24px; }
+    .footer-links a { font-size: 0.9375rem; color: rgba(255,255,255,0.45); transition: color 0.2s ease; }
+    .footer-links a:hover { color: rgba(255,255,255,0.8); }
+    .footer-copy p { font-size: 0.875rem; color: rgba(255,255,255,0.3); }
+
+    @media (max-width: 900px) {
+      .article-outer { grid-template-columns: 1fr; gap: 40px; }
+      .article-sidebar { position: static; }
+      .related-cards { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      .nav-links { display: none; }
+      .hamburger { display: flex; }
+      .article-outer { padding: 32px 20px 60px; }
+    }
+  </style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true">
+  <symbol id="aq-icon" viewBox="0 0 632 632">
+    <defs>
+      <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#1A1200"/><stop offset="100%" stop-color="#0A0800"/></linearGradient>
+      <linearGradient id="gv" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFE566"/><stop offset="40%" stop-color="#C8920A"/><stop offset="100%" stop-color="#7A4800"/></linearGradient>
+      <linearGradient id="gcb" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFE566"/><stop offset="100%" stop-color="#A06800"/></linearGradient>
+      <radialGradient id="grs" cx="38%" cy="35%" r="65%"><stop offset="0%" stop-color="#FFE566"/><stop offset="55%" stop-color="#C8920A"/><stop offset="100%" stop-color="#7A4800"/></radialGradient>
+    </defs>
+    <rect width="632" height="632" fill="url(#bg)" rx="126"/>
+    <polygon points="298.58,32.55 321.42,43.45 60.46,574.61 49.54,569.39" fill="url(#gv)" opacity="0.88"/>
+    <polygon points="298.58,43.45 321.42,32.55 570.46,569.39 559.54,574.61" fill="url(#gv)" opacity="0.88"/>
+    <rect x="203.0" y="251.0" width="213.9" height="22.0" fill="url(#gcb)" rx="8.8"/>
+    <circle cx="310" cy="262" r="20.2" fill="rgba(8,4,0,0.90)" stroke="#FFE135" stroke-width="3.7"/>
+    <circle cx="310" cy="262" r="5.5" fill="rgba(255,253,200,0.88)"/>
+  </symbol>
+</svg>
+
+<nav role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a href="../website.html" class="nav-logo" aria-label="AccuQuote home">
+      <svg width="32" height="32" viewBox="0 0 632 632" aria-hidden="true" focusable="false"><use href="#aq-icon"/></svg>
+      <span class="nav-logo-wordmark">AccuQuote</span>
+    </a>
+    <ul class="nav-links" role="list">
+      <li><a href="../how-it-works.html">How It Works</a></li>
+      <li><a href="../blog.html" class="active">Blog</a></li>
+      <li><a href="../demo.html">Try Demo</a></li>
+      <li><a href="../website.html#pricing" class="nav-cta">Start Free Trial</a></li>
+    </ul>
+    <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="mobile-menu" id="mobile-menu" role="menu">
+    <a href="../how-it-works.html" role="menuitem">How It Works</a>
+    <a href="../blog.html" role="menuitem">Blog</a>
+    <a href="../demo.html" role="menuitem">Try Demo</a>
+    <a href="../website.html#pricing" class="nav-cta" role="menuitem">Start Free Trial</a>
+  </div>
+</nav>
+
+<div class="breadcrumb-bar">
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="../website.html">Home</a>
+    <span class="breadcrumb-sep" aria-hidden="true">/</span>
+    <a href="../blog.html">Blog</a>
+    <span class="breadcrumb-sep" aria-hidden="true">/</span>
+    <span class="breadcrumb-current">Quoting Software for Plasterers</span>
+  </nav>
+</div>
+
+<div class="article-outer">
+  <main>
+    <header class="article-header">
+      <span class="article-tag">Plasterers</span>
+      <h1>Quoting Software for Plasterers: Stop Underquoting and Start Winning the Right Jobs</h1>
+      <div class="article-meta">
+        <span>AccuQuote Team</span>
+        <span class="article-meta-dot" aria-hidden="true">&bull;</span>
+        <span>18 February 2025</span>
+        <span class="article-meta-dot" aria-hidden="true">&bull;</span>
+        <span>6 min read</span>
+      </div>
+    </header>
+
+    <div class="article-body">
+
+      <div class="wound-callout">
+        <strong>Plasterboard is up 28% since 2020. Thistle MultiFinish, beads, bonding coat — all moved.</strong> Three forgotten bags per job, three jobs a month: that's £300+ you're working for free before Christmas.
+      </div>
+
+      <p>Plastering quotes go wrong more often than they should. Not because plasterers can't price their work — they absolutely can — but because the quoting process itself is broken. You walk around a house, talk to the customer, have a rough number in your head, and then go home to type it up. By the time you're sitting at the kitchen table, you've forgotten the small lobby ceiling, the awkward chimney breast with the recessed alcoves, and the fact the customer mentioned they want dot-and-dab on the cold external wall in the back bedroom.</p>
+
+      <p>Taken individually, none of those things is huge. Together, they add up to £200–350 worth of work you've done for free. Do that across three jobs a month and you've given away the best part of a thousand pounds before Christmas.</p>
+
+      <p>AccuQuote was built with 200+ UK tradesmen — including a lot of plasterers — who were all losing money the same way. This guide covers what you're missing in your quotes, how to calculate plastering work accurately, and how to send a professional quote before you've started the van.</p>
+
+      <h2>The Real Cost of Underquoting as a Plasterer</h2>
+
+      <p>The underquoting problem in plastering is structural. Unlike a plumber where the rough scope of a job (e.g. "new bathroom suite") is fairly predictable, plastering jobs have enormous variation in what's actually involved — and much of it only becomes clear when you're standing in the room with a torch.</p>
+
+      <p>Here's what typically gets missed when quoting plastering work:</p>
+
+      <ul>
+        <li><strong>Dot and dab on cold or damp external walls.</strong> A customer says "skim the back bedroom" and you quote for one coat of finish on existing plasterboard. But the wall is a solid external wall that needs insulated dot-and-dab boards before you can skim it. That's a completely different job.</li>
+        <li><strong>Beading on all exposed corners and reveals.</strong> Stop beads, angle beads, archway beads — these add up on a busy house. A full room with a bay window might want 14–18 metres of bead at £1.80/m from Toolstation, plus fixing time.</li>
+        <li><strong>Board replacement areas under the skim.</strong> You quoted to skim a ceiling. You get there and find a 1.2m x 2.4m section of old lath and plaster that needs to be cut out and boarded before you can skim. That's an hour and a half of work you didn't price.</li>
+        <li><strong>Plaster consumption on rough or porous backgrounds.</strong> A 12kg bag of Thistle MultiFinish covers around 10m² at 2mm. On a rough background — old sand-and-cement render, for example — you'll use more. Experienced plasterers know this, but it doesn't always make it into the quote.</li>
+        <li><strong>Slow rooms.</strong> A room with a chimney breast, alcoves, bay window and coved ceiling takes significantly longer to skim than a plain rectangular room of identical floor area. Flat-rate m² pricing kills you on these jobs.</li>
+      </ul>
+
+      <div class="callout-box">
+        <p><strong>Rule of thumb:</strong> If your quotes are consistently coming in under your expectations at the end of the job, the problem is almost certainly in the survey — not the work itself. Every missed item is a choice to work for free.</p>
+      </div>
+
+      <h2>What Plastering-Specific Quoting Software Should Do</h2>
+
+      <p>Generic quoting tools for tradespeople are too blunt for plastering. You need a tool that understands the specific materials and calculations that plastering involves:</p>
+
+      <ul>
+        <li><strong>m² calculation from room scans.</strong> Know the exact area of every wall and ceiling you're quoting for, not a rough mental estimate made while chatting to the customer.</li>
+        <li><strong>Bag count calculation.</strong> Based on area, background type and coat count, calculate how many bags of MultiFinish, Hardwall, Bonding or Renovating Plaster you need. Don't forget the margin for waste — typically 10–15%.</li>
+        <li><strong>Plasterboard quantities.</strong> If you're dry-lining or dot-and-dabbing, calculate the number of sheets (standard 1200 x 2400mm Gyproc Wallboard or 1200 x 2400mm Knauf insulated board), plus the adhesive dabs and plugs.</li>
+        <li><strong>Beading by length.</strong> Input the number of corners, window reveals and door reveals and calculate metres of angle bead, stop bead and arch bead required.</li>
+        <li><strong>Labour by complexity, not just m².</strong> A bedroom with a chimney breast should generate a different day-rate calculation than a plain rectangular room of the same size.</li>
+        <li><strong>Primer and PVA.</strong> These are always forgotten. Thistle Bond-It or Unibond PVA for suction control — a 5L tub covers around 50m² and costs about £18 from Toolstation.</li>
+      </ul>
+
+      <h2>How AccuQuote Works for Plasterers</h2>
+
+      <p>AccuQuote runs on iPhone and uses the LiDAR sensor (available on Pro models from iPhone 12 Pro onwards) to capture room dimensions accurately on site. Here's the workflow for a typical plastering survey:</p>
+
+      <ol>
+        <li><strong>Scan each room on site.</strong> The 20-second LiDAR scan captures floor area, ceiling height, and identifies windows and doors. From this, AccuQuote calculates wall and ceiling areas automatically — you don't need to measure anything.</li>
+        <li><strong>Describe the scope.</strong> Tap the mic: "Skim all walls and ceiling in master bedroom, dot and dab required on rear external wall, angle bead all corners, PVA required on existing plaster." The AI parses this into a structured job scope.</li>
+        <li><strong>Review the bill of materials.</strong> The app generates quantities: bags of MultiFinish, length of angle bead, number of 12.5mm Gyproc Wallboard sheets for the dot-and-dab section, tub of Gyproc Bonding Coat, PVA. All priced from Toolstation or Travis Perkins at current rates.</li>
+        <li><strong>Set your day rate and adjust labour.</strong> Enter your day rate (typically £200–300/day for a plasterer) and the app estimates days. You adjust for difficulty — the chimney breast room gets an extra half day.</li>
+        <li><strong>Send the quote.</strong> A clean PDF goes to the customer immediately. It itemises materials separately from labour so the customer can see what they're paying for.</li>
+      </ol>
+
+      <h2>A Real Plastering Quote Example</h2>
+
+      <p>Here's a realistic breakdown for skimming a large master bedroom with a chimney breast and two alcoves, including dot-and-dab on the rear external wall (a 1980s cavity wall with no insulation). Customer is in South Yorkshire.</p>
+
+      <table class="quote-table">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Spec / Supplier</th>
+            <th>Qty</th>
+            <th>Unit</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Thistle MultiFinish 25kg</td><td>Travis Perkins</td><td>8</td><td>£14.50</td><td>£116</td></tr>
+          <tr><td>Gyproc Wallboard 12.5mm (1200x2400)</td><td>Travis Perkins</td><td>6</td><td>£12.80</td><td>£77</td></tr>
+          <tr><td>Gyproc Bonding Coat 25kg</td><td>Travis Perkins</td><td>2</td><td>£16.20</td><td>£32</td></tr>
+          <tr><td>Angle bead (2.4m lengths)</td><td>Toolstation</td><td>10</td><td>£1.85</td><td>£19</td></tr>
+          <tr><td>Stop bead (3m lengths)</td><td>Toolstation</td><td>4</td><td>£2.20</td><td>£9</td></tr>
+          <tr><td>Unibond PVA 5L</td><td>Toolstation</td><td>1</td><td>£17.50</td><td>£18</td></tr>
+          <tr><td>Thistle Bonding coat plugs &amp; adhesive</td><td>—</td><td>—</td><td>—</td><td>£12</td></tr>
+          <tr><td>Misc (scrim tape, nails, plastic sheeting)</td><td>—</td><td>—</td><td>—</td><td>£15</td></tr>
+        </tbody>
+        <tfoot>
+          <tr><td colspan="4"><strong>Materials subtotal</strong></td><td><strong>£298</strong></td></tr>
+          <tr><td colspan="4">Labour — 2 days @ £250/day</td><td>£500</td></tr>
+          <tr class="total-row"><td colspan="4"><strong>Total (ex. VAT)</strong></td><td><strong>£798</strong></td></tr>
+        </tfoot>
+      </table>
+
+      <p>An underquote on this job — for example, quoting £600 flat without itemising — might still win the job, but you'd be working for about £150/day once you factor in materials. At £798 with clear justification, a customer who asked for three quotes and got two vague numbers will typically pick you.</p>
+
+      <h2>FAQs About Quoting Plastering Work</h2>
+
+      <div class="faq-item">
+        <p class="faq-q">How do I price plastering by the m²?</p>
+        <p class="faq-a">A rough guide for skimming (labour only) in 2025 is £6–10 per m² for experienced plasterers in most UK regions, rising to £12–14/m² in London. However, this rate only makes sense on large, plain areas — it breaks down on rooms with lots of features. Always price complex rooms at day rate, not m².</p>
+      </div>
+
+      <div class="faq-item">
+        <p class="faq-q">How many bags of MultiFinish do I need per m²?</p>
+        <p class="faq-a">A 25kg bag of Thistle MultiFinish at 2mm thick covers approximately 10m². On smooth backgrounds with PVA, you'll hit this. On rough or porous backgrounds, allow 7–8m² per bag. Always buy one extra bag per room for peace of mind.</p>
+      </div>
+
+      <div class="faq-item">
+        <p class="faq-q">Should I charge separately for materials on plastering jobs?</p>
+        <p class="faq-a">Yes — almost always. Materials should be a separate line item so you're not guessing wrong and absorbing the difference. It also makes your quote easier to compare against competitors, and customers are generally comfortable paying for materials they can see itemised.</p>
+      </div>
+
+      <div class="faq-item">
+        <p class="faq-q">What's the best way to quote a full house re-plaster?</p>
+        <p class="faq-a">Room by room, assessed individually. Don't try to quote a whole house with a single m² calculation — the variation between a standard bedroom and a kitchen with a chimney breast and four window reveals is too great. AccuQuote scans each room separately so you get an accurate figure per room, then combines them into a single quote document.</p>
+      </div>
+
+      <h2>Ready to Quote Smarter?</h2>
+
+      <p>AccuQuote was built by 200+ UK tradesmen — plasterers included. Three free quotes, no card required, no salesperson, no Calendly. Quote your next job on site and send it before you've even started the van.</p>
+
+      <div class="referral-box">
+        <strong>Bring 3 mates → 3 months free.</strong> Every tradesman you refer gets the app. You get 3 months on us. No catch.
+      </div>
+
+      <p><a href="../website.html#pricing" style="color: var(--gold); font-weight: 600; text-decoration: underline;">Download free — no card, no call &rarr;</a></p>
+
+    </div>
+  </main>
+
+  <aside class="article-sidebar">
+    <div class="sidebar-cta">
+      <h3>Quote your next job in 20 minutes</h3>
+      <p>3 free quotes. No card, no call, no salesperson. Built with 200+ UK tradesmen.</p>
+      <a href="../website.html#pricing" class="sidebar-cta-btn">Download free &rarr;</a>
+    </div>
+    <div class="sidebar-related">
+      <h3>Related Articles</h3>
+      <a href="./quoting-software-for-electricians.html" class="related-link">Quoting Software for Electricians</a>
+      <a href="./quoting-software-for-builders.html" class="related-link">Quoting Software for Builders</a>
+      <a href="./quoting-software-for-plumbers.html" class="related-link">Quoting Software for Plumbers</a>
+      <a href="./quoting-software-for-painters.html" class="related-link">Quoting Software for Painters</a>
+      <a href="./how-to-win-more-quotes.html" class="related-link">How to Win More Quotes</a>
+      <a href="./quote-faster-on-site.html" class="related-link">Quote Faster On Site</a>
+    </div>
+  </aside>
+</div>
+
+<section class="related-row">
+  <h2>More articles for tradespeople</h2>
+  <div class="related-cards">
+    <a href="./quoting-software-for-builders.html" class="related-card">
+      <p class="related-card-tag">Builders</p>
+      <h3>Quoting Software for Builders</h3>
+      <p>The complete guide to quoting building work in the UK — extensions, refurbs, conversions and more.</p>
+      <span class="related-card-link">Read more &rarr;</span>
+    </a>
+    <a href="./quoting-software-for-painters.html" class="related-card">
+      <p class="related-card-tag">Painters &amp; Decorators</p>
+      <h3>Quoting Software for Painters and Decorators</h3>
+      <p>How to price painting and decorating jobs so you never undersell again.</p>
+      <span class="related-card-link">Read more &rarr;</span>
+    </a>
+  </div>
+</section>
+
+<footer role="contentinfo">
+  <div class="footer-logo" role="img" aria-label="AccuQuote">
+    <svg width="48" height="48" viewBox="0 0 632 632" aria-hidden="true" focusable="false"><use href="#aq-icon"/></svg>
+    <span class="footer-logo-wordmark">AccuQuote</span>
+  </div>
+  <nav class="footer-links" aria-label="Footer navigation">
+    <a href="../how-it-works.html">How It Works</a>
+    <a href="../blog.html">Blog</a>
+    <a href="../privacy-policy.html">Privacy Policy</a>
+    <a href="mailto:hello@accuquote.app">Contact</a>
+  </nav>
+  <div class="footer-copy">
+    <p>&copy; 2025 AccuQuote. All rights reserved.</p>
+  </div>
+</footer>
+
+<script>
+  const hamburger = document.getElementById('hamburger');
+  const mobileMenu = document.getElementById('mobile-menu');
+  hamburger.addEventListener('click', function () {
+    const isOpen = mobileMenu.classList.toggle('open');
+    hamburger.classList.toggle('open', isOpen);
+    hamburger.setAttribute('aria-expanded', isOpen.toString());
+  });
+  mobileMenu.querySelectorAll('a').forEach(function (link) {
+    link.addEventListener('click', function () {
+      mobileMenu.classList.remove('open');
+      hamburger.classList.remove('open');
+      hamburger.setAttribute('aria-expanded', 'false');
+    });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quoting Software for Plumbers | AccuQuote</title>
+  <meta name="description" content="Quoting software designed for UK plumbers. Accurate prices for bathrooms, boiler swaps, and heating work — quote faster and stop losing jobs on price." />
+  <link rel="canonical" href="https://accuquote.app/blog/quoting-software-for-plumbers.html" />
+
+  <meta property="og:title" content="Quoting Software for Plumbers | AccuQuote" />
+  <meta property="og:description" content="Stop losing jobs on price. A plumber's guide to accurate quoting — from bathroom suites to boiler swaps." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://accuquote.app/blog/quoting-software-for-plumbers.html" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "Quoting Software for Plumbers: Accurate Prices, Faster Jobs, Happier Customers",
+    "description": "Stop losing jobs on price. A plumber's guide to accurate quoting for bathroom suites, boiler swaps, and heating work in the UK.",
+    "author": { "@type": "Organization", "name": "AccuQuote Team" },
+    "publisher": { "@type": "Organization", "name": "AccuQuote", "url": "https://accuquote.app" },
+    "datePublished": "2025-02-05",
+    "dateModified": "2025-02-05",
+    "mainEntityOfPage": "https://accuquote.app/blog/quoting-software-for-plumbers.html"
+  }
+  </script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --gold: #C8922A; --gold-hover: #b07e22; --dark: #1D1D1F; --secondary: #6E6E73;
+      --navy: #0A0A1A; --navy-mid: #0f0f2a; --white: #FFFFFF; --off-white: #F5F5F7;
+      --border: #E0E0E5; --radius: 14px; --radius-sm: 8px;
+      --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+    }
+    html { scroll-behavior: smooth; font-size: 16px; -webkit-font-smoothing: antialiased; }
+    body { font-family: var(--font); background: var(--white); color: var(--dark); line-height: 1.6; overflow-x: hidden; }
+    a { color: inherit; text-decoration: none; }
+
+    nav { position: sticky; top: 0; z-index: 1000; background: var(--navy); border-bottom: 1px solid rgba(255,255,255,0.06); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+    .nav-inner { max-width: 1200px; margin: 0 auto; padding: 0 24px; height: 68px; display: flex; align-items: center; justify-content: space-between; }
+    .nav-logo { display: flex; align-items: center; gap: 10px; }
+    .nav-logo svg { width: 32px; height: 32px; flex-shrink: 0; border-radius: 7px; overflow: hidden; }
+    .nav-logo-wordmark { font-size: 1.125rem; font-weight: 700; letter-spacing: -0.02em; color: var(--white); }
+    .nav-links { display: flex; align-items: center; gap: 32px; list-style: none; }
+    .nav-links a { color: rgba(255,255,255,0.75); font-size: 0.9375rem; font-weight: 500; letter-spacing: -0.01em; transition: color 0.2s ease; }
+    .nav-links a:hover, .nav-links a.active { color: var(--white); }
+    .nav-cta { background: var(--gold); color: var(--white) !important; padding: 9px 20px; border-radius: 100px; font-weight: 600 !important; transition: background 0.2s ease !important; }
+    .nav-cta:hover { background: var(--gold-hover) !important; }
+    .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 4px; background: none; border: none; }
+    .hamburger span { display: block; width: 24px; height: 2px; background: rgba(255,255,255,0.8); border-radius: 2px; transition: all 0.25s ease; }
+    .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity: 0; }
+    .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+    .mobile-menu { display: none; flex-direction: column; background: var(--navy-mid); border-top: 1px solid rgba(255,255,255,0.06); padding: 8px 0 16px; }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a { padding: 13px 24px; color: rgba(255,255,255,0.8); font-size: 1rem; font-weight: 500; }
+    .mobile-menu a.nav-cta { margin: 12px 24px 0; text-align: center; border-radius: 10px; }
+
+    .breadcrumb-bar { background: var(--off-white); border-bottom: 1px solid var(--border); padding: 12px 24px; }
+    .breadcrumb { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; gap: 8px; font-size: 0.8125rem; color: var(--secondary); }
+    .breadcrumb a { color: var(--secondary); transition: color 0.15s ease; }
+    .breadcrumb a:hover { color: var(--gold); }
+    .breadcrumb-sep { color: var(--border); }
+    .breadcrumb-current { color: var(--dark); font-weight: 500; }
+
+    .article-outer { max-width: 1200px; margin: 0 auto; padding: 48px 24px 80px; display: grid; grid-template-columns: 1fr 320px; gap: 56px; align-items: start; }
+
+    .article-header { margin-bottom: 40px; }
+    .article-tag { display: inline-block; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold); background: rgba(200,146,42,0.1); border-radius: 100px; padding: 4px 10px; margin-bottom: 16px; }
+    .article-header h1 { font-size: clamp(1.75rem, 4vw, 2.625rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.15; color: var(--dark); margin-bottom: 16px; }
+    .article-meta { display: flex; align-items: center; gap: 20px; font-size: 0.875rem; color: var(--secondary); }
+    .article-meta-dot { color: var(--border); }
+
+    .article-body { max-width: 760px; }
+    .article-body p { font-size: 1.0625rem; color: #3a3a3c; line-height: 1.8; margin-bottom: 20px; }
+    .article-body h2 { font-size: clamp(1.25rem, 2.5vw, 1.625rem); font-weight: 700; letter-spacing: -0.025em; color: var(--dark); margin: 44px 0 16px; line-height: 1.25; }
+    .article-body h3 { font-size: 1.125rem; font-weight: 600; letter-spacing: -0.015em; color: var(--dark); margin: 28px 0 10px; line-height: 1.3; }
+    .article-body ul, .article-body ol { margin: 0 0 20px 20px; }
+    .article-body li { font-size: 1.0625rem; color: #3a3a3c; line-height: 1.8; margin-bottom: 6px; }
+    .article-body strong { color: var(--dark); font-weight: 600; }
+
+    .callout-box { background: rgba(200,146,42,0.07); border-left: 3px solid var(--gold); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; padding: 20px 24px; margin: 28px 0; }
+    .callout-box p { margin-bottom: 0; color: var(--dark); }
+    .wound-callout { background: #fff8e6; border: 1.5px solid var(--gold); border-radius: 10px; padding: 18px 22px; margin-bottom: 28px; font-size: 1rem; line-height: 1.6; color: var(--dark); }
+    .wound-callout strong { color: #7a4800; }
+    .referral-box { background: var(--navy); border: 1.5px solid var(--gold); border-radius: 10px; padding: 18px 22px; margin: 28px 0; font-size: 0.9375rem; color: var(--white); line-height: 1.6; }
+    .referral-box strong { color: var(--gold); display: block; margin-bottom: 4px; font-size: 1rem; }
+
+    .faq-item { border-bottom: 1px solid var(--border); padding: 20px 0; }
+    .faq-item:last-child { border-bottom: none; }
+    .faq-q { font-size: 1.0625rem; font-weight: 600; color: var(--dark); margin-bottom: 8px; }
+    .faq-a { font-size: 1.0625rem; color: #3a3a3c; line-height: 1.8; }
+
+    .quote-table { width: 100%; border-collapse: collapse; margin: 28px 0; font-size: 0.9375rem; }
+    .quote-table th { text-align: left; padding: 10px 14px; background: var(--off-white); font-weight: 600; color: var(--dark); border-bottom: 2px solid var(--border); font-size: 0.875rem; }
+    .quote-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: #3a3a3c; vertical-align: top; }
+    .quote-table tr:last-child td { border-bottom: none; }
+    .quote-table .total-row td { font-weight: 700; color: var(--dark); border-top: 2px solid var(--border); border-bottom: none; }
+
+    .article-sidebar { position: sticky; top: 88px; }
+    .sidebar-cta { background: linear-gradient(140deg, var(--navy) 0%, #1a0f05 100%); border-radius: var(--radius); padding: 28px 24px; margin-bottom: 24px; }
+    .sidebar-cta h3 { font-size: 1.0625rem; font-weight: 700; letter-spacing: -0.015em; color: var(--white); margin-bottom: 10px; }
+    .sidebar-cta p { font-size: 0.9rem; color: rgba(255,255,255,0.6); margin-bottom: 20px; line-height: 1.6; }
+    .sidebar-cta-btn { display: block; background: var(--gold); color: var(--white); text-align: center; font-size: 0.9375rem; font-weight: 600; padding: 12px 20px; border-radius: 100px; transition: background 0.2s ease; }
+    .sidebar-cta-btn:hover { background: var(--gold-hover); }
+    .sidebar-related { background: var(--off-white); border-radius: var(--radius); padding: 24px; }
+    .sidebar-related h3 { font-size: 0.8125rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--secondary); margin-bottom: 16px; }
+    .related-link { display: block; font-size: 0.9rem; font-weight: 500; color: var(--dark); padding: 10px 0; border-bottom: 1px solid var(--border); transition: color 0.15s ease; line-height: 1.4; }
+    .related-link:last-child { border-bottom: none; padding-bottom: 0; }
+    .related-link:hover { color: var(--gold); }
+
+    .related-row { max-width: 1200px; margin: 0 auto; padding: 0 24px 80px; }
+    .related-row h2 { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; color: var(--dark); margin-bottom: 24px; }
+    .related-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+    .related-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+    .related-card:hover { border-color: rgba(200,146,42,0.35); box-shadow: 0 6px 24px rgba(0,0,0,0.07); }
+    .related-card-tag { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
+    .related-card h3 { font-size: 1rem; font-weight: 700; letter-spacing: -0.015em; color: var(--dark); margin-bottom: 8px; line-height: 1.3; }
+    .related-card p { font-size: 0.875rem; color: var(--secondary); line-height: 1.6; margin-bottom: 12px; }
+    .related-card-link { font-size: 0.875rem; font-weight: 600; color: var(--gold); }
+
+    footer { background: var(--navy); border-top: 1px solid rgba(255,255,255,0.06); padding: 48px 24px; text-align: center; }
+    .footer-logo { display: flex; flex-direction: column; align-items: center; gap: 12px; margin: 0 auto 28px; }
+    .footer-logo svg { width: 48px; height: 48px; border-radius: 11px; overflow: hidden; box-shadow: 0 4px 16px rgba(200,146,42,0.18), 0 1px 4px rgba(0,0,0,0.35); }
+    .footer-logo-wordmark { font-size: 1rem; font-weight: 700; letter-spacing: -0.015em; color: rgba(255,255,255,0.75); }
+    .footer-links { display: flex; gap: 28px; justify-content: center; flex-wrap: wrap; margin-bottom: 24px; }
+    .footer-links a { font-size: 0.9375rem; color: rgba(255,255,255,0.45); transition: color 0.2s ease; }
+    .footer-links a:hover { color: rgba(255,255,255,0.8); }
+    .footer-copy p { font-size: 0.875rem; color: rgba(255,255,255,0.3); }
+
+    @media (max-width: 900px) {
+      .article-outer { grid-template-columns: 1fr; gap: 40px; }
+      .article-sidebar { position: static; }
+      .related-cards { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      .nav-links { display: none; }
+      .hamburger { display: flex; }
+      .article-outer { padding: 32px 20px 60px; }
+    }
+  </style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true">
+  <symbol id="aq-icon" viewBox="0 0 632 632">
+    <defs>
+      <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#1A1200"/><stop offset="100%" stop-color="#0A0800"/></linearGradient>
+      <linearGradient id="gv" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFE566"/><stop offset="40%" stop-color="#C8920A"/><stop offset="100%" stop-color="#7A4800"/></linearGradient>
+      <linearGradient id="gcb" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFE566"/><stop offset="100%" stop-color="#A06800"/></linearGradient>
+      <radialGradient id="grs" cx="38%" cy="35%" r="65%"><stop offset="0%" stop-color="#FFE566"/><stop offset="55%" stop-color="#C8920A"/><stop offset="100%" stop-color="#7A4800"/></radialGradient>
+    </defs>
+    <rect width="632" height="632" fill="url(#bg)" rx="126"/>
+    <polygon points="298.58,32.55 321.42,43.45 60.46,574.61 49.54,569.39" fill="url(#gv)" opacity="0.88"/>
+    <polygon points="298.58,43.45 321.42,32.55 570.46,569.39 559.54,574.61" fill="url(#gv)" opacity="0.88"/>
+    <rect x="203.0" y="251.0" width="213.9" height="22.0" fill="url(#gcb)" rx="8.8"/>
+    <circle cx="310" cy="262" r="20.2" fill="rgba(8,4,0,0.90)" stroke="#FFE135" stroke-width="3.7"/>
+    <circle cx="310" cy="262" r="5.5" fill="rgba(255,253,200,0.88)"/>
+  </symbol>
+</svg>
+
+<nav role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a href="../website.html" class="nav-logo" aria-label="AccuQuote home">
+      <svg width="32" height="32" viewBox="0 0 632 632" aria-hidden="true" focusable="false"><use href="#aq-icon"/></svg>
+      <span class="nav-logo-wordmark">AccuQuote</span>
+    </a>
+    <ul class="nav-links" role="list">
+      <li><a href="../how-it-works.html">How It Works</a></li>
+      <li><a href="../blog.html" class="active">Blog</a></li>
+      <li><a href="../demo.html">Try Demo</a></li>
+      <li><a href="../website.html#pricing" class="nav-cta">Start Free Trial</a></li>
+    </ul>
+    <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="mobile-menu" id="mobile-menu" role="menu">
+    <a href="../how-it-works.html" role="menuitem">How It Works</a>
+    <a href="../blog.html" role="menuitem">Blog</a>
+    <a href="../demo.html" role="menuitem">Try Demo</a>
+    <a href="../website.html#pricing" class="nav-cta" role="menuitem">Start Free Trial</a>
+  </div>
+</nav>
+
+<div class="breadcrumb-bar">
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="../website.html">Home</a>
+    <span class="breadcrumb-sep" aria-hidden="true">/</span>
+    <a href="../blog.html">Blog</a>
+    <span class="breadcrumb-sep" aria-hidden="true">/</span>
+    <span class="breadcrumb-current">Quoting Software for Plumbers</span>
+  </nav>
+</div>
+
+<div class="article-outer">
+  <main>
+    <header class="article-header">
+      <span class="article-tag">Plumbers</span>
+      <h1>Quoting Software for Plumbers: Accurate Prices, Faster Jobs, Happier Customers</h1>
+      <div class="article-meta">
+        <span>AccuQuote Team</span>
+        <span class="article-meta-dot" aria-hidden="true">&bull;</span>
+        <span>5 February 2025</span>
+        <span class="article-meta-dot" aria-hidden="true">&bull;</span>
+        <span>6 min read</span>
+      </div>
+    </header>
+
+    <div class="article-body">
+
+      <div class="wound-callout">
+        <strong>Copper pipe is up 35% since 2020. Boiler prices have moved by £150+ in six months.</strong> If your last quote was based on prices you remember rather than prices you checked, you absorbed that difference — and you didn't have to.
+      </div>
+
+      <p>Plumbing quotes are tricky in a very specific way: the job you can see is rarely the whole job. You survey a bathroom, price the suite and the tiling and the waste fittings — and on day one you find the old pipework is 1/2" imperial copper that doesn't mate cleanly to modern compression fittings. Or the soil pipe is blocked and needs rodding before the new WC goes in. Or the customer assumed you'd replace the section of floor where the old bath has been dripping for three years.</p>
+
+      <p>Managing this uncertainty is part of being a good plumber. But it shouldn't mean you're quoting from rough memory and hoping for the best. AccuQuote was built with over 200 UK tradesmen who were all losing money the same way — and this guide covers how to stop.</p>
+
+      <h2>The Unique Challenges of Plumbing Quotes</h2>
+
+      <h3>Variable pipe routes</h3>
+      <p>Where does the soil pipe actually run? How far is the boiler from the hot water cylinder? Is the heating system a combi, a system, or an old gravity-fed S-plan with a tank in the loft? These things determine how much pipe you need and how hard the job is, and you often can't tell without opening some walls. Plumbing quotes need to reflect this uncertainty honestly rather than ignoring it and arguing about it later.</p>
+
+      <h3>Material cost volatility</h3>
+      <p>Copper pipe, push-fit fittings, radiators, valves — prices from Plumb Center, Toolstation and Screwfix all shift regularly. A boiler price can move by £150 in six months. If your quote was based on a price you saw three months ago, you're either absorbing the difference or explaining yourself to the customer.</p>
+
+      <h3>Job type complexity</h3>
+      <p>A bathroom fit-out and a boiler swap and an emergency leak repair are three completely different jobs. They require different materials, different tools, different skill sets and different time estimates. Generic quoting software that just gives you a blank form isn't much help. You need templates that understand what a typical bathroom refit involves versus a combi boiler swap versus a radiator addition.</p>
+
+      <h3>Gas Safe certification costs</h3>
+      <p>If you're Gas Safe registered and doing boiler work, the certification cost and any commissioning fees need to be in the quote. They often aren't, because they feel like overhead — but they're not overhead, they're a direct cost of that specific job.</p>
+
+      <div class="callout-box">
+        <p><strong>The forgotten cost:</strong> A Benchmark commissioning document and boiler registration currently costs around £55–75 in time and fees. A Landlord Gas Safety Record (CP12) is around £65–90 to produce. Neither typically makes it into a rough quote. Both absolutely should.</p>
+      </div>
+
+      <h2>What Plumbing Quoting Software Should Handle</h2>
+
+      <p>To be genuinely useful for a plumber, quoting software needs to:</p>
+
+      <ul>
+        <li><strong>Know common job types.</strong> Bathroom suite supply and fit, boiler swap, new radiator, heating system flush, leak investigation and repair — each has a typical bill of materials and labour estimate that you refine rather than building from scratch.</li>
+        <li><strong>Price materials from real suppliers.</strong> Screwfix, Toolstation, Plumb Center, City Plumbing — current prices, not placeholder figures. A Grohe shower valve costs very differently depending on range. The quote needs to reflect what you'll actually spend.</li>
+        <li><strong>Handle contingency for hidden work.</strong> Add a clearly-labelled contingency for "investigation/access" rather than quietly padding the margin. Customers who can see a contingency line understand why it's there — customers who discover the "hidden" markup don't.</li>
+        <li><strong>Include Gas Safe and certification costs.</strong> As standard line items, not afterthoughts.</li>
+        <li><strong>Work quickly on site.</strong> You can't spend 45 minutes in someone's bathroom typing up a quote on a phone. The tool needs to be fast — scan, describe, review, send.</li>
+      </ul>
+
+      <h2>How AccuQuote Works for Plumbers</h2>
+
+      <p>AccuQuote is designed to be used on-site on an iPhone. For a bathroom survey, the process looks like this:</p>
+
+      <ol>
+        <li><strong>Scan the bathroom with LiDAR.</strong> The app captures room dimensions in about 20 seconds. Floor area and wall measurements are used to calculate tiling quantities, waste pipe runs and towel radiator sizing.</li>
+        <li><strong>Describe the job.</strong> "Full bathroom refit, existing cast-iron bath, separate shower not required, new close-coupled WC, new basin and pedestal, new bath, chrome fixtures throughout, half-tile to bath surround and basin splash, vinyl floor, new radiator." AccuQuote parses this into a structured scope.</li>
+        <li><strong>Review the bill of materials.</strong> The app generates a list: close-coupled WC suite (with Screwfix/Plumb Center SKU), basin and pedestal, bath, bath waste and overflow, trap and waste fittings, isolation valves, flexible connectors, silicone, wall anchors. You review and adjust for the specific products the customer has chosen.</li>
+        <li><strong>Add labour and certification.</strong> Set your day rate (£240–320/day for most UK plumbers), estimate days, add Gas Safe cert costs if applicable.</li>
+        <li><strong>Send the quote.</strong> Clean PDF to the customer's email. Itemised breakdown of materials and labour. Total with VAT.</li>
+      </ol>
+
+      <h2>Example: Full Bathroom Suite Refit Quote</h2>
+
+      <p>Here's a realistic breakdown for a standard bathroom refit in a three-bed semi in the North West — removing old bath/WC/basin and fitting a new suite. No structural changes, existing soil pipe, existing tile backer. 3 days' work.</p>
+
+      <table class="quote-table">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Supplier / Spec</th>
+            <th>Qty</th>
+            <th>Unit Cost</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Close-coupled WC suite (white)</td><td>Roca Nexo / Screwfix</td><td>1</td><td>£185</td><td>£185</td></tr>
+          <tr><td>600mm basin and pedestal (white)</td><td>Ideal Standard / Plumb Center</td><td>1</td><td>£140</td><td>£140</td></tr>
+          <tr><td>P-trap, bottle trap, waste</td><td>Toolstation / chrome</td><td>2</td><td>£18</td><td>£36</td></tr>
+          <tr><td>Bath (1700x700mm, steel, white)</td><td>Bette / Plumb Center</td><td>1</td><td>£220</td><td>£220</td></tr>
+          <tr><td>Bath waste and overflow (chrome)</td><td>Toolstation / Wirquin</td><td>1</td><td>£32</td><td>£32</td></tr>
+          <tr><td>Basin mixer tap (chrome)</td><td>Bristan / Plumb Center</td><td>1</td><td>£65</td><td>£65</td></tr>
+          <tr><td>Bath filler/shower mixer</td><td>Bristan / Plumb Center</td><td>1</td><td>£95</td><td>£95</td></tr>
+          <tr><td>Isolation valves (x4) and flexible tails</td><td>Toolstation</td><td>set</td><td>£28</td><td>£28</td></tr>
+          <tr><td>Chrome towel radiator (400x800mm)</td><td>Screwfix / Terma</td><td>1</td><td>£75</td><td>£75</td></tr>
+          <tr><td>Radiator valves (TRV + lockshield)</td><td>Toolstation</td><td>pair</td><td>£22</td><td>£22</td></tr>
+          <tr><td>Silicone sealant, PTFE, jointing compound</td><td>Screwfix</td><td>—</td><td>—</td><td>£18</td></tr>
+          <tr><td>Miscellaneous fittings and fixings</td><td>—</td><td>—</td><td>—</td><td>£30</td></tr>
+        </tbody>
+        <tfoot>
+          <tr><td colspan="4"><strong>Materials subtotal</strong></td><td><strong>£946</strong></td></tr>
+          <tr><td colspan="4">Strip-out and disposal (half day)</td><td>£130</td></tr>
+          <tr><td colspan="4">Fit and commission (2.5 days @ £280/day)</td><td>£700</td></tr>
+          <tr class="total-row"><td colspan="4"><strong>Total (ex. VAT)</strong></td><td><strong>£1,776</strong></td></tr>
+        </tfoot>
+      </table>
+
+      <p>This is a realistic price for a straight swap-out in the North West in 2025. The customer gets an itemised breakdown so they can see what the suite costs versus the labour — which is exactly what a customer comparison-shopping will want to see. It builds trust and reduces negotiation on price.</p>
+
+      <h2>FAQs About Quoting Plumbing Work</h2>
+
+      <div class="faq-item">
+        <p class="faq-q">How do I price a boiler swap in the UK?</p>
+        <p class="faq-a">A standard combi boiler swap (like-for-like position, no flue extension, existing pipework in good condition) typically runs £1,800–2,800 all-in including the boiler, labour, new controls, commissioning and Gas Safe documentation. Worcester Bosch and Viessmann are at the premium end; Vaillant and Ideal sit in the mid-range. Always get merchant pricing on the boiler before quoting — retail prices and trade prices differ significantly at Plumb Center or City Plumbing.</p>
+      </div>
+
+      <div class="faq-item">
+        <p class="faq-q">Should I charge a call-out fee for leak investigations?</p>
+        <p class="faq-a">Yes. A leak investigation is a diagnostic job — you're spending time and expertise identifying the source, not just fixing it. A £75–120 investigation fee, credited back against the repair quote if the customer proceeds, is standard practice and protects you from spending two hours on a job that turns out to be a hairline crack behind a tile.</p>
+      </div>
+
+      <div class="faq-item">
+        <p class="faq-q">How do I handle plumbing jobs where the price depends on what you find?</p>
+        <p class="faq-a">Clearly scope what is included and what isn't in your quote, with a contingency line for investigative work. "Quote is based on existing pipework being in good condition. Any replacement of corroded or non-compliant pipework found during works will be charged at £X/hour plus materials." Customers who see this upfront are never surprised.</p>
+      </div>
+
+      <div class="faq-item">
+        <p class="faq-q">What's a fair day rate for a plumber in the UK in 2025?</p>
+        <p class="faq-a">Sole trader plumbers in most of England charge £240–320/day in 2025. London and South East runs £320–420/day. Gas Safe-registered plumbers doing heating and boiler work tend to be at the higher end of these ranges. When quoting labour, be explicit about whether your day rate includes materials markup or whether materials are priced separately at cost.</p>
+      </div>
+
+      <h2>Start Quoting on Site with AccuQuote</h2>
+
+      <p>Plumbing quotes done properly win more jobs and cause fewer arguments. AccuQuote was built with 200+ UK tradesmen who were tired of discovering their quote was wrong when the bill landed. Three free quotes — no card, no call, no salesperson.</p>
+
+      <div class="referral-box">
+        <strong>Bring 3 mates → 3 months free.</strong> Every tradesman you refer gets the app. You get 3 months on us. No catch.
+      </div>
+
+      <p><a href="../website.html#pricing" style="color: var(--gold); font-weight: 600; text-decoration: underline;">Download free — no card, no call &rarr;</a></p>
+
+    </div>
+  </main>
+
+  <aside class="article-sidebar">
+    <div class="sidebar-cta">
+      <h3>Quote your next job in 20 minutes</h3>
+      <p>3 free quotes. No card, no call, no salesperson. Built with 200+ UK tradesmen.</p>
+      <a href="../website.html#pricing" class="sidebar-cta-btn">Download free &rarr;</a>
+    </div>
+    <div class="sidebar-related">
+      <h3>Related Articles</h3>
+      <a href="./quoting-software-for-electricians.html" class="related-link">Quoting Software for Electricians</a>
+      <a href="./quoting-software-for-builders.html" class="related-link">Quoting Software for Builders</a>
+      <a href="./quoting-software-for-plasterers.html" class="related-link">Quoting Software for Plasterers</a>
+      <a href="./quoting-software-for-painters.html" class="related-link">Quoting Software for Painters</a>
+      <a href="./how-to-win-more-quotes.html" class="related-link">How to Win More Quotes</a>
+      <a href="./quote-faster-on-site.html" class="related-link">Quote Faster On Site</a>
+    </div>
+  </aside>
+</div>
+
+<section class="related-row">
+  <h2>More articles for tradespeople</h2>
+  <div class="related-cards">
+    <a href="./quoting-software-for-electricians.html" class="related-card">
+      <p class="related-card-tag">Electricians</p>
+      <h3>Quoting Software for Electricians</h3>
+      <p>How UK electricians are cutting quote time from 3 hours to 20 minutes with itemised materials and CEF SKUs.</p>
+      <span class="related-card-link">Read more &rarr;</span>
+    </a>
+    <a href="./quoting-software-for-builders.html" class="related-card">
+      <p class="related-card-tag">Builders</p>
+      <h3>Quoting Software for Builders</h3>
+      <p>The complete guide to quoting building work in the UK — extensions, refurbs, conversions and more.</p>
+      <span class="related-card-link">Read more &rarr;</span>
+    </a>
+  </div>
+</section>
+
+<footer role="contentinfo">
+  <div class="footer-logo" role="img" aria-label="AccuQuote">
+    <svg width="48" height="48" viewBox="0 0 632 632" aria-hidden="true" focusable="false"><use href="#aq-icon"/></svg>
+    <span class="footer-logo-wordmark">AccuQuote</span>
+  </div>
+  <nav class="footer-links" aria-label="Footer navigation">
+    <a href="../how-it-works.html">How It Works</a>
+    <a href="../blog.html">Blog</a>
+    <a href="../privacy-policy.html">Privacy Policy</a>
+    <a href="mailto:hello@accuquote.app">Contact</a>
+  </nav>
+  <div class="footer-copy">
+    <p>&copy; 2025 AccuQuote. All rights reserved.</p>
+  </div>
+</footer>
+
+<script>
+  const hamburger = document.getElementById('hamburger');
+  const mobileMenu = document.getElementById('mobile-menu');
+  hamburger.addEventListener('click', function () {
+    const isOpen = mobileMenu.classList.toggle('open');
+    hamburger.classList.toggle('open', isOpen);
+    hamburger.setAttribute('aria-expanded', isOpen.toString());
+  });
+  mobileMenu.querySelectorAll('a').forEach(function (link) {
+    link.addEventListener('click', function () {
+      mobileMenu.classList.remove('open');
+      hamburger.classList.remove('open');
+      hamburger.setAttribute('aria-expanded', 'false');
+    });
+  });
+</script>
+</body>
+</html>

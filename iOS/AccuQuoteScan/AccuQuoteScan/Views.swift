@@ -5,7 +5,7 @@ import SceneKit
 
 // MARK: - Design tokens
 
-private enum AQ {
+enum AQ {
     // Palette
     static let ink       = Color(red: 0.07, green: 0.07, blue: 0.09)      // near-black
     static let label     = Color(red: 0.18, green: 0.18, blue: 0.22)
@@ -59,11 +59,14 @@ struct AQLogoView: View {
     }
 }
 
+// Threshold for the ProfileGateView unlock indicator (used in OnboardingSheet)
+let profileUnlockThreshold = 70
+
 // MARK: - Profile Gate View
-// Shown until personalisation reaches profileUnlockThreshold (70%).
-// The scan cannot be started until the AI profile is green.
+// Shown in OnboardingSheet; the unlock banner fires at profileUnlockThreshold (70%).
 
 struct ProfileGateView: View {
+    var onGuestTap: (() -> Void)? = nil
     @EnvironmentObject var engine: QuestionEngine
     @State private var inputText = ""
     @FocusState private var inputFocused: Bool
@@ -249,6 +252,21 @@ struct ProfileGateView: View {
                     .padding(.horizontal, 24)
                 }
 
+                // ── Guest entry link ────────────────────────────────────────────
+                if let guestTap = onGuestTap {
+                    Button(action: guestTap) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "dot.scope")
+                                .font(.system(size: 13, weight: .medium))
+                            Text("Just want to scan a room? Try it free →")
+                                .font(.system(size: 13, weight: .medium))
+                        }
+                        .foregroundColor(AQ.secondary)
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 8)
+                }
+
                 Color.clear.frame(height: 36)
             }
         }
@@ -387,9 +405,12 @@ private struct StepWhyCard: View {
 struct ReadyView: View {
     @ObservedObject var coordinator: ScanCoordinator
     @EnvironmentObject var questionEngine: QuestionEngine
+    var onGuestTap: (() -> Void)? = nil
     @State private var showOnboarding = false
     @State private var showManualEntry = false
+    @State private var showHistory = false
     @State private var pulseIcon = false
+    @ObservedObject private var historyStore = QuoteHistoryStore.shared
 
     var isLiDAR: Bool { coordinator.scanMethod == .lidar }
 
@@ -405,10 +426,25 @@ struct ReadyView: View {
                         .foregroundColor(AQ.secondary)
                 }
                 Spacer()
-                AIProfileButton(
-                    answered: questionEngine.answeredCount,
-                    pct: questionEngine.personalisation
-                ) { showOnboarding = true }
+                HStack(spacing: 12) {
+                    if !historyStore.quotes.isEmpty {
+                        Button { showHistory = true } label: {
+                            ZStack(alignment: .topTrailing) {
+                                Image(systemName: "clock.arrow.circlepath")
+                                    .font(.system(size: 18, weight: .medium))
+                                    .foregroundColor(AQ.secondary)
+                                Circle()
+                                    .fill(AQ.blue)
+                                    .frame(width: 8, height: 8)
+                                    .offset(x: 3, y: -3)
+                            }
+                        }
+                    }
+                    AIProfileButton(
+                        answered: questionEngine.answeredCount,
+                        pct: questionEngine.personalisation
+                    ) { showOnboarding = true }
+                }
             }
             .padding(.horizontal, 24)
             .padding(.top, 56)
@@ -423,7 +459,34 @@ struct ReadyView: View {
                 StepDot(number: 3, label: "Get Quote",  active: false, done: false, color: AQ.secondary.opacity(0.4))
             }
             .padding(.horizontal, 32)
-            .padding(.bottom, 20)
+            .padding(.bottom, 16)
+
+            // ── Profile hint strip ─────────────────────────────────────────
+            if questionEngine.answeredCount > 0 {
+                let trade    = questionEngine.profile.trade
+                let rate     = questionEngine.profile.answers.first(where: { $0.id == "day_rate" })?.answer ?? ""
+                let supplier = questionEngine.profile.answers.first(where: { $0.id == "supplier" })?.answer ?? ""
+                let parts = [trade, rate, supplier].filter { !$0.isEmpty }
+                if !parts.isEmpty {
+                    Button { showOnboarding = true } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundColor(AQ.green)
+                            Text("Quote will use: \(parts.joined(separator: " · "))")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(AQ.secondary)
+                                .lineLimit(1)
+                            Spacer()
+                            Image(systemName: "pencil")
+                                .font(.system(size: 10))
+                                .foregroundColor(AQ.secondary.opacity(0.5))
+                        }
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 12)
+                    }
+                }
+            }
 
             Divider().background(AQ.rule).padding(.horizontal, 24)
 
@@ -473,32 +536,39 @@ struct ReadyView: View {
             VStack(spacing: 0) {
                 Divider().background(AQ.rule).padding(.bottom, 20)
 
-                // Primary CTA
-                Button { coordinator.startScan() } label: {
-                    Text(isLiDAR ? "Start LiDAR Scan" : "Sweep Room")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 17)
-                        .background(AQ.blue)
+                // Primary CTAs
+                HStack(spacing: 10) {
+                    Button { coordinator.startScan() } label: {
+                        Text(isLiDAR ? "Start LiDAR Scan" : "Sweep Room")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 17)
+                            .background(AQ.blue)
+                            .cornerRadius(14)
+                    }
+                    Button { showManualEntry = true } label: {
+                        VStack(spacing: 3) {
+                            Image(systemName: "ruler")
+                                .font(.system(size: 14, weight: .medium))
+                            Text("I have the\nmeasurements")
+                                .font(.system(size: 12, weight: .medium))
+                                .multilineTextAlignment(.center)
+                        }
+                        .foregroundColor(AQ.ink)
+                        .frame(width: 88)
+                        .padding(.vertical, 14)
+                        .background(AQ.fill)
                         .cornerRadius(14)
+                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(AQ.rule, lineWidth: 1))
+                    }
                 }
                 .padding(.horizontal, 24)
 
                 // Secondary options
                 HStack(spacing: 20) {
-                    if isLiDAR {
-                        // No alternative for LiDAR — just demo
-                    } else {
-                        Button { showManualEntry = true } label: {
-                            HStack(spacing: 5) {
-                                Image(systemName: "ruler").font(.system(size: 12))
-                                Text("Enter manually").font(.system(size: 13, weight: .medium))
-                            }
-                            .foregroundColor(AQ.secondary)
-                        }
-                        Text("·").foregroundColor(AQ.rule)
-                    }
+                    // manual entry promoted above
+                    #if DEBUG
                     Button {
                         coordinator.submitManual(length: 4.8, width: 3.6, height: 2.4)
                     } label: {
@@ -508,9 +578,23 @@ struct ReadyView: View {
                         }
                         .foregroundColor(AQ.secondary)
                     }
+                    #endif
                 }
                 .padding(.top, 16)
-                .padding(.bottom, 36)
+
+                if let guestTap = onGuestTap {
+                    Button(action: guestTap) {
+                        HStack(spacing: 5) {
+                            Image(systemName: "dot.scope").font(.system(size: 12))
+                            Text("Just want to scan a room? Try it free →")
+                                .font(.system(size: 13, weight: .medium))
+                        }
+                        .foregroundColor(AQ.secondary)
+                    }
+                    .padding(.top, 4)
+                }
+
+                Color.clear.frame(height: 28)
             }
         }
         .background(Color.white)
@@ -519,6 +603,9 @@ struct ReadyView: View {
         }
         .sheet(isPresented: $showManualEntry) {
             ManualEntrySheet(coordinator: coordinator)
+        }
+        .sheet(isPresented: $showHistory) {
+            QuoteHistoryView(store: historyStore)
         }
     }
 }
@@ -2139,6 +2226,7 @@ struct LiDARScanningView: View {
 struct PoseFusionScanningView: View {
     @ObservedObject var coordinator: ScanCoordinator
     @State private var isHolding = false
+    @State private var showTutorial = !UserDefaults.standard.bool(forKey: "aq_posefusion_tutorial_seen")
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -2215,6 +2303,80 @@ struct PoseFusionScanningView: View {
         }
         .ignoresSafeArea()
         .animation(.easeInOut(duration: 0.2), value: isHolding)
+        .overlay {
+            if showTutorial {
+                ZStack {
+                    Color.black.opacity(0.55).ignoresSafeArea()
+                    ScanTutorialAnimation()
+                        .padding(.bottom, 140)
+                }
+                .onAppear {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                        withAnimation(.easeOut(duration: 0.4)) { showTutorial = false }
+                        UserDefaults.standard.set(true, forKey: "aq_posefusion_tutorial_seen")
+                    }
+                }
+                .onTapGesture {
+                    withAnimation(.easeOut(duration: 0.3)) { showTutorial = false }
+                    UserDefaults.standard.set(true, forKey: "aq_posefusion_tutorial_seen")
+                }
+                .transition(.opacity)
+            }
+        }
+        .animation(.easeInOut(duration: 0.3), value: showTutorial)
+    }
+}
+
+// MARK: - Scan Tutorial Animation
+
+private struct ScanTutorialAnimation: View {
+    @State private var sweepOffset: CGFloat = -40
+    @State private var sweepOpacity: Double = 0
+
+    var body: some View {
+        VStack(spacing: 28) {
+            ZStack {
+                // Sweep arcs
+                ForEach(0..<3) { i in
+                    Capsule()
+                        .fill(Color.white.opacity(0.15 - Double(i) * 0.04))
+                        .frame(width: 3, height: 40 + CGFloat(i) * 16)
+                        .offset(x: sweepOffset + CGFloat(i) * 6)
+                        .animation(
+                            .easeInOut(duration: 1.4).repeatForever(autoreverses: true)
+                                .delay(Double(i) * 0.08),
+                            value: sweepOffset
+                        )
+                }
+                // Phone icon
+                Image(systemName: "iphone")
+                    .font(.system(size: 48, weight: .ultraLight))
+                    .foregroundColor(.white)
+                    .rotationEffect(.degrees(90))
+                    .offset(x: sweepOffset)
+                    .animation(.easeInOut(duration: 1.4).repeatForever(autoreverses: true), value: sweepOffset)
+            }
+            .frame(width: 160, height: 100)
+            .opacity(sweepOpacity)
+
+            VStack(spacing: 8) {
+                Text("Hold & sweep slowly")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundColor(.white)
+                HStack(spacing: 6) {
+                    Image(systemName: "hand.point.down.fill")
+                        .font(.system(size: 13))
+                        .foregroundColor(.white.opacity(0.7))
+                    Text("Hold the button below")
+                        .font(.system(size: 14))
+                        .foregroundColor(.white.opacity(0.7))
+                }
+            }
+        }
+        .onAppear {
+            withAnimation(.easeIn(duration: 0.4)) { sweepOpacity = 1 }
+            sweepOffset = 40
+        }
     }
 }
 
@@ -2337,6 +2499,16 @@ struct ResultView: View {
     let result: RoomDimensions
     @ObservedObject var coordinator: ScanCoordinator
     @State private var showJobDescription = false
+    @State private var roomTypeOverride = ""
+
+    private func isSelected(_ type: String) -> Bool {
+        if roomTypeOverride.isEmpty {
+            return result.roomType.lowercased() == type.lowercased()
+        }
+        return roomTypeOverride.lowercased() == type.lowercased()
+    }
+
+    var effectiveRoomType: String { roomTypeOverride.isEmpty ? result.roomType : roomTypeOverride }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -2361,18 +2533,29 @@ struct ResultView: View {
             .padding(.top, 56)
             .padding(.bottom, 20)
 
-            // ── Step roadmap ────────────────────────────────────────────────
-            HStack(spacing: 0) {
-                StepDot(number: 1, label: "AI Profile", active: false, done: true, color: AQ.green)
-                StepConnector(done: true)
-                StepDot(number: 2, label: "Scan Room",  active: false, done: true, color: AQ.green)
-                StepConnector(done: true)
-                StepDot(number: 3, label: "Get Quote",  active: true,  done: false, color: AQ.blue)
-            }
-            .padding(.horizontal, 32)
-            .padding(.bottom, 20)
+            Divider().background(AQ.rule).padding(.horizontal, 24).padding(.bottom, 16)
 
-            Divider().background(AQ.rule).padding(.horizontal, 24).padding(.bottom, 24)
+            // Room type picker
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(["Kitchen", "Bathroom", "Living room", "Bedroom", "Other"], id: \.self) { type in
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.15)) { roomTypeOverride = type }
+                        } label: {
+                            Text(type)
+                                .font(.system(size: 13, weight: isSelected(type) ? .semibold : .medium))
+                                .foregroundColor(isSelected(type) ? .white : AQ.ink)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 8)
+                                .background(isSelected(type) ? AQ.blue : AQ.fill)
+                                .cornerRadius(20)
+                                .overlay(RoundedRectangle(cornerRadius: 20).stroke(isSelected(type) ? AQ.blue : AQ.rule, lineWidth: 1))
+                        }
+                    }
+                }
+                .padding(.horizontal, 24)
+            }
+            .padding(.bottom, 16)
 
             // Dimensions card
             VStack(spacing: 0) {
@@ -2445,19 +2628,17 @@ struct ResultView: View {
                 .padding(.horizontal, 24)
 
                 Button { coordinator.reset() } label: {
-                    Text("Measure Again")
-                        .font(.system(size: 15, weight: .medium))
+                    Text("Rescan")
+                        .font(.system(size: 13, weight: .medium))
                         .foregroundColor(AQ.secondary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
                 }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 24)
+                .padding(.top, 4)
+                .padding(.bottom, 28)
             }
         }
         .background(AQ.fill)
         .fullScreenCover(isPresented: $showJobDescription) {
-            JobDescriptionView(result: result, coordinator: coordinator)
+            JobDescriptionView(result: result, coordinator: coordinator, roomTypeOverride: effectiveRoomType)
         }
     }
 }
@@ -2467,6 +2648,7 @@ struct ResultView: View {
 struct JobDescriptionView: View {
     let result: RoomDimensions
     @ObservedObject var coordinator: ScanCoordinator
+    var roomTypeOverride: String = ""
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var questionEngine: QuestionEngine
 
@@ -2474,8 +2656,11 @@ struct JobDescriptionView: View {
     @State private var jobDescription = ""
     @State private var customerName   = ""
     @State private var showQuote      = false
-    @State private var showTypeInput  = false
+    @State private var showVoicePanel = false
+    @State private var showQuickSetup = false
     @FocusState private var typeFocused: Bool
+
+    private var effectiveRoomType: String { roomTypeOverride.isEmpty ? result.roomType : roomTypeOverride }
 
     var canProceed: Bool { jobDescription.trimmingCharacters(in: .whitespaces).count > 10 }
 
@@ -2490,7 +2675,7 @@ struct JobDescriptionView: View {
                         HStack(spacing: 8) {
                             Image(systemName: "cube.transparent")
                                 .font(.system(size: 12)).foregroundColor(AQ.blue)
-                            Text("\(result.lengthStr) × \(result.widthStr) × \(result.heightStr)m · \(result.floorAreaStr)m² · \(result.roomType.capitalized)")
+                            Text("\(result.lengthStr) × \(result.widthStr) × \(result.heightStr)m · \(result.floorAreaStr)m² · \(effectiveRoomType.capitalized)")
                                 .font(.system(size: 12, weight: .medium)).foregroundColor(AQ.blue)
                         }
                         .padding(.horizontal, 12).padding(.vertical, 7)
@@ -2501,19 +2686,12 @@ struct JobDescriptionView: View {
                             .font(.system(size: 32, weight: .bold)).foregroundColor(AQ.ink)
                             .padding(.horizontal, 24).padding(.bottom, 6)
 
-                        Text("Speak it. The more specific, the tighter the quote.")
+                        Text("Just talk — describe the job out loud.")
                             .font(AQ.body(15)).foregroundColor(AQ.secondary)
-                            .lineSpacing(4).padding(.horizontal, 24).padding(.bottom, 24)
+                            .lineSpacing(4).padding(.horizontal, 24).padding(.bottom, 20)
 
-                        // ── Voice waveform / transcript area ─────────────────
-                        VoiceInputCard(
-                            recorder: recorder,
-                            transcript: $jobDescription
-                        )
-                        .padding(.horizontal, 24).padding(.bottom, 20)
-
-                        // ── Typed fallback ───────────────────────────────────
-                        if showTypeInput || !jobDescription.isEmpty {
+                        // ── Text input (default) with mic button in corner ────
+                        ZStack(alignment: .bottomTrailing) {
                             ZStack(alignment: .topLeading) {
                                 if jobDescription.isEmpty {
                                     Text("e.g. Replace consumer unit, add 3 double sockets, install LED downlights. Old wiring throughout.")
@@ -2524,15 +2702,43 @@ struct JobDescriptionView: View {
                                 TextEditor(text: $jobDescription)
                                     .font(.system(size: 15)).foregroundColor(AQ.ink)
                                     .focused($typeFocused)
-                                    .frame(minHeight: 130)
+                                    .frame(minHeight: 140)
                                     .padding(12)
+                                    .padding(.trailing, 44) // space for mic button
                                     .scrollContentBackground(.hidden)
                             }
                             .background(AQ.fill).cornerRadius(14)
                             .overlay(RoundedRectangle(cornerRadius: 14)
                                 .stroke(typeFocused ? AQ.blue : AQ.rule, lineWidth: 1)
                                 .animation(.easeInOut(duration: 0.15), value: typeFocused))
-                            .padding(.horizontal, 24).padding(.bottom, 20)
+
+                            // Mic button overlay
+                            Button {
+                                typeFocused = false
+                                showVoicePanel.toggle()
+                            } label: {
+                                ZStack {
+                                    Circle()
+                                        .fill(recorder.isRecording ? AQ.blue : Color.white)
+                                        .frame(width: 34, height: 34)
+                                        .shadow(color: Color.black.opacity(0.08), radius: 4, x: 0, y: 1)
+                                    Image(systemName: recorder.isRecording ? "waveform" : "mic")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(recorder.isRecording ? .white : AQ.secondary)
+                                }
+                            }
+                            .padding(8)
+                        }
+                        .padding(.horizontal, 24).padding(.bottom, 8)
+
+                        // ── Voice panel (collapsible) ─────────────────────────
+                        if showVoicePanel {
+                            VoiceInputCard(
+                                recorder: recorder,
+                                transcript: $jobDescription
+                            )
+                            .padding(.horizontal, 24).padding(.bottom, 16)
+                            .transition(.move(edge: .top).combined(with: .opacity))
                         }
 
                         // Customer name
@@ -2555,7 +2761,11 @@ struct JobDescriptionView: View {
                     // Primary CTA
                     Button {
                         typeFocused = false
-                        showQuote = true
+                        if questionEngine.personalisation < profileQuickSetupThreshold {
+                            showQuickSetup = true
+                        } else {
+                            showQuote = true
+                        }
                     } label: {
                         HStack(spacing: 8) {
                             Image(systemName: "sparkles")
@@ -2574,22 +2784,9 @@ struct JobDescriptionView: View {
 
                     // Secondary options
                     HStack(spacing: 20) {
-                        Button {
-                            showTypeInput.toggle()
-                            if showTypeInput { typeFocused = true }
-                        } label: {
-                            HStack(spacing: 5) {
-                                Image(systemName: showTypeInput ? "keyboard.chevron.compact.down" : "keyboard")
-                                    .font(.system(size: 12))
-                                Text(showTypeInput ? "Hide keyboard" : "Type instead")
-                                    .font(.system(size: 13, weight: .medium))
-                            }
-                            .foregroundColor(showTypeInput ? AQ.blue : AQ.secondary)
-                        }
-                        Text("·").foregroundColor(AQ.rule)
+                        #if DEBUG
                         Button {
                             jobDescription = "Full rewire of a 3-bed semi. Strip out all old wiring, first and second fix throughout. 14 double sockets, 10 single sockets, 12 LED downlights in kitchen and bathrooms, new consumer unit with RCDs, outside socket and PIR flood light. Old plaster in good condition — no re-plastering needed. Customer has already cleared the rooms."
-                            showTypeInput = true
                         } label: {
                             HStack(spacing: 5) {
                                 Image(systemName: "flask").font(.system(size: 12))
@@ -2597,6 +2794,7 @@ struct JobDescriptionView: View {
                             }
                             .foregroundColor(AQ.secondary)
                         }
+                        #endif
                     }
                     .padding(.top, 12).padding(.bottom, 28)
                     .background(Color.white)
@@ -2611,15 +2809,184 @@ struct JobDescriptionView: View {
                         .foregroundColor(AQ.secondary)
                 }
             }
+            .onAppear {
+                guard jobDescription.isEmpty else { return }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                    showVoicePanel = true
+                    recorder.toggle()
+                }
+            }
         }
         .fullScreenCover(isPresented: $showQuote) {
             QuoteView(result: result, jobDescription: jobDescription,
                       customerName: customerName, coordinator: coordinator)
                 .environmentObject(questionEngine)
         }
+        .sheet(isPresented: $showQuickSetup) {
+            QuickSetupSheet(onContinue: {
+                showQuickSetup = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    showQuote = true
+                }
+            })
+            .environmentObject(questionEngine)
+            .presentationDetents([.large])
+            .presentationDragIndicator(.visible)
+        }
         .onTapGesture { typeFocused = false }
         .onReceive(recorder.$transcript) { t in
             if !t.isEmpty { jobDescription = t }
+        }
+    }
+}
+
+// MARK: - Quick Setup Sheet
+// Shown before first quote when profile is thin (< 50%).
+// Surfaces the 3 most impactful unanswered questions.
+
+private struct QuickSetupSheet: View {
+    let onContinue: () -> Void
+    @EnvironmentObject var engine: QuestionEngine
+
+    // Top 3 unanswered foundation questions by impact order
+    private var unanswered: [OnboardingQuestion] {
+        let priority = ["trade", "day_rate", "region", "vat", "what_included", "material_markup"]
+        let answered = Set(engine.questions.filter { $0.isAnswered }.map { $0.id })
+        return priority.compactMap { id in
+            engine.questions.first(where: { $0.id == id && !answered.contains(id) })
+        }.prefix(3).map { $0 }
+    }
+
+    @State private var answers: [String: String] = [:]
+    @State private var currentIdx = 0
+
+    private var currentQ: OnboardingQuestion? {
+        guard currentIdx < unanswered.count else { return nil }
+        return unanswered[currentIdx]
+    }
+
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            VStack(spacing: 8) {
+                Text("Quick setup")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundColor(AQ.ink)
+                Text("Answer \(unanswered.count) quick question\(unanswered.count == 1 ? "" : "s") for a more accurate quote — takes 30 seconds.")
+                    .font(AQ.body(14))
+                    .foregroundColor(AQ.secondary)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(3)
+                    .padding(.horizontal, 32)
+
+                // Progress dots
+                HStack(spacing: 6) {
+                    ForEach(0..<unanswered.count, id: \.self) { i in
+                        Circle()
+                            .fill(i <= currentIdx ? AQ.blue : AQ.rule)
+                            .frame(width: 6, height: 6)
+                            .animation(.easeInOut(duration: 0.2), value: currentIdx)
+                    }
+                }
+                .padding(.top, 4)
+            }
+            .padding(.top, 28)
+            .padding(.bottom, 24)
+
+            Divider().background(AQ.rule)
+
+            if let q = currentQ {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(q.text)
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundColor(AQ.ink)
+                        .padding(.horizontal, 24)
+                        .padding(.top, 28)
+                        .padding(.bottom, 6)
+
+                    Text(q.quoteImpact)
+                        .font(.system(size: 13))
+                        .foregroundColor(AQ.blue)
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 20)
+
+                    ZStack(alignment: .topLeading) {
+                        let binding = Binding(
+                            get: { answers[q.id, default: ""] },
+                            set: { answers[q.id] = $0 }
+                        )
+                        if answers[q.id, default: ""].isEmpty {
+                            Text(q.hint)
+                                .font(.system(size: 15))
+                                .foregroundColor(AQ.secondary.opacity(0.6))
+                                .padding(16)
+                                .allowsHitTesting(false)
+                        }
+                        TextEditor(text: binding)
+                            .font(.system(size: 15))
+                            .foregroundColor(AQ.ink)
+                            .focused($focused)
+                            .frame(minHeight: 100)
+                            .padding(12)
+                            .scrollContentBackground(.hidden)
+                    }
+                    .background(AQ.fill)
+                    .cornerRadius(14)
+                    .overlay(RoundedRectangle(cornerRadius: 14)
+                        .stroke(focused ? AQ.blue : AQ.rule, lineWidth: 1))
+                    .padding(.horizontal, 24)
+                    .onAppear { focused = true }
+                }
+
+                Spacer()
+
+                VStack(spacing: 8) {
+                    Divider().background(AQ.rule).padding(.bottom, 8)
+                    Button {
+                        let ans = answers[q.id, default: ""].trimmingCharacters(in: .whitespaces)
+                        if !ans.isEmpty {
+                            engine.submitAnswer(ans)
+                        }
+                        if currentIdx < unanswered.count - 1 {
+                            withAnimation { currentIdx += 1 }
+                            answers[unanswered[currentIdx].id] = ""
+                            focused = true
+                        } else {
+                            onContinue()
+                        }
+                    } label: {
+                        Text(currentIdx < unanswered.count - 1 ? "Next" : "Generate Quote →")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(AQ.blue)
+                            .cornerRadius(14)
+                    }
+                    .padding(.horizontal, 24)
+
+                    Button("Skip and generate anyway") {
+                        onContinue()
+                    }
+                    .font(.system(size: 13))
+                    .foregroundColor(AQ.secondary)
+                    .padding(.bottom, 28)
+                }
+            } else {
+                // All done — should not render, but handle gracefully
+                Spacer()
+                Button("Continue") { onContinue() }
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(AQ.blue)
+                    .cornerRadius(14)
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 36)
+            }
         }
     }
 }
@@ -2930,7 +3297,7 @@ struct QuoteView: View {
         // Animate through loading steps
         let stepTask = Task {
             for i in 0..<loadingSteps.count {
-                try? await Task.sleep(nanoseconds: 550_000_000)
+                try? await Task.sleep(nanoseconds: 900_000_000)
                 await MainActor.run { loadingStep = i }
             }
         }
@@ -3065,7 +3432,39 @@ struct QuoteView: View {
 
             let q = buildQuote(from: parsed)
             stepTask.cancel()
-            await MainActor.run { quote = q; isLoading = false }
+            await MainActor.run {
+                quote = q
+                isLoading = false
+                // Persist to history
+                let saved = SavedQuote(
+                    id: UUID().uuidString,
+                    savedAt: Date(),
+                    customerName: q.customerName,
+                    jobDescription: q.jobDescription,
+                    roomType: result.roomType,
+                    floorArea: result.floorArea,
+                    labourDays: q.labourDays,
+                    labourRate: q.labourRate,
+                    labourTotal: q.labourTotal,
+                    items: q.items.map {
+                        SavedQuoteItem(
+                            id: $0.id.uuidString,
+                            description: $0.description,
+                            qty: $0.qty,
+                            unit: $0.unit,
+                            unitPrice: $0.unitPrice,
+                            sku: $0.sku,
+                            supplier: $0.supplier
+                        )
+                    },
+                    subtotal: q.subtotal,
+                    vatRate: q.vatRate,
+                    vatAmount: q.vatAmount,
+                    grandTotal: q.grandTotal,
+                    notes: q.notes
+                )
+                QuoteHistoryStore.shared.save(saved)
+            }
             return
         } catch {
             stepTask.cancel()
@@ -3232,8 +3631,27 @@ struct QuoteResultView: View {
     let onStartOver: () -> Void
     @EnvironmentObject var questionEngine: QuestionEngine
     @State private var pdfURL: URL?
+    @State private var showBreakdown = false
+    @State private var editingLabourTotal = false
+    @State private var labourTotalOverride: Double? = nil
+    @State private var showProfileNudge = true
+    @State private var showOnboarding = false
+
+    var effectiveLabourTotal: Double { labourTotalOverride ?? quote.labourTotal }
+    var effectiveSubtotal: Double { effectiveLabourTotal + quote.items.reduce(0) { $0 + $1.total } }
+    var effectiveVatAmount: Double { effectiveSubtotal * (quote.vatRate / 100) }
+    var effectiveGrandTotal: Double { effectiveSubtotal + effectiveVatAmount }
+
+    private var profileNudgeQuestion: OnboardingQuestion? {
+        guard questionEngine.answeredCount < 6 else { return nil }
+        let priority = ["day_rate", "trade", "region", "material_markup", "vat"]
+        return priority.compactMap { id in
+            questionEngine.questions.first(where: { $0.id == id && !$0.isAnswered })
+        }.first
+    }
 
     var body: some View {
+        VStack(spacing: 0) {
         ScrollView {
             VStack(spacing: 0) {
 
@@ -3244,7 +3662,7 @@ struct QuoteResultView: View {
                         .foregroundColor(AQ.secondary)
                         .kerning(0.8)
                         .textCase(.uppercase)
-                    Text("£\(Int(quote.grandTotal).formatted())")
+                    Text("£\(Int(effectiveGrandTotal).formatted())")
                         .font(.system(size: 52, weight: .bold, design: .rounded))
                         .foregroundColor(AQ.ink)
                     Text("inc. VAT")
@@ -3257,108 +3675,196 @@ struct QuoteResultView: View {
 
                 Divider().background(AQ.rule)
 
-                // Labour
-                QuoteSectionHeader(title: "Labour")
-                QuoteRow(
-                    label: "\(String(format: "%.1f", quote.labourDays)) day\(quote.labourDays == 1 ? "" : "s") @ £\(Int(quote.labourRate))/day",
-                    value: "£\(Int(quote.labourTotal).formatted())",
-                    bold: false
-                )
-                Divider().background(AQ.rule).padding(.leading, 24)
-
-                // Materials
-                if !quote.items.isEmpty {
-                    QuoteSectionHeader(title: "Materials & Items")
-                    ForEach(quote.items) { item in
-                        VStack(alignment: .leading, spacing: 0) {
-                            QuoteRow(
-                                label: item.description,
-                                value: "£\(String(format: "%.2f", item.total))",
-                                bold: false,
-                                multiline: false
-                            )
-                            HStack(spacing: 8) {
-                                Text("\(formatQty(item.qty)) \(item.unit) × £\(String(format: "%.2f", item.unitPrice))")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(AQ.secondary)
-                                if !item.sku.isEmpty {
-                                    Text("·")
-                                        .foregroundColor(AQ.rule)
-                                    HStack(spacing: 3) {
-                                        if !item.supplier.isEmpty {
-                                            Text(item.supplier)
-                                                .font(.system(size: 11, weight: .medium))
-                                                .foregroundColor(AQ.blue)
-                                        }
-                                        Text("SKU \(item.sku)")
-                                            .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                                            .foregroundColor(AQ.blue)
-                                    }
-                                    .padding(.horizontal, 7).padding(.vertical, 3)
-                                    .background(AQ.blue.opacity(0.07))
-                                    .cornerRadius(5)
-                                }
-                            }
-                            .padding(.horizontal, 24)
-                            .padding(.bottom, 12)
+                // Profile nudge banner
+                if showProfileNudge, let q = profileNudgeQuestion {
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Make this quote more accurate")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(AQ.ink)
+                            Text(q.text)
+                                .font(.system(size: 12))
+                                .foregroundColor(AQ.secondary)
+                                .lineLimit(1)
                         }
-                        Divider().background(AQ.rule).padding(.leading, 24)
+                        Spacer()
+                        Button("Answer") {
+                            showProfileNudge = false
+                            showOnboarding = true
+                        }
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 12).padding(.vertical, 6)
+                        .background(AQ.blue).cornerRadius(8)
+                        Button { showProfileNudge = false } label: {
+                            Image(systemName: "xmark").font(.system(size: 10)).foregroundColor(AQ.secondary)
+                        }
                     }
+                    .padding(.horizontal, 16).padding(.vertical, 12)
+                    .background(AQ.blue.opacity(0.06))
+                    .overlay(Rectangle().frame(height: 1).foregroundColor(AQ.blue.opacity(0.12)), alignment: .bottom)
                 }
 
-                // Totals
+                // Summary rows always visible
                 QuoteSectionHeader(title: "Summary")
-                QuoteRow(label: "Subtotal", value: "£\(Int(quote.subtotal).formatted())", bold: false)
+                Button {
+                    labourTotalOverride = labourTotalOverride ?? quote.labourTotal
+                    editingLabourTotal = true
+                } label: {
+                    QuoteRow(label: "Labour ✎", value: "£\(Int(effectiveLabourTotal).formatted())", bold: false)
+                }
                 Divider().background(AQ.rule).padding(.leading, 24)
-                QuoteRow(label: "VAT (\(Int(quote.vatRate))%)", value: "£\(String(format: "%.2f", quote.vatAmount))", bold: false)
+                if !quote.items.isEmpty {
+                    QuoteRow(label: "Materials", value: "£\(Int(quote.items.reduce(0) { $0 + $1.total }).formatted())", bold: false)
+                    Divider().background(AQ.rule).padding(.leading, 24)
+                }
+                QuoteRow(label: "VAT (\(Int(quote.vatRate))%)", value: "£\(String(format: "%.2f", effectiveVatAmount))", bold: false)
                 Divider().background(AQ.rule).padding(.leading, 24)
-                QuoteRow(label: "Total", value: "£\(Int(quote.grandTotal).formatted())", bold: true)
+                QuoteRow(label: "Total", value: "£\(Int(effectiveGrandTotal).formatted())", bold: true)
                 Divider().background(AQ.rule)
 
-                // Notes
-                if !quote.notes.isEmpty {
-                    QuoteSectionHeader(title: "Notes & Inclusions")
-                    Text(quote.notes)
-                        .font(AQ.body(14))
-                        .foregroundColor(AQ.secondary)
-                        .lineSpacing(5)
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 16)
+                // Breakdown toggle
+                Button {
+                    withAnimation(.easeInOut(duration: 0.22)) { showBreakdown.toggle() }
+                } label: {
+                    HStack(spacing: 6) {
+                        Text(showBreakdown ? "Hide breakdown" : "View breakdown")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(AQ.blue)
+                        Image(systemName: showBreakdown ? "chevron.up" : "chevron.down")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(AQ.blue)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                }
+
+                if showBreakdown {
                     Divider().background(AQ.rule)
-                }
 
-                // Actions
-                VStack(spacing: 10) {
-                    Button {
-                        let url = buildPDF()
-                        pdfURL = url
-                    } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: "square.and.arrow.up")
-                                .font(.system(size: 15, weight: .semibold))
-                            Text("Share Quote PDF")
-                                .font(.system(size: 17, weight: .semibold))
+                    // Labour detail
+                    QuoteSectionHeader(title: "Labour")
+                    QuoteRow(
+                        label: "\(String(format: "%.1f", quote.labourDays)) day\(quote.labourDays == 1 ? "" : "s") @ £\(Int(quote.labourRate))/day",
+                        value: "£\(Int(effectiveLabourTotal).formatted())",
+                        bold: false
+                    )
+                    Divider().background(AQ.rule).padding(.leading, 24)
+
+                    // Materials detail
+                    if !quote.items.isEmpty {
+                        QuoteSectionHeader(title: "Materials & Items")
+                        ForEach(quote.items) { item in
+                            VStack(alignment: .leading, spacing: 0) {
+                                QuoteRow(
+                                    label: item.description,
+                                    value: "£\(String(format: "%.2f", item.total))",
+                                    bold: false,
+                                    multiline: false
+                                )
+                                HStack(spacing: 8) {
+                                    Text("\(formatQty(item.qty)) \(item.unit) × £\(String(format: "%.2f", item.unitPrice))")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(AQ.secondary)
+                                    if !item.sku.isEmpty {
+                                        Text("·")
+                                            .foregroundColor(AQ.rule)
+                                        HStack(spacing: 3) {
+                                            if !item.supplier.isEmpty {
+                                                Text(item.supplier)
+                                                    .font(.system(size: 11, weight: .medium))
+                                                    .foregroundColor(AQ.blue)
+                                            }
+                                            Text("SKU \(item.sku)")
+                                                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                                                .foregroundColor(AQ.blue)
+                                        }
+                                        .padding(.horizontal, 7).padding(.vertical, 3)
+                                        .background(AQ.blue.opacity(0.07))
+                                        .cornerRadius(5)
+                                    }
+                                }
+                                .padding(.horizontal, 24)
+                                .padding(.bottom, 12)
+                            }
+                            Divider().background(AQ.rule).padding(.leading, 24)
                         }
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity).padding(.vertical, 17)
-                        .background(AQ.blue).cornerRadius(14)
                     }
 
-                    Button(action: onStartOver) {
-                        Text("Start New Quote")
-                            .font(.system(size: 15, weight: .medium))
+                    // Notes
+                    if !quote.notes.isEmpty {
+                        QuoteSectionHeader(title: "Notes & Inclusions")
+                        Text(quote.notes)
+                            .font(AQ.body(14))
                             .foregroundColor(AQ.secondary)
-                            .frame(maxWidth: .infinity).padding(.vertical, 14)
+                            .lineSpacing(5)
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 16)
+                        Divider().background(AQ.rule)
                     }
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 24)
-                .padding(.bottom, 40)
+
+                Color.clear.frame(height: 20)
             }
         }
         .background(Color.white)
+
+        // Sticky footer
+        VStack(spacing: 0) {
+            Divider().background(AQ.rule)
+            HStack(spacing: 10) {
+                Button(action: onStartOver) {
+                    Text("New Quote")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(AQ.secondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 15)
+                        .background(AQ.fill)
+                        .cornerRadius(14)
+                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(AQ.rule, lineWidth: 1))
+                }
+                .frame(width: 110)
+
+                Button {
+                    let url = buildPDF()
+                    pdfURL = url
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "paperplane.fill")
+                            .font(.system(size: 15, weight: .semibold))
+                        Text("Send to customer")
+                            .font(.system(size: 17, weight: .semibold))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(AQ.blue)
+                    .cornerRadius(14)
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 12)
+            .padding(.bottom, 28)
+        }
+        .background(Color.white)
+        } // end outer VStack
+        .background(Color.white)
         .sheet(item: $pdfURL) { url in
             ShareSheet(url: url)
+        }
+        .sheet(isPresented: $editingLabourTotal) {
+            LabourEditSheet(
+                current: effectiveLabourTotal,
+                onSave: { newVal in
+                    labourTotalOverride = newVal
+                    editingLabourTotal = false
+                },
+                onCancel: { editingLabourTotal = false }
+            )
+            .presentationDetents([.height(260)])
+        }
+        .sheet(isPresented: $showOnboarding) {
+            OnboardingSheet().environmentObject(questionEngine)
         }
     }
 
@@ -3694,6 +4200,61 @@ struct ErrorView: View {
             }
         }
         .background(Color.white)
+    }
+}
+
+// MARK: - Labour Edit Sheet
+
+private struct LabourEditSheet: View {
+    let current: Double
+    let onSave: (Double) -> Void
+    let onCancel: () -> Void
+    @State private var text = ""
+    @FocusState private var focused: Bool
+
+    var parsed: Double? { Double(text.replacingOccurrences(of: "£", with: "").replacingOccurrences(of: ",", with: "")) }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Text("Edit Labour Total")
+                .font(.system(size: 20, weight: .bold))
+                .foregroundColor(AQ.ink)
+            Text("Override the calculated labour cost for this quote.")
+                .font(.system(size: 14))
+                .foregroundColor(AQ.secondary)
+            HStack {
+                Text("£").font(.system(size: 22, weight: .semibold)).foregroundColor(AQ.secondary)
+                TextField("0", text: $text)
+                    .font(.system(size: 28, weight: .bold))
+                    .foregroundColor(AQ.ink)
+                    .keyboardType(.decimalPad)
+                    .focused($focused)
+            }
+            .padding(16)
+            .background(AQ.fill)
+            .cornerRadius(12)
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(AQ.blue, lineWidth: 1.5))
+            HStack(spacing: 10) {
+                Button("Cancel") { onCancel() }
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(AQ.secondary)
+                    .frame(maxWidth: .infinity).padding(.vertical, 14)
+                    .background(AQ.fill).cornerRadius(12)
+                Button("Save") {
+                    if let v = parsed { onSave(v) }
+                }
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity).padding(.vertical, 14)
+                .background(parsed != nil ? AQ.blue : AQ.rule).cornerRadius(12)
+                .disabled(parsed == nil)
+            }
+        }
+        .padding(28)
+        .onAppear {
+            text = String(Int(current))
+            focused = true
+        }
     }
 }
 

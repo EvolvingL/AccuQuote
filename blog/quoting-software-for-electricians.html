@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quoting Software for Electricians | AccuQuote</title>
+  <meta name="description" content="The best quoting software for electricians in the UK. Cut quote time from hours to 20 minutes with itemised materials, Screwfix and CEF SKUs, and professional PDF quotes." />
+  <link rel="canonical" href="https://accuquote.app/blog/quoting-software-for-electricians.html" />
+
+  <meta property="og:title" content="Quoting Software for Electricians | AccuQuote" />
+  <meta property="og:description" content="How UK electricians are cutting quote time from 3 hours to 20 minutes with AccuQuote." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://accuquote.app/blog/quoting-software-for-electricians.html" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "Quoting Software for Electricians: How to Quote Any Job in 20 Minutes",
+    "description": "How UK electricians are cutting quote time from 3 hours to 20 minutes using AccuQuote — with itemised materials, Screwfix and CEF SKUs, and professional PDF quotes sent on the day.",
+    "author": { "@type": "Organization", "name": "AccuQuote Team" },
+    "publisher": { "@type": "Organization", "name": "AccuQuote", "url": "https://accuquote.app" },
+    "datePublished": "2025-03-12",
+    "dateModified": "2025-03-12",
+    "mainEntityOfPage": "https://accuquote.app/blog/quoting-software-for-electricians.html"
+  }
+  </script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gold: #C8922A;
+      --gold-hover: #b07e22;
+      --dark: #1D1D1F;
+      --secondary: #6E6E73;
+      --navy: #0A0A1A;
+      --navy-mid: #0f0f2a;
+      --white: #FFFFFF;
+      --off-white: #F5F5F7;
+      --border: #E0E0E5;
+      --radius: 14px;
+      --radius-sm: 8px;
+      --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    html { scroll-behavior: smooth; font-size: 16px; -webkit-font-smoothing: antialiased; }
+    body { font-family: var(--font); background: var(--white); color: var(--dark); line-height: 1.6; overflow-x: hidden; }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+
+    /* NAV */
+    nav {
+      position: sticky; top: 0; z-index: 1000;
+      background: var(--navy);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+    .nav-inner {
+      max-width: 1200px; margin: 0 auto; padding: 0 24px;
+      height: 68px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; }
+    .nav-logo svg { width: 32px; height: 32px; flex-shrink: 0; border-radius: 7px; overflow: hidden; }
+    .nav-logo-wordmark { font-size: 1.125rem; font-weight: 700; letter-spacing: -0.02em; color: var(--white); }
+    .nav-links { display: flex; align-items: center; gap: 32px; list-style: none; }
+    .nav-links a { color: rgba(255,255,255,0.75); font-size: 0.9375rem; font-weight: 500; letter-spacing: -0.01em; transition: color 0.2s ease; }
+    .nav-links a:hover { color: var(--white); }
+    .nav-links a.active { color: var(--white); }
+    .nav-cta { background: var(--gold); color: var(--white) !important; padding: 9px 20px; border-radius: 100px; font-weight: 600 !important; transition: background 0.2s ease !important; }
+    .nav-cta:hover { background: var(--gold-hover) !important; }
+    .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 4px; background: none; border: none; }
+    .hamburger span { display: block; width: 24px; height: 2px; background: rgba(255,255,255,0.8); border-radius: 2px; transition: all 0.25s ease; }
+    .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity: 0; }
+    .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+    .mobile-menu { display: none; flex-direction: column; background: var(--navy-mid); border-top: 1px solid rgba(255,255,255,0.06); padding: 8px 0 16px; }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a { padding: 13px 24px; color: rgba(255,255,255,0.8); font-size: 1rem; font-weight: 500; }
+    .mobile-menu a.nav-cta { margin: 12px 24px 0; text-align: center; border-radius: 10px; }
+
+    /* BREADCRUMB */
+    .breadcrumb-bar {
+      background: var(--off-white);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+    }
+    .breadcrumb {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8125rem;
+      color: var(--secondary);
+    }
+    .breadcrumb a { color: var(--secondary); transition: color 0.15s ease; }
+    .breadcrumb a:hover { color: var(--gold); }
+    .breadcrumb-sep { color: var(--border); }
+    .breadcrumb-current { color: var(--dark); font-weight: 500; }
+
+    /* ARTICLE LAYOUT */
+    .article-outer {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 56px;
+      align-items: start;
+    }
+
+    /* ARTICLE CONTENT */
+    .article-header { margin-bottom: 40px; }
+
+    .article-tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--gold);
+      background: rgba(200,146,42,0.1);
+      border-radius: 100px;
+      padding: 4px 10px;
+      margin-bottom: 16px;
+    }
+
+    .article-header h1 {
+      font-size: clamp(1.75rem, 4vw, 2.625rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      color: var(--dark);
+      margin-bottom: 16px;
+    }
+
+    .article-meta {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      font-size: 0.875rem;
+      color: var(--secondary);
+    }
+
+    .article-meta-dot { color: var(--border); }
+
+    .article-body { max-width: 760px; }
+
+    .article-body p {
+      font-size: 1.0625rem;
+      color: #3a3a3c;
+      line-height: 1.8;
+      margin-bottom: 20px;
+    }
+
+    .article-body h2 {
+      font-size: clamp(1.25rem, 2.5vw, 1.625rem);
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      color: var(--dark);
+      margin: 44px 0 16px;
+      line-height: 1.25;
+    }
+
+    .article-body h3 {
+      font-size: 1.125rem;
+      font-weight: 600;
+      letter-spacing: -0.015em;
+      color: var(--dark);
+      margin: 28px 0 10px;
+      line-height: 1.3;
+    }
+
+    .article-body ul, .article-body ol {
+      margin: 0 0 20px 20px;
+    }
+
+    .article-body li {
+      font-size: 1.0625rem;
+      color: #3a3a3c;
+      line-height: 1.8;
+      margin-bottom: 6px;
+    }
+
+    .article-body strong { color: var(--dark); font-weight: 600; }
+
+    .callout-box {
+      background: rgba(200,146,42,0.07);
+      border-left: 3px solid var(--gold);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      padding: 20px 24px;
+      margin: 28px 0;
+    }
+
+    .callout-box p { margin-bottom: 0; color: var(--dark); }
+    .wound-callout { background: #fff8e6; border: 1.5px solid var(--gold); border-radius: 10px; padding: 18px 22px; margin-bottom: 28px; font-size: 1rem; line-height: 1.6; color: var(--dark); }
+    .wound-callout strong { color: #7a4800; }
+    .referral-box { background: var(--navy); border: 1.5px solid var(--gold); border-radius: 10px; padding: 18px 22px; margin: 28px 0; font-size: 0.9375rem; color: var(--white); line-height: 1.6; }
+    .referral-box strong { color: var(--gold); display: block; margin-bottom: 4px; font-size: 1rem; }
+
+    .quote-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 28px 0;
+      font-size: 0.9375rem;
+    }
+
+    .quote-table th {
+      text-align: left;
+      padding: 10px 14px;
+      background: var(--off-white);
+      font-weight: 600;
+      color: var(--dark);
+      border-bottom: 2px solid var(--border);
+      font-size: 0.875rem;
+    }
+
+    .quote-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      color: #3a3a3c;
+      vertical-align: top;
+    }
+
+    .quote-table tr:last-child td { border-bottom: none; }
+
+    .quote-table .total-row td {
+      font-weight: 700;
+      color: var(--dark);
+      border-top: 2px solid var(--border);
+      border-bottom: none;
+    }
+
+    /* SIDEBAR */
+    .article-sidebar { position: sticky; top: 88px; }
+
+    .sidebar-cta {
+      background: linear-gradient(140deg, var(--navy) 0%, #1a0f05 100%);
+      border-radius: var(--radius);
+      padding: 28px 24px;
+      margin-bottom: 24px;
+    }
+
+    .sidebar-cta h3 {
+      font-size: 1.0625rem;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+      color: var(--white);
+      margin-bottom: 10px;
+    }
+
+    .sidebar-cta p {
+      font-size: 0.9rem;
+      color: rgba(255,255,255,0.6);
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+
+    .sidebar-cta-btn {
+      display: block;
+      background: var(--gold);
+      color: var(--white);
+      text-align: center;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      padding: 12px 20px;
+      border-radius: 100px;
+      transition: background 0.2s ease;
+    }
+
+    .sidebar-cta-btn:hover { background: var(--gold-hover); }
+
+    .sidebar-related {
+      background: var(--off-white);
+      border-radius: var(--radius);
+      padding: 24px;
+    }
+
+    .sidebar-related h3 {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--secondary);
+      margin-bottom: 16px;
+    }
+
+    .related-link {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--dark);
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      transition: color 0.15s ease;
+      line-height: 1.4;
+    }
+
+    .related-link:last-child { border-bottom: none; padding-bottom: 0; }
+    .related-link:hover { color: var(--gold); }
+
+    /* RELATED ARTICLES ROW */
+    .related-row {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px 80px;
+    }
+
+    .related-row h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--dark);
+      margin-bottom: 24px;
+    }
+
+    .related-cards {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+
+    .related-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .related-card:hover {
+      border-color: rgba(200,146,42,0.35);
+      box-shadow: 0 6px 24px rgba(0,0,0,0.07);
+    }
+
+    .related-card-tag {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 8px;
+    }
+
+    .related-card h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+      color: var(--dark);
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+
+    .related-card p {
+      font-size: 0.875rem;
+      color: var(--secondary);
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+
+    .related-card-link {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--gold);
+    }
+
+    /* FOOTER */
+    footer { background: var(--navy); border-top: 1px solid rgba(255,255,255,0.06); padding: 48px 24px; text-align: center; }
+    .footer-logo { display: flex; flex-direction: column; align-items: center; gap: 12px; margin: 0 auto 28px; }
+    .footer-logo svg { width: 48px; height: 48px; border-radius: 11px; overflow: hidden; box-shadow: 0 4px 16px rgba(200,146,42,0.18), 0 1px 4px rgba(0,0,0,0.35); }
+    .footer-logo-wordmark { font-size: 1rem; font-weight: 700; letter-spacing: -0.015em; color: rgba(255,255,255,0.75); }
+    .footer-links { display: flex; gap: 28px; justify-content: center; flex-wrap: wrap; margin-bottom: 24px; }
+    .footer-links a { font-size: 0.9375rem; color: rgba(255,255,255,0.45); transition: color 0.2s ease; }
+    .footer-links a:hover { color: rgba(255,255,255,0.8); }
+    .footer-copy p { font-size: 0.875rem; color: rgba(255,255,255,0.3); }
+
+    /* RESPONSIVE */
+    @media (max-width: 900px) {
+      .article-outer { grid-template-columns: 1fr; gap: 40px; }
+      .article-sidebar { position: static; }
+      .related-cards { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 640px) {
+      .nav-links { display: none; }
+      .hamburger { display: flex; }
+      .article-outer { padding: 32px 20px 60px; }
+    }
+  </style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true">
+  <symbol id="aq-icon" viewBox="0 0 632 632">
+    <defs>
+      <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#1A1200"/><stop offset="100%" stop-color="#0A0800"/></linearGradient>
+      <linearGradient id="gv" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFE566"/><stop offset="40%" stop-color="#C8920A"/><stop offset="100%" stop-color="#7A4800"/></linearGradient>
+      <linearGradient id="gcb" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFE566"/><stop offset="100%" stop-color="#A06800"/></linearGradient>
+      <radialGradient id="grs" cx="38%" cy="35%" r="65%"><stop offset="0%" stop-color="#FFE566"/><stop offset="55%" stop-color="#C8920A"/><stop offset="100%" stop-color="#7A4800"/></radialGradient>
+    </defs>
+    <rect width="632" height="632" fill="url(#bg)" rx="126"/>
+    <polygon points="298.58,32.55 321.42,43.45 60.46,574.61 49.54,569.39" fill="url(#gv)" opacity="0.88"/>
+    <polygon points="298.58,43.45 321.42,32.55 570.46,569.39 559.54,574.61" fill="url(#gv)" opacity="0.88"/>
+    <rect x="203.0" y="251.0" width="213.9" height="22.0" fill="url(#gcb)" rx="8.8"/>
+    <circle cx="310" cy="262" r="20.2" fill="rgba(8,4,0,0.90)" stroke="#FFE135" stroke-width="3.7"/>
+    <circle cx="310" cy="262" r="5.5" fill="rgba(255,253,200,0.88)"/>
+  </symbol>
+</svg>
+
+<nav role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a href="../website.html" class="nav-logo" aria-label="AccuQuote home">
+      <svg width="32" height="32" viewBox="0 0 632 632" aria-hidden="true" focusable="false"><use href="#aq-icon"/></svg>
+      <span class="nav-logo-wordmark">AccuQuote</span>
+    </a>
+    <ul class="nav-links" role="list">
+      <li><a href="../how-it-works.html">How It Works</a></li>
+      <li><a href="../blog.html" class="active">Blog</a></li>
+      <li><a href="../demo.html">Try Demo</a></li>
+      <li><a href="../website.html#pricing" class="nav-cta">Start Free Trial</a></li>
+    </ul>
+    <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="mobile-menu" id="mobile-menu" role="menu">
+    <a href="../how-it-works.html" role="menuitem">How It Works</a>
+    <a href="../blog.html" role="menuitem">Blog</a>
+    <a href="../demo.html" role="menuitem">Try Demo</a>
+    <a href="../website.html#pricing" class="nav-cta" role="menuitem">Start Free Trial</a>
+  </div>
+</nav>
+
+<div class="breadcrumb-bar">
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="../website.html">Home</a>
+    <span class="breadcrumb-sep" aria-hidden="true">/</span>
+    <a href="../blog.html">Blog</a>
+    <span class="breadcrumb-sep" aria-hidden="true">/</span>
+    <span class="breadcrumb-current">Quoting Software for Electricians</span>
+  </nav>
+</div>
+
+<div class="article-outer">
+  <main>
+    <header class="article-header">
+      <span class="article-tag">Electricians</span>
+      <h1>Quoting Software for Electricians: How to Quote Any Job in 20 Minutes</h1>
+      <div class="article-meta">
+        <span>AccuQuote Team</span>
+        <span class="article-meta-dot" aria-hidden="true">&bull;</span>
+        <span>12 March 2025</span>
+        <span class="article-meta-dot" aria-hidden="true">&bull;</span>
+        <span>7 min read</span>
+      </div>
+    </header>
+
+    <div class="article-body">
+
+      <div class="wound-callout">
+        <strong>Copper is up 35% since 2020. Twin and earth, containment, accessories — all moved.</strong> If you're still quoting from memory or last year's spreadsheet, you're not just slow — you're losing margin on every job.
+      </div>
+
+      <p>Ask any electrician what they hate most about running their business and the answer is almost always the same: the quoting. Not the work itself — the endless time spent after a site visit, back at the kitchen table, trying to remember what you said you'd include, looking up cable prices, calculating how many back boxes you need for a 14-socket first fix, and then wondering if you've priced the labour right.</p>
+
+      <p>For most sole traders and small electrical firms, quoting takes between two and four hours per job. A busy sparks doing four or five surveys a week can easily spend a full working day every week just on quotes — time that isn't billable, isn't paid, and often doesn't even convert to a job.</p>
+
+      <p>AccuQuote was built with over 200 UK tradesmen — electricians included — who were all dealing with the same problem: materials moving while their quote templates stood still. This guide covers what makes electrical quoting genuinely hard, what good software needs to do, and how to quote faster without losing accuracy.</p>
+
+      <h2>Why Electricians Waste So Much Time Quoting</h2>
+
+      <p>The core problem with electrical quoting is the number of variables. A kitchen rewire isn't just "X days labour plus materials" — it's consumer unit type, ways in the board, circuit runs, cable type and length for each circuit, back boxes, faceplates, containment, accessories, test certificate, EIC, Part P notification and so on. Miss any one of them and you're either eating the cost or having an awkward conversation with the customer.</p>
+
+      <p>Most electricians handle this one of three ways, and none of them are great:</p>
+
+      <ul>
+        <li><strong>Spreadsheet templates</strong> — good if you built them yourself and remember to update them, but they're rigid and don't travel well to different job types.</li>
+        <li><strong>Rough mental arithmetic on-site, written up later</strong> — fast, but prone to forgetting things. How many metres of 2.5mm T&amp;E did you actually walk? What was the run to the outdoor socket?</li>
+        <li><strong>Quoting software designed for builders</strong> — clunky for electrical work, doesn't know the difference between a radial and a ring final, and almost certainly doesn't have CEF or Screwfix SKUs built in.</li>
+      </ul>
+
+      <p>The result is quotes that take too long and still aren't quite right. Either you've underpriced to be competitive and you're working for less than your day rate, or you've padded to be safe and you're losing jobs to someone who quoted more accurately.</p>
+
+      <h2>What Good Quoting Software for Electricians Actually Does</h2>
+
+      <p>The right quoting tool for an electrician needs to understand electrical work specifically. That means it needs to:</p>
+
+      <ul>
+        <li>Know the difference between consumer unit upgrades, rewires, partial rewires, EV charger installs, solar and battery installs, and smart home work — and build different bill of materials templates for each</li>
+        <li>Calculate cable runs from room dimensions, not just from you typing "some cable"</li>
+        <li>Include testing and certification costs as standard — EICR, EIC, Part P notification fees — because these are always forgotten and always come out of your margin</li>
+        <li>Pull real materials costs from Screwfix, CEF (City Electrical Factors), or Toolstation, not generic placeholder prices that don't reflect what you'll actually pay</li>
+        <li>Let you specify your day rate and automatically calculate labour by job type and scope</li>
+        <li>Output a clean, professional PDF that looks like it came from a proper business, not a Word document from 2008</li>
+      </ul>
+
+      <div class="callout-box">
+        <p><strong>The certification trap:</strong> A domestic EIC currently costs around £35–50 to register with your certification body. A Part P notification is £50–75 depending on your local authority. On a small job, that's a meaningful chunk of margin — and it's almost always forgotten when quoting quickly. Good software includes it automatically.</p>
+      </div>
+
+      <p>Beyond materials, the tool needs to handle the awkward in-betweens: what to charge when you find the existing installation is in worse shape than quoted, how to present options (standard vs. upgrade), and how to structure a quote so the customer can understand what they're paying for without it reading like a parts list from a technical manual.</p>
+
+      <h2>How AccuQuote Works for Electricians</h2>
+
+      <p>AccuQuote is an iPhone app designed specifically for UK tradespeople. Here's the workflow for a typical electrical survey:</p>
+
+      <ol>
+        <li><strong>Open the app on site.</strong> Before you leave, you scan each relevant room using the iPhone's LiDAR sensor. This takes 20–30 seconds per room and captures floor area and ceiling height.</li>
+        <li><strong>Describe the job in plain language.</strong> Tap the mic and say something like: "Full rewire, 3-bed semi, new 18-way Hager consumer unit, all circuits, 12 double sockets downstairs, 8 upstairs, smoke alarms to BS 5839, EV charger to garage." AccuQuote's AI parses this and builds a structured job scope.</li>
+        <li><strong>Review the itemised bill of materials.</strong> The app generates a line-by-line BOM: consumer unit (with Hager or Schneider SKU from CEF), 2.5mm T&amp;E (Prysmian, priced per 100m), 1mm T&amp;E for lighting circuits, 6mm SWA for the garage run, back boxes, faceplates, smoke alarm heads, cable clips, and so on. You can edit any line.</li>
+        <li><strong>Set your labour.</strong> Enter your day rate (e.g. £280/day) and the app estimates days based on job scope. You adjust if needed.</li>
+        <li><strong>Add certification costs.</strong> Part P, EIC, EICR if required — these appear as standard line items with current rates.</li>
+        <li><strong>Send the PDF.</strong> Hit send and a professionally formatted quote lands in the customer's email. It shows your business name, breakdown of materials and labour, total, VAT status, and a validity period.</li>
+      </ol>
+
+      <p>The whole process — from finishing the survey to the customer receiving the quote — typically takes 15 to 25 minutes, including travel time if you do it in the van.</p>
+
+      <h2>Real Example: 3-Bed Semi Full Rewire</h2>
+
+      <p>Here's a realistic quote breakdown for a full rewire on a three-bedroom semi-detached house in the Midlands. This is based on roughly 5 days' work for a sole trader with a mate in on day 2 and 3.</p>
+
+      <table class="quote-table">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Supplier / Spec</th>
+            <th>Qty</th>
+            <th>Unit Cost</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Hager 18-way dual RCD consumer unit</td><td>CEF / VML418DPRC</td><td>1</td><td>£148</td><td>£148</td></tr>
+          <tr><td>Prysmian 2.5mm T&amp;E 100m drum</td><td>Screwfix / CEF</td><td>3</td><td>£62</td><td>£186</td></tr>
+          <tr><td>Prysmian 1mm T&amp;E 100m drum</td><td>Screwfix</td><td>2</td><td>£38</td><td>£76</td></tr>
+          <tr><td>6mm T&amp;E 25m for cooker circuit</td><td>CEF</td><td>1</td><td>£24</td><td>£24</td></tr>
+          <tr><td>Double sockets (white, unswitched)</td><td>Schneider / Screwfix</td><td>22</td><td>£4.50</td><td>£99</td></tr>
+          <tr><td>Metal back boxes 35mm</td><td>Toolstation</td><td>22</td><td>£1.80</td><td>£40</td></tr>
+          <tr><td>Single socket outlets (utility)</td><td>Screwfix</td><td>6</td><td>£2.80</td><td>£17</td></tr>
+          <tr><td>Interlinked smoke alarms (mains) x4</td><td>Aico Ei650i</td><td>4</td><td>£32</td><td>£128</td></tr>
+          <tr><td>Heat alarm (kitchen)</td><td>Aico Ei603C</td><td>1</td><td>£28</td><td>£28</td></tr>
+          <tr><td>Cable clips, fixings, misc consumables</td><td>—</td><td>—</td><td>—</td><td>£55</td></tr>
+          <tr><td><strong>Materials subtotal</strong></td><td></td><td></td><td></td><td><strong>£801</strong></td></tr>
+          <tr><td>Labour — 5 days sole trader @ £280/day</td><td></td><td></td><td></td><td>£1,400</td></tr>
+          <tr><td>Labour — 2 days mate @ £200/day</td><td></td><td></td><td></td><td>£400</td></tr>
+          <tr><td>EIC (Electrical Installation Certificate)</td><td>NICEIC/NAPIT</td><td>1</td><td>£42</td><td>£42</td></tr>
+          <tr><td>Part P notification</td><td>Local authority</td><td>1</td><td>£65</td><td>£65</td></tr>
+        </tbody>
+        <tfoot>
+          <tr class="total-row"><td colspan="4"><strong>Total (ex. VAT)</strong></td><td><strong>£2,708</strong></td></tr>
+        </tfoot>
+      </table>
+
+      <p>This is the kind of breakdown that makes customers trust you. It's not just a single number — it shows you've thought through every aspect of the job and you know exactly what it involves. Customers who can see itemised quotes like this are significantly more likely to sign off without negotiating, because they can see where their money is going.</p>
+
+      <div class="callout-box">
+        <p><strong>Worth noting:</strong> The figures above are representative for a Midlands sole trader in 2025. Cable prices in particular move around — CEF and Screwfix both shift pricing regularly. AccuQuote pulls current prices so your quote reflects what you'll actually pay at the merchant this week, not what it cost six months ago.</p>
+      </div>
+
+      <h2>What to Look for in Quoting Software for Electricians</h2>
+
+      <p>There's no shortage of quoting tools on the market, but most are built for general tradespeople or construction — not specifically for electrical work. Here's what separates a good tool from a generic one:</p>
+
+      <ul>
+        <li><strong>Trade-specific templates.</strong> Does it understand the difference between a EICR and a full rewire? Does it know to include testing fees?</li>
+        <li><strong>Live materials pricing.</strong> Generic quoting tools use placeholder prices. You need current prices from the suppliers you actually use — Screwfix, CEF, Toolstation, Rexel.</li>
+        <li><strong>Labour calculation by scope.</strong> Not just "enter your day rate" — but a sensible estimate of days based on job type and scope, which you can adjust.</li>
+        <li><strong>Speed on site.</strong> If you can't complete the quote before you leave the customer's house, it's not going to happen until 10pm. The tool needs to work on a phone, quickly, in real-world conditions.</li>
+        <li><strong>Professional output.</strong> The PDF the customer receives is a reflection of your business. It needs to look professional — branded, structured, clear.</li>
+        <li><strong>VAT handling.</strong> If you're VAT registered, this needs to be automatic. If you're not, it shouldn't appear.</li>
+      </ul>
+
+      <p>AccuQuote was built from the ground up for UK trades — starting with electricians, plumbers, builders, plasterers and painters. It runs on iPhone, uses LiDAR where it helps, and is designed to be completed on-site before you drive away.</p>
+
+      <h2>Try AccuQuote Free</h2>
+
+      <p>Every new account comes with 3 free quote tokens — no card required, no salesperson, no Calendly. Use them to quote your next three jobs and see how long it actually takes. Most electricians are done in under 20 minutes. Built by 200+ UK tradesmen, available now.</p>
+
+      <div class="referral-box">
+        <strong>Bring 3 mates → 3 months free.</strong> Every tradesman you refer gets the app. You get 3 months on us. No catch.
+      </div>
+
+      <p><a href="../website.html#pricing" style="color: var(--gold); font-weight: 600; text-decoration: underline;">Download free — no card, no call &rarr;</a></p>
+
+    </div>
+  </main>
+
+  <!-- SIDEBAR -->
+  <aside class="article-sidebar">
+    <div class="sidebar-cta">
+      <h3>Quote your next job in 20 minutes</h3>
+      <p>3 free quotes. No card, no call, no salesperson. Built with 200+ UK tradesmen.</p>
+      <a href="../website.html#pricing" class="sidebar-cta-btn">Download free &rarr;</a>
+    </div>
+
+    <div class="sidebar-related">
+      <h3>Related Articles</h3>
+      <a href="./quoting-software-for-plumbers.html" class="related-link">Quoting Software for Plumbers</a>
+      <a href="./quoting-software-for-builders.html" class="related-link">Quoting Software for Builders</a>
+      <a href="./quoting-software-for-plasterers.html" class="related-link">Quoting Software for Plasterers</a>
+      <a href="./quoting-software-for-painters.html" class="related-link">Quoting Software for Painters</a>
+      <a href="./how-to-win-more-quotes.html" class="related-link">How to Win More Quotes</a>
+      <a href="./quote-faster-on-site.html" class="related-link">Quote Faster On Site</a>
+    </div>
+  </aside>
+</div>
+
+<!-- RELATED ARTICLES -->
+<section class="related-row">
+  <h2>More articles for tradespeople</h2>
+  <div class="related-cards">
+    <a href="./quoting-software-for-plumbers.html" class="related-card">
+      <p class="related-card-tag">Plumbers</p>
+      <h3>Quoting Software for Plumbers</h3>
+      <p>Stop losing jobs on price. A plumber's guide to accurate quoting — from bathroom suites to boiler swaps.</p>
+      <span class="related-card-link">Read more &rarr;</span>
+    </a>
+    <a href="./quoting-software-for-builders.html" class="related-card">
+      <p class="related-card-tag">Builders</p>
+      <h3>Quoting Software for Builders</h3>
+      <p>The complete guide to quoting building work in the UK — extensions, refurbs, conversions and more.</p>
+      <span class="related-card-link">Read more &rarr;</span>
+    </a>
+  </div>
+</section>
+
+<footer role="contentinfo">
+  <div class="footer-logo" role="img" aria-label="AccuQuote">
+    <svg width="48" height="48" viewBox="0 0 632 632" aria-hidden="true" focusable="false"><use href="#aq-icon"/></svg>
+    <span class="footer-logo-wordmark">AccuQuote</span>
+  </div>
+  <nav class="footer-links" aria-label="Footer navigation">
+    <a href="../how-it-works.html">How It Works</a>
+    <a href="../blog.html">Blog</a>
+    <a href="../privacy-policy.html">Privacy Policy</a>
+    <a href="mailto:hello@accuquote.app">Contact</a>
+  </nav>
+  <div class="footer-copy">
+    <p>&copy; 2025 AccuQuote. All rights reserved.</p>
+  </div>
+</footer>
+
+<script>
+  const hamburger = document.getElementById('hamburger');
+  const mobileMenu = document.getElementById('mobile-menu');
+  hamburger.addEventListener('click', function () {
+    const isOpen = mobileMenu.classList.toggle('open');
+    hamburger.classList.toggle('open', isOpen);
+    hamburger.setAttribute('aria-expanded', isOpen.toString());
+  });
+  mobileMenu.querySelectorAll('a').forEach(function (link) {
+    link.addEventListener('click', function () {
+      mobileMenu.classList.remove('open');
+      hamburger.classList.remove('open');
+      hamburger.setAttribute('aria-expanded', 'false');
+    });
+  });
+</script>
+
+</body>
+</html>

@@ -14,6 +14,8 @@
 		A109 /* PhotogrammetryAssetManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A011 /* PhotogrammetryAssetManager.swift */; };
 		A110 /* TradesmanProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A012 /* TradesmanProfile.swift */; };
 		A111 /* APIKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = A013 /* APIKeys.swift */; };
+		A116 /* GuestScanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A016 /* GuestScanView.swift */; };
+		A117 /* QuoteHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = A017 /* QuoteHistory.swift */; };
 		A112 /* accuquote-logo.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = A014 /* accuquote-logo.jpeg */; };
 		A113 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A015 /* Assets.xcassets */; };
 		A105 /* RoomPlan.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A005 /* RoomPlan.framework */; };
@@ -35,6 +37,8 @@
 		A011 /* PhotogrammetryAssetManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotogrammetryAssetManager.swift; sourceTree = "<group>"; };
 		A012 /* TradesmanProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TradesmanProfile.swift; sourceTree = "<group>"; };
 		A013 /* APIKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIKeys.swift; sourceTree = "<group>"; };
+		A016 /* GuestScanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuestScanView.swift; sourceTree = "<group>"; };
+		A017 /* QuoteHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuoteHistory.swift; sourceTree = "<group>"; };
 		A014 /* accuquote-logo.jpeg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "accuquote-logo.jpeg"; sourceTree = "<group>"; };
 		A015 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A010 /* AccuQuoteScan.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AccuQuoteScan.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -74,6 +78,8 @@
 				A011 /* PhotogrammetryAssetManager.swift */,
 				A012 /* TradesmanProfile.swift */,
 				A013 /* APIKeys.swift */,
+				A016 /* GuestScanView.swift */,
+				A017 /* QuoteHistory.swift */,
 				A014 /* accuquote-logo.jpeg */,
 				A015 /* Assets.xcassets */,
 				A006 /* Info.plist */,
@@ -177,6 +183,8 @@
 				A109 /* PhotogrammetryAssetManager.swift in Sources */,
 				A110 /* TradesmanProfile.swift in Sources */,
 				A111 /* APIKeys.swift in Sources */,
+				A116 /* GuestScanView.swift in Sources */,
+				A117 /* QuoteHistory.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

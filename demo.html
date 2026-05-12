@@ -1,0 +1,1856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Try the Demo — AccuQuote</title>
+<style>
+  :root {
+    --gold: #C8922A;
+    --gold-hover: #b07e22;
+    --dark: #1D1D1F;
+    --secondary: #6E6E73;
+    --navy: #0A0A1A;
+    --white: #FFFFFF;
+    --off-white: #F5F5F7;
+    --border: #E0E0E5;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+    background: var(--off-white);
+    color: var(--dark);
+    line-height: 1.5;
+  }
+
+  /* ── NAV ── */
+  nav {
+    background: var(--navy);
+    padding: 0 24px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+
+  .nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--white);
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: -0.3px;
+  }
+
+  .nav-logo svg { width: 36px; height: 36px; border-radius: 8px; }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    list-style: none;
+  }
+
+  .nav-links a {
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 7px 14px;
+    border-radius: 8px;
+    transition: background 0.18s, color 0.18s;
+  }
+
+  .nav-links .link-plain { color: rgba(255,255,255,0.72); }
+  .nav-links .link-plain:hover { color: var(--white); background: rgba(255,255,255,0.08); }
+
+  .nav-links .link-outline {
+    color: var(--white);
+    border: 1.5px solid rgba(255,255,255,0.55);
+  }
+  .nav-links .link-outline:hover { border-color: var(--white); background: rgba(255,255,255,0.08); }
+
+  .nav-links .link-gold {
+    background: var(--gold);
+    color: var(--white);
+    font-weight: 600;
+  }
+  .nav-links .link-gold:hover { background: var(--gold-hover); }
+
+  .nav-hamburger {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    cursor: pointer;
+    padding: 6px;
+    border: none;
+    background: none;
+  }
+  .nav-hamburger span {
+    display: block;
+    width: 22px;
+    height: 2px;
+    background: rgba(255,255,255,0.8);
+    border-radius: 2px;
+    transition: 0.2s;
+  }
+
+  .nav-mobile {
+    display: none;
+    position: absolute;
+    top: 64px;
+    left: 0; right: 0;
+    background: var(--navy);
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding: 12px 16px 16px;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .nav-mobile.open { display: flex; }
+  .nav-mobile a {
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 500;
+    padding: 10px 14px;
+    border-radius: 8px;
+    color: rgba(255,255,255,0.8);
+    transition: background 0.15s;
+  }
+  .nav-mobile a:hover { background: rgba(255,255,255,0.08); color: var(--white); }
+  .nav-mobile a.mob-gold { background: var(--gold); color: var(--white); margin-top: 4px; text-align: center; }
+  .nav-mobile a.mob-gold:hover { background: var(--gold-hover); }
+
+  /* ── HERO ── */
+  .hero {
+    background: var(--navy);
+    color: var(--white);
+    padding: 64px 24px 72px;
+    text-align: center;
+  }
+
+  .hero h1 {
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 700;
+    letter-spacing: -1.2px;
+    line-height: 1.1;
+    margin-bottom: 16px;
+  }
+
+  .hero h1 span { color: var(--gold); }
+
+  .hero p {
+    font-size: clamp(16px, 2vw, 19px);
+    color: rgba(255,255,255,0.72);
+    max-width: 580px;
+    margin: 0 auto 20px;
+    line-height: 1.55;
+  }
+
+  .hero-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(200,146,42,0.15);
+    border: 1px solid rgba(200,146,42,0.35);
+    border-radius: 40px;
+    padding: 8px 18px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.75);
+  }
+
+  .hero-note::before {
+    content: '';
+    display: inline-block;
+    width: 7px; height: 7px;
+    background: var(--gold);
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ── MAIN CONTENT ── */
+  .demo-wrap {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 40px 20px 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  /* ── STEP CARD ── */
+  .step-card {
+    background: var(--white);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 20px 24px 18px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .step-num {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--gold);
+    color: var(--white);
+    font-size: 14px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .step-header h2 {
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+
+  .step-body { padding: 24px; }
+
+  /* ── ROOM TYPE PILLS ── */
+  .pill-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+
+  .pill {
+    padding: 8px 16px;
+    border-radius: 40px;
+    border: 1.5px solid var(--border);
+    background: var(--white);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--dark);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .pill:hover { border-color: var(--gold); color: var(--gold); }
+  .pill.active {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: var(--white);
+  }
+
+  /* ── DIMENSION INPUTS ── */
+  .dim-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+
+  .input-group { display: flex; flex-direction: column; gap: 6px; }
+  .input-group label { font-size: 12px; font-weight: 600; color: var(--secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .input-with-unit {
+    display: flex;
+    align-items: center;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: border-color 0.15s;
+  }
+  .input-with-unit:focus-within { border-color: var(--gold); }
+
+  .input-with-unit input {
+    flex: 1;
+    border: none;
+    outline: none;
+    padding: 11px 12px;
+    font-size: 16px;
+    font-weight: 500;
+    background: var(--white);
+    color: var(--dark);
+    width: 100%;
+    min-width: 0;
+  }
+
+  .input-with-unit input::placeholder { color: #c0c0c5; }
+
+  .unit-badge {
+    padding: 0 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--secondary);
+    background: var(--off-white);
+    border-left: 1.5px solid var(--border);
+    height: 100%;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+  }
+
+  /* ── AREA DISPLAY ── */
+  .area-display {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .area-chip {
+    background: var(--off-white);
+    border-radius: 10px;
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+  }
+
+  .area-chip .label { font-size: 11px; font-weight: 600; color: var(--secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .area-chip .value { font-size: 22px; font-weight: 700; color: var(--dark); letter-spacing: -0.5px; }
+  .area-chip .value span { font-size: 13px; font-weight: 500; color: var(--secondary); }
+
+  /* ── ROOM SVG DIAGRAM ── */
+  .room-diagram-wrap {
+    background: var(--off-white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 140px;
+  }
+
+  #room-svg { display: block; }
+
+  /* ── TEXTAREA ── */
+  textarea {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: 15px;
+    font-family: inherit;
+    color: var(--dark);
+    background: var(--white);
+    resize: vertical;
+    min-height: 110px;
+    outline: none;
+    transition: border-color 0.15s;
+    line-height: 1.5;
+  }
+  textarea:focus { border-color: var(--gold); }
+  textarea::placeholder { color: #b0b0b5; }
+
+  /* ── PRESET BUTTONS ── */
+  .presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .preset-btn {
+    padding: 7px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    background: var(--white);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--dark);
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .preset-btn::before { content: '↗'; font-size: 11px; color: var(--gold); }
+  .preset-btn:hover { border-color: var(--gold); color: var(--gold); background: rgba(200,146,42,0.04); }
+
+  /* ── TRADE / RATE ROW ── */
+  .trade-rate-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 20px;
+    align-items: start;
+    margin-bottom: 20px;
+  }
+
+  .day-rate-input {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .day-rate-input label { font-size: 12px; font-weight: 600; color: var(--secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .vat-toggle-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
+  }
+
+  .vat-toggle-wrap .vtlabel { font-size: 12px; font-weight: 600; color: var(--secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 48px; height: 26px;
+    cursor: pointer;
+  }
+  .toggle-switch input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider {
+    position: absolute;
+    inset: 0;
+    background: #D1D1D6;
+    border-radius: 26px;
+    transition: 0.2s;
+  }
+  .toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: white;
+    left: 3px; top: 3px;
+    transition: 0.2s;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  }
+  .toggle-switch input:checked + .toggle-slider { background: var(--gold); }
+  .toggle-switch input:checked + .toggle-slider::before { transform: translateX(22px); }
+
+  /* ── GENERATE BUTTON ── */
+  .generate-wrap { text-align: center; }
+
+  #generate-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--gold);
+    color: var(--white);
+    border: none;
+    border-radius: 14px;
+    padding: 18px 44px;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    cursor: pointer;
+    transition: all 0.18s;
+    box-shadow: 0 4px 20px rgba(200,146,42,0.4);
+  }
+  #generate-btn:hover { background: var(--gold-hover); transform: translateY(-1px); box-shadow: 0 6px 28px rgba(200,146,42,0.45); }
+  #generate-btn:active { transform: translateY(0); }
+  #generate-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
+
+  /* ── LOADING ── */
+  #loading-card {
+    background: var(--white);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    padding: 40px 32px;
+    text-align: center;
+    display: none;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  #loading-card.visible { display: block; }
+
+  .loading-spinner {
+    width: 48px; height: 48px;
+    border: 3px solid var(--border);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 20px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-step {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--dark);
+    min-height: 24px;
+  }
+
+  .loading-steps-track {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 280px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .ltrack-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: #b0b0b5;
+    transition: color 0.3s;
+  }
+  .ltrack-item.done { color: var(--dark); }
+  .ltrack-item.active { color: var(--gold); font-weight: 600; }
+
+  .ltrack-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+    flex-shrink: 0;
+    transition: background 0.3s;
+  }
+  .ltrack-item.done .ltrack-dot { background: #34C759; }
+  .ltrack-item.active .ltrack-dot { background: var(--gold); animation: pulse 0.9s ease-in-out infinite; }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.5); opacity: 0.7; }
+  }
+
+  /* ── QUOTE RESULT ── */
+  #quote-result {
+    display: none;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+  #quote-result.visible { display: block; }
+  #quote-result.shown { opacity: 1; transform: translateY(0); }
+
+  .quote-card {
+    background: var(--white);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+
+  .quote-header {
+    background: var(--navy);
+    color: var(--white);
+    padding: 28px 28px 24px;
+  }
+
+  .quote-header-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .quote-from { font-size: 12px; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; }
+  .quote-biz { font-size: 17px; font-weight: 700; }
+
+  .quote-ref { font-size: 12px; color: rgba(255,255,255,0.5); text-align: right; }
+  .quote-ref strong { display: block; color: rgba(255,255,255,0.85); font-size: 13px; }
+
+  .quote-total-block { text-align: center; padding-top: 4px; }
+  .quote-total-label { font-size: 12px; color: rgba(255,255,255,0.55); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .quote-total-amount { font-size: clamp(40px, 7vw, 60px); font-weight: 800; letter-spacing: -2px; color: var(--white); }
+  .quote-total-amount .currency { font-size: 0.5em; font-weight: 600; vertical-align: top; margin-top: 10px; display: inline-block; }
+  .quote-total-incvat { font-size: 13px; color: rgba(255,255,255,0.5); margin-top: 4px; }
+
+  .quote-body { padding: 24px 28px; }
+
+  .quote-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+
+  .qs-item {
+    background: var(--off-white);
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .qs-label { font-size: 11px; font-weight: 600; color: var(--secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+  .qs-value { font-size: 18px; font-weight: 700; color: var(--dark); letter-spacing: -0.5px; }
+
+  .quote-job-info {
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .quote-job-info h3 { font-size: 13px; font-weight: 700; color: var(--secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+  .quote-job-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+  .quote-tag {
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .quote-tag.room { background: rgba(10,10,26,0.07); color: var(--dark); }
+  .quote-tag.area { background: rgba(200,146,42,0.1); color: #7a4c00; }
+
+  /* ── BREAKDOWN TOGGLE ── */
+  .breakdown-toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: none;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--dark);
+    cursor: pointer;
+    transition: border-color 0.15s;
+    margin-bottom: 0;
+  }
+  .breakdown-toggle:hover { border-color: var(--gold); color: var(--gold); }
+  .breakdown-toggle .chevron { transition: transform 0.2s; font-style: normal; }
+  .breakdown-toggle.open .chevron { transform: rotate(180deg); }
+
+  .breakdown-body {
+    display: none;
+    margin-top: 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .breakdown-body.open { display: block; }
+
+  .bd-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .bd-table th {
+    background: var(--off-white);
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border);
+  }
+  .bd-table th:last-child,
+  .bd-table td:last-child { text-align: right; }
+  .bd-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--dark);
+    vertical-align: top;
+  }
+  .bd-table tr:last-child td { border-bottom: none; }
+  .bd-table td:first-child { font-weight: 500; }
+  .bd-table .section-row td {
+    background: rgba(200,146,42,0.06);
+    font-weight: 700;
+    font-size: 12px;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 8px 14px;
+  }
+
+  /* ── QUOTE FOOTER ACTIONS ── */
+  .quote-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  .btn-primary {
+    display: block;
+    width: 100%;
+    text-align: center;
+    background: var(--gold);
+    color: var(--white);
+    border: none;
+    border-radius: 12px;
+    padding: 15px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.15s, transform 0.1s;
+    letter-spacing: -0.2px;
+  }
+  .btn-primary:hover { background: var(--gold-hover); }
+
+  .btn-secondary {
+    display: block;
+    width: 100%;
+    text-align: center;
+    background: var(--off-white);
+    color: var(--dark);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: border-color 0.15s;
+    letter-spacing: -0.2px;
+  }
+  .btn-secondary:hover { border-color: var(--secondary); }
+
+  .pdf-msg {
+    display: none;
+    text-align: center;
+    font-size: 13px;
+    color: var(--secondary);
+    background: var(--off-white);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-top: -4px;
+  }
+
+  /* ── "WHAT REAL APP ADDS" ── */
+  .real-app-section {
+    background: var(--white);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    padding: 32px 28px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+
+  .real-app-section h2 {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    margin-bottom: 6px;
+  }
+
+  .real-app-section .subtext {
+    font-size: 14px;
+    color: var(--secondary);
+    margin-bottom: 24px;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+
+  .feature-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    background: var(--off-white);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+
+  .feature-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    background: var(--gold);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .feature-text .ft { font-size: 13px; font-weight: 700; color: var(--dark); margin-bottom: 2px; }
+  .feature-text .fd { font-size: 12px; color: var(--secondary); line-height: 1.4; }
+
+  .cta-banner {
+    background: var(--navy);
+    border-radius: 14px;
+    padding: 24px 20px;
+    text-align: center;
+    color: var(--white);
+  }
+
+  .cta-banner h3 { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 6px; }
+  .cta-banner p { font-size: 14px; color: rgba(255,255,255,0.65); margin-bottom: 18px; }
+
+  .cta-banner a {
+    display: inline-block;
+    background: var(--gold);
+    color: var(--white);
+    text-decoration: none;
+    border-radius: 12px;
+    padding: 14px 32px;
+    font-size: 16px;
+    font-weight: 700;
+    transition: background 0.15s;
+    letter-spacing: -0.2px;
+  }
+  .cta-banner a:hover { background: var(--gold-hover); }
+
+  /* ── DEMO REFERRAL BANNER ── */
+  .demo-referral-banner {
+    background: linear-gradient(135deg, #0a1628 0%, #152242 100%);
+    border: 1.5px solid var(--gold);
+    border-radius: 14px;
+    padding: 24px 20px;
+    margin-top: 20px;
+  }
+  .drb-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    text-align: center;
+  }
+  .drb-text strong {
+    display: block;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--gold);
+    letter-spacing: -0.3px;
+    margin-bottom: 6px;
+  }
+  .drb-text span {
+    font-size: 13px;
+    color: rgba(255,255,255,0.65);
+    line-height: 1.5;
+  }
+  .drb-cta {
+    display: inline-block;
+    background: var(--gold);
+    color: var(--white);
+    text-decoration: none;
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-size: 15px;
+    font-weight: 700;
+    transition: background 0.15s;
+    letter-spacing: -0.2px;
+    white-space: nowrap;
+  }
+  .drb-cta:hover { background: var(--gold-hover); }
+
+  /* ── DEMO PEER QUOTE ── */
+  .demo-peer-quote {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  .dpq-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1a2a4a, #2a4070);
+    border: 2px solid rgba(200,146,42,0.5);
+    color: var(--gold);
+    font-size: 0.65rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .dpq-text {
+    font-size: 13px;
+    line-height: 1.6;
+    color: rgba(255,255,255,0.7);
+    margin: 0;
+    font-style: italic;
+  }
+
+  .dpq-text cite {
+    display: block;
+    margin-top: 8px;
+    font-style: normal;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gold);
+    opacity: 0.85;
+  }
+
+  /* ── DEMO TRUST STRIP ── */
+  .demo-trust-strip {
+    background: #f8f4ef;
+    border-bottom: 1px solid #e8e0d4;
+    padding: 12px 20px;
+  }
+
+  .demo-trust-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .demo-trust-avatars {
+    display: flex;
+    align-items: center;
+  }
+
+  .dta {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #1a2a4a;
+    border: 2px solid #fff;
+    color: var(--gold);
+    font-size: 0.58rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: -5px;
+    flex-shrink: 0;
+  }
+  .dta:first-child { margin-left: 0; }
+
+  .demo-trust-text {
+    font-size: 12px;
+    color: #666;
+  }
+  .demo-trust-text strong { color: #222; font-weight: 600; }
+
+  .demo-trust-divider {
+    width: 1px;
+    height: 16px;
+    background: #d0c8be;
+    flex-shrink: 0;
+  }
+
+  .demo-trust-safe {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: #555;
+    font-weight: 500;
+  }
+
+  /* ── GENERATE TRUST ── */
+  .generate-trust {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+
+  .generate-trust-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: #666;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 640px) {
+    nav { padding: 0 16px; }
+    .nav-links { display: none; }
+    .nav-hamburger { display: flex; }
+
+    .hero { padding: 48px 20px 56px; }
+
+    .demo-wrap { padding: 24px 16px 60px; gap: 16px; }
+    .step-header { padding: 16px 18px 14px; }
+    .step-body { padding: 18px; }
+
+    .dim-row { grid-template-columns: 1fr 1fr; }
+    .dim-row .input-group:last-child { grid-column: 1 / -1; }
+
+    .area-display { grid-template-columns: 1fr 1fr; }
+
+    .trade-rate-row { grid-template-columns: 1fr; }
+    .vat-toggle-wrap { flex-direction: row; align-items: center; justify-content: space-between; }
+
+    .quote-header { padding: 20px 20px 18px; }
+    .quote-header-top { flex-direction: column; gap: 12px; }
+    .quote-ref { text-align: left; }
+
+    .quote-body { padding: 18px 20px; }
+
+    .features-grid { grid-template-columns: 1fr; }
+
+    .real-app-section { padding: 24px 20px; }
+
+    #generate-btn { font-size: 16px; padding: 16px 32px; }
+  }
+
+  @media (max-width: 380px) {
+    .dim-row { grid-template-columns: 1fr; }
+    .dim-row .input-group:last-child { grid-column: auto; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Hidden SVG sprite -->
+<svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true">
+  <symbol id="aq-icon" viewBox="0 0 632 632">
+    <defs>
+      <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#1A1200"/><stop offset="100%" stop-color="#0A0800"/></linearGradient>
+      <linearGradient id="gv" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFE566"/><stop offset="40%" stop-color="#C8920A"/><stop offset="100%" stop-color="#7A4800"/></linearGradient>
+      <linearGradient id="gcb" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFE566"/><stop offset="100%" stop-color="#A06800"/></linearGradient>
+      <radialGradient id="grs" cx="38%" cy="35%" r="65%"><stop offset="0%" stop-color="#FFE566"/><stop offset="55%" stop-color="#C8920A"/><stop offset="100%" stop-color="#7A4800"/></radialGradient>
+    </defs>
+    <rect width="632" height="632" fill="url(#bg)" rx="126"/>
+    <polygon points="298.58,32.55 321.42,43.45 60.46,574.61 49.54,569.39" fill="url(#gv)" opacity="0.88"/>
+    <polygon points="298.58,43.45 321.42,32.55 570.46,569.39 559.54,574.61" fill="url(#gv)" opacity="0.88"/>
+    <rect x="203.0" y="251.0" width="213.9" height="22.0" fill="url(#gcb)" rx="8.8"/>
+    <circle cx="310" cy="262" r="20.2" fill="rgba(8,4,0,0.90)" stroke="#FFE135" stroke-width="3.7"/>
+    <circle cx="310" cy="262" r="5.5" fill="rgba(255,253,200,0.88)"/>
+  </symbol>
+</svg>
+
+<!-- NAV -->
+<nav>
+  <a href="./website.html" class="nav-logo" aria-label="AccuQuote home">
+    <svg aria-hidden="true"><use href="#aq-icon"/></svg>
+    AccuQuote
+  </a>
+  <ul class="nav-links">
+    <li><a href="./how-it-works.html" class="link-plain">How It Works</a></li>
+    <li><a href="./blog.html" class="link-plain">Blog</a></li>
+    <li><a href="./demo.html" class="link-outline">Try Demo</a></li>
+    <li><a href="./website.html#pricing" class="link-gold">Start Free Trial</a></li>
+  </ul>
+  <button class="nav-hamburger" aria-label="Open menu" id="hamburger">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<div class="nav-mobile" id="mobile-nav">
+  <a href="./how-it-works.html">How It Works</a>
+  <a href="./blog.html">Blog</a>
+  <a href="./demo.html">Try Demo</a>
+  <a href="./website.html#pricing" class="mob-gold">Start Free Trial</a>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <h1>Materials are up 38%.<br><span>Is your quote keeping up?</span></h1>
+  <p>Put in a real job. See exactly how AccuQuote builds the quote — with current material costs, your labour rate, and a breakdown you can send in two taps.</p>
+  <div class="hero-note">No sign-up. No salesperson. No Calendly. Just try it — built by 200+ UK tradesmen.</div>
+</section>
+
+<!-- DEMO TRUST STRIP -->
+<div class="demo-trust-strip">
+  <div class="demo-trust-inner">
+    <div class="demo-trust-avatars" aria-hidden="true">
+      <div class="dta">DH</div>
+      <div class="dta">MK</div>
+      <div class="dta">SR</div>
+      <div class="dta">JC</div>
+      <div class="dta">TP</div>
+    </div>
+    <span class="demo-trust-text"><strong>200+ UK tradesmen</strong> helped shape this tool — electricians, plasterers, builders, plumbers</span>
+    <span class="demo-trust-divider" aria-hidden="true"></span>
+    <span class="demo-trust-safe">
+      <svg viewBox="0 0 16 16" fill="none" width="14" height="14" aria-hidden="true"><path d="M8 2 L13 4.5 V8 C13 11.5 8 14 8 14 C8 14 3 11.5 3 8 V4.5 Z" stroke="#22c55e" stroke-width="1.5" fill="rgba(34,197,94,0.1)" stroke-linejoin="round"/><path d="M5.5 8 L7 9.5 L10.5 6" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      No account. No data stored. No card.
+    </span>
+  </div>
+</div>
+
+<!-- DEMO WRAP -->
+<main class="demo-wrap">
+
+  <!-- STEP 1: ROOM DIMENSIONS -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-num">1</div>
+      <h2>Room Dimensions</h2>
+    </div>
+    <div class="step-body">
+
+      <div class="pill-group" id="room-type-group" role="group" aria-label="Room type">
+        <button class="pill active" data-room="Living Room">Living Room</button>
+        <button class="pill" data-room="Kitchen">Kitchen</button>
+        <button class="pill" data-room="Bathroom">Bathroom</button>
+        <button class="pill" data-room="Bedroom">Bedroom</button>
+        <button class="pill" data-room="Other">Other</button>
+      </div>
+
+      <div class="dim-row">
+        <div class="input-group">
+          <label for="dim-length">Length</label>
+          <div class="input-with-unit">
+            <input type="number" id="dim-length" placeholder="5.0" min="0.5" max="50" step="0.1" inputmode="decimal">
+            <span class="unit-badge">m</span>
+          </div>
+        </div>
+        <div class="input-group">
+          <label for="dim-width">Width</label>
+          <div class="input-with-unit">
+            <input type="number" id="dim-width" placeholder="4.0" min="0.5" max="50" step="0.1" inputmode="decimal">
+            <span class="unit-badge">m</span>
+          </div>
+        </div>
+        <div class="input-group">
+          <label for="dim-height">Height</label>
+          <div class="input-with-unit">
+            <input type="number" id="dim-height" placeholder="2.4" min="1.5" max="10" step="0.1" inputmode="decimal">
+            <span class="unit-badge">m</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="area-display">
+        <div class="area-chip">
+          <div class="label">Floor Area</div>
+          <div class="value" id="floor-area">— <span>m²</span></div>
+        </div>
+        <div class="area-chip">
+          <div class="label">Wall Area</div>
+          <div class="value" id="wall-area">— <span>m²</span></div>
+        </div>
+      </div>
+
+      <div class="room-diagram-wrap">
+        <svg id="room-svg" width="260" height="130" viewBox="0 0 260 130" aria-label="Room diagram top-down view">
+          <!-- drawn by JS -->
+        </svg>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- STEP 2: JOB DESCRIPTION -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-num">2</div>
+      <h2>Job Description</h2>
+    </div>
+    <div class="step-body">
+      <textarea id="job-desc" placeholder="Describe the job — e.g. full rewire, re-plaster walls and ceiling, fit new bathroom suite…" rows="4"></textarea>
+      <div class="presets">
+        <button class="preset-btn" data-preset="rewire">Full rewire</button>
+        <button class="preset-btn" data-preset="replaster">Re-plaster room</button>
+        <button class="preset-btn" data-preset="bathroom">New bathroom suite</button>
+        <button class="preset-btn" data-preset="redecorate">Redecorate walls &amp; ceiling</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3: TRADE & RATE -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-num">3</div>
+      <h2>Your Trade &amp; Rate</h2>
+    </div>
+    <div class="step-body">
+
+      <div class="pill-group" id="trade-group" role="group" aria-label="Trade type" style="margin-bottom:20px">
+        <button class="pill active" data-trade="Electrician" data-rate="320">Electrician</button>
+        <button class="pill" data-trade="Plasterer" data-rate="280">Plasterer</button>
+        <button class="pill" data-trade="Builder" data-rate="260">Builder</button>
+        <button class="pill" data-trade="Plumber" data-rate="300">Plumber</button>
+        <button class="pill" data-trade="Painter" data-rate="220">Painter</button>
+      </div>
+
+      <div class="trade-rate-row">
+        <div class="day-rate-input">
+          <label for="day-rate">Day Rate</label>
+          <div class="input-with-unit">
+            <span class="unit-badge" style="border-left:none;border-right:1.5px solid var(--border)">£</span>
+            <input type="number" id="day-rate" value="320" min="50" max="2000" step="10" inputmode="numeric">
+          </div>
+        </div>
+        <div class="vat-toggle-wrap">
+          <div class="vtlabel">VAT Registered?</div>
+          <label class="toggle-switch" aria-label="VAT registered">
+            <input type="checkbox" id="vat-toggle">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- GENERATE BUTTON -->
+  <div class="generate-wrap">
+    <button id="generate-btn">Generate Quote &rarr;</button>
+    <div class="generate-trust">
+      <span class="generate-trust-item">
+        <svg viewBox="0 0 16 16" fill="none" width="14" height="14" aria-hidden="true"><path d="M3 8 L6 11 L13 5" stroke="#22c55e" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        No sign-up needed
+      </span>
+      <span class="generate-trust-item">
+        <svg viewBox="0 0 16 16" fill="none" width="14" height="14" aria-hidden="true"><rect x="3" y="7" width="10" height="7" rx="1.5" stroke="#22c55e" stroke-width="1.5"/><path d="M5 7 V5.5 a3 3 0 0 1 6 0 V7" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
+        Nothing stored
+      </span>
+      <span class="generate-trust-item">
+        <svg viewBox="0 0 16 16" fill="none" width="14" height="14" aria-hidden="true"><circle cx="8" cy="8" r="6" stroke="#22c55e" stroke-width="1.5"/><path d="M8 5 V8 L10 9.5" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Ready in ~15 seconds
+      </span>
+    </div>
+  </div>
+
+  <!-- LOADING CARD -->
+  <div id="loading-card" role="status" aria-live="polite">
+    <div class="loading-spinner"></div>
+    <div class="loading-step" id="loading-step-text">Reading room dimensions…</div>
+    <div class="loading-steps-track">
+      <div class="ltrack-item active" data-step="0"><div class="ltrack-dot"></div> Reading room dimensions</div>
+      <div class="ltrack-item" data-step="1"><div class="ltrack-dot"></div> Scoping the job</div>
+      <div class="ltrack-item" data-step="2"><div class="ltrack-dot"></div> Calculating materials</div>
+      <div class="ltrack-item" data-step="3"><div class="ltrack-dot"></div> Writing your quote</div>
+    </div>
+  </div>
+
+  <!-- QUOTE RESULT -->
+  <div id="quote-result">
+    <div class="quote-card">
+      <div class="quote-header">
+        <div class="quote-header-top">
+          <div>
+            <div class="quote-from">Quote from</div>
+            <div class="quote-biz" id="q-biz-name">Your Business Name</div>
+          </div>
+          <div class="quote-ref">
+            <span>Ref</span>
+            <strong id="q-ref">AQ-0001</strong>
+            <div id="q-date" style="margin-top:2px"></div>
+          </div>
+        </div>
+        <div class="quote-total-block">
+          <div class="quote-total-label">Total Quote Value</div>
+          <div class="quote-total-amount"><span class="currency">£</span><span id="q-grand-total">0</span></div>
+          <div class="quote-total-incvat" id="q-vat-note"></div>
+        </div>
+      </div>
+      <div class="quote-body">
+
+        <div class="quote-job-info">
+          <h3>Job Details</h3>
+          <div class="quote-job-tags" id="q-job-tags"></div>
+        </div>
+
+        <div class="quote-summary" id="q-summary"></div>
+
+        <button class="breakdown-toggle" id="breakdown-toggle" aria-expanded="false">
+          View full breakdown
+          <i class="chevron">&#x2303;</i>
+        </button>
+        <div class="breakdown-body" id="breakdown-body">
+          <table class="bd-table" id="bd-table">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Qty</th>
+                <th>Unit</th>
+                <th>Unit Price</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody id="bd-tbody"></tbody>
+          </table>
+        </div>
+
+        <div class="quote-actions">
+          <button class="btn-secondary" id="pdf-btn">&#8595; Download as PDF</button>
+          <div class="pdf-msg" id="pdf-msg">Download PDF — available in the full app.</div>
+          <a href="./website.html#pricing" class="btn-primary">Get the app to save &amp; share this quote &rarr;</a>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- WHAT THE REAL APP ADDS -->
+  <div class="real-app-section" id="real-app-section" style="display:none">
+    <h2>The demo shows the structure.<br>The real app protects your margin.</h2>
+    <p class="subtext">Timber up 41%. Copper up 35%. Plasterboard up 28%. The demo uses fixed prices — AccuQuote uses live supplier prices so your quotes never fall behind the market.</p>
+    <div class="features-grid">
+      <div class="feature-item">
+        <div class="feature-icon">🏷️</div>
+        <div class="feature-text">
+          <div class="ft">Live supplier prices</div>
+          <div class="fd">Pulls real prices from Screwfix, Toolstation, CEF &amp; more — updated weekly</div>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">📐</div>
+        <div class="feature-text">
+          <div class="ft">LiDAR room scanning</div>
+          <div class="fd">Point your phone at the room — dimensions auto-fill in seconds, no tape measure needed</div>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">📄</div>
+        <div class="feature-text">
+          <div class="ft">Branded PDF quotes</div>
+          <div class="fd">Your business name, logo and contact details on every quote</div>
+        </div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">💬</div>
+        <div class="feature-text">
+          <div class="ft">WhatsApp &amp; email sharing</div>
+          <div class="fd">Send your quote to a customer in two taps — looks professional, lands fast</div>
+        </div>
+      </div>
+    </div>
+    <div class="demo-peer-quote">
+      <div class="dpq-avatar" aria-hidden="true">DH</div>
+      <blockquote class="dpq-text">
+        "I nearly didn't try it — thought it'd be another app that wastes your time. First job I used it on, I had a quote ready before I got to my van. Sent it on WhatsApp. Customer said yes the same afternoon."
+        <cite>— Dave Howarth, Electrician · Manchester · Beta tester</cite>
+      </blockquote>
+    </div>
+
+    <div class="demo-referral-banner">
+      <div class="drb-inner">
+        <div class="drb-text">
+          <strong>Bring 3 mates → 3 months free</strong>
+          <span>Every tradesman you refer gets the app. You get 3 months free. No catch.</span>
+        </div>
+        <a href="./website.html#pricing" class="drb-cta">Download free — no card, no call &rarr;</a>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  // ── STATE ──
+  var state = {
+    roomType: 'Living Room',
+    length: null,
+    width: null,
+    height: null,
+    jobDesc: '',
+    trade: 'Electrician',
+    dayRate: 320,
+    vatRegistered: false
+  };
+
+  // ── NAV HAMBURGER ──
+  var hamburger = document.getElementById('hamburger');
+  var mobileNav = document.getElementById('mobile-nav');
+  hamburger.addEventListener('click', function () {
+    mobileNav.classList.toggle('open');
+  });
+
+  // ── ROOM TYPE PILLS ──
+  document.getElementById('room-type-group').addEventListener('click', function (e) {
+    var btn = e.target.closest('.pill');
+    if (!btn) return;
+    this.querySelectorAll('.pill').forEach(function (p) { p.classList.remove('active'); });
+    btn.classList.add('active');
+    state.roomType = btn.dataset.room;
+  });
+
+  // ── DIMENSION INPUTS ──
+  function getDim(id) {
+    var v = parseFloat(document.getElementById(id).value);
+    return isNaN(v) || v <= 0 ? null : v;
+  }
+
+  function updateAreas() {
+    var l = getDim('dim-length');
+    var w = getDim('dim-width');
+    var h = getDim('dim-height');
+    state.length = l;
+    state.width = w;
+    state.height = h;
+
+    var fa = document.getElementById('floor-area');
+    var wa = document.getElementById('wall-area');
+
+    if (l && w) {
+      fa.innerHTML = (l * w).toFixed(1) + ' <span>m²</span>';
+    } else {
+      fa.innerHTML = '— <span>m²</span>';
+    }
+    if (l && w && h) {
+      wa.innerHTML = (2 * (l + w) * h).toFixed(1) + ' <span>m²</span>';
+    } else {
+      wa.innerHTML = '— <span>m²</span>';
+    }
+    drawRoomSVG(l, w);
+  }
+
+  ['dim-length', 'dim-width', 'dim-height'].forEach(function (id) {
+    document.getElementById(id).addEventListener('input', updateAreas);
+  });
+
+  // ── ROOM SVG ──
+  function drawRoomSVG(l, w) {
+    var svg = document.getElementById('room-svg');
+    var svgW = 260, svgH = 130;
+    var pad = 28;
+
+    if (!l || !w) {
+      svg.innerHTML = '<text x="130" y="68" text-anchor="middle" fill="#c0c0c5" font-size="13" font-family="inherit">Enter length &amp; width</text>';
+      return;
+    }
+
+    var aspect = l / w;
+    var maxW = svgW - pad * 2;
+    var maxH = svgH - pad * 2;
+
+    var rW, rH;
+    if (aspect >= 1) {
+      rW = maxW;
+      rH = Math.min(maxH, maxW / aspect);
+    } else {
+      rH = maxH;
+      rW = Math.min(maxW, maxH * aspect);
+    }
+
+    var rx = (svgW - rW) / 2;
+    var ry = (svgH - rH) / 2;
+
+    var dimLineOffset = 12;
+    var arrowSize = 5;
+
+    function arrow(x1, y1, x2, y2) {
+      var dx = x2 - x1, dy = y2 - y1;
+      var len = Math.sqrt(dx * dx + dy * dy);
+      var ux = dx / len, uy = dy / len;
+      var px = -uy, py = ux;
+      return 'M' + (x1 + px * arrowSize + ux * arrowSize) + ',' + (y1 + py * arrowSize + uy * arrowSize)
+        + ' L' + x1 + ',' + y1
+        + ' L' + (x1 - px * arrowSize + ux * arrowSize) + ',' + (y1 - py * arrowSize + uy * arrowSize);
+    }
+
+    var html = '';
+
+    // Floor fill
+    html += '<rect x="' + rx + '" y="' + ry + '" width="' + rW + '" height="' + rH + '" fill="#F8F3EC" rx="4"/>';
+    // Floor hatch (subtle)
+    html += '<defs><pattern id="hatch" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">'
+      + '<line x1="0" y1="0" x2="0" y2="12" stroke="#e8dfd0" stroke-width="1"/>'
+      + '</pattern></defs>';
+    html += '<rect x="' + rx + '" y="' + ry + '" width="' + rW + '" height="' + rH + '" fill="url(#hatch)"/>';
+    // Border
+    html += '<rect x="' + rx + '" y="' + ry + '" width="' + rW + '" height="' + rH + '" fill="none" stroke="#C8922A" stroke-width="2" rx="4"/>';
+
+    // Width dimension (bottom)
+    var dimY = ry + rH + dimLineOffset;
+    html += '<line x1="' + rx + '" y1="' + dimY + '" x2="' + (rx + rW) + '" y2="' + dimY + '" stroke="#888" stroke-width="1.2"/>';
+    html += '<path d="' + arrow(rx, dimY, rx + 6, dimY) + '" stroke="#888" stroke-width="1.2" fill="none"/>';
+    html += '<path d="' + arrow(rx + rW, dimY, rx + rW - 6, dimY) + '" stroke="#888" stroke-width="1.2" fill="none"/>';
+    html += '<text x="' + (rx + rW / 2) + '" y="' + (dimY + 9) + '" text-anchor="middle" fill="#555" font-size="10" font-family="inherit">' + l.toFixed(1) + 'm</text>';
+
+    // Height dimension (right)
+    var dimX = rx + rW + dimLineOffset;
+    html += '<line x1="' + dimX + '" y1="' + ry + '" x2="' + dimX + '" y2="' + (ry + rH) + '" stroke="#888" stroke-width="1.2"/>';
+    html += '<path d="' + arrow(dimX, ry, dimX, ry + 6) + '" stroke="#888" stroke-width="1.2" fill="none"/>';
+    html += '<path d="' + arrow(dimX, ry + rH, dimX, ry + rH - 6) + '" stroke="#888" stroke-width="1.2" fill="none"/>';
+    html += '<text x="' + (dimX + 9) + '" y="' + (ry + rH / 2 + 4) + '" text-anchor="middle" fill="#555" font-size="10" font-family="inherit">' + w.toFixed(1) + 'm</text>';
+
+    // Centre label
+    html += '<text x="' + (rx + rW / 2) + '" y="' + (ry + rH / 2 + 4) + '" text-anchor="middle" fill="rgba(200,146,42,0.6)" font-size="11" font-weight="600" font-family="inherit">' + state.roomType + '</text>';
+
+    svg.innerHTML = html;
+  }
+
+  // ── PRESET JOB DESCRIPTIONS ──
+  var presets = {
+    rewire: 'Full electrical rewire of the room. Strip out all existing wiring back to the consumer unit. Install new twin and earth cable throughout, new back boxes, sockets and switches. Supply and fit new LED downlights. Test and certify all works to BS 7671 18th Edition. Make good any plasterwork disturbed.',
+    replaster: 'Full re-skim of all walls and ceiling. Hack off existing plaster to bare brick/block. Apply bonding coat to all surfaces, allow to dry, then apply two coats of finishing plaster. Sand down and prepare surfaces ready for decoration. Remove all waste and leave site clean.',
+    bathroom: 'Supply and fit a complete new bathroom suite. Remove and dispose of existing suite. Install new close-coupled WC, pedestal basin, and P-shaped shower bath with screen. Re-tile walls to full height using supplied tiles. Install new chrome towel rail, mirror, and extractor fan. Commission and test all plumbing. Silicone all joints.',
+    redecorate: 'Full redecoration of walls and ceiling. Fill all cracks, holes and imperfections. Sand surfaces smooth. Apply one coat of mist coat (PVA/water) to seal, followed by two coats of premium emulsion to ceiling and two coats to all walls in colour of customer\'s choice. Paint all woodwork, skirting boards, and door architraves in eggshell finish. Protect all floors and furnishings throughout.'
+  };
+
+  document.querySelector('.presets').addEventListener('click', function (e) {
+    var btn = e.target.closest('.preset-btn');
+    if (!btn) return;
+    var key = btn.dataset.preset;
+    if (presets[key]) {
+      document.getElementById('job-desc').value = presets[key];
+      state.jobDesc = presets[key];
+    }
+  });
+
+  document.getElementById('job-desc').addEventListener('input', function () {
+    state.jobDesc = this.value;
+  });
+
+  // ── TRADE PILLS ──
+  document.getElementById('trade-group').addEventListener('click', function (e) {
+    var btn = e.target.closest('.pill');
+    if (!btn) return;
+    this.querySelectorAll('.pill').forEach(function (p) { p.classList.remove('active'); });
+    btn.classList.add('active');
+    state.trade = btn.dataset.trade;
+    state.dayRate = parseInt(btn.dataset.rate, 10);
+    document.getElementById('day-rate').value = state.dayRate;
+  });
+
+  document.getElementById('day-rate').addEventListener('input', function () {
+    var v = parseInt(this.value, 10);
+    state.dayRate = isNaN(v) ? 0 : v;
+  });
+
+  document.getElementById('vat-toggle').addEventListener('change', function () {
+    state.vatRegistered = this.checked;
+  });
+
+  // ── QUOTE GENERATION LOGIC ──
+
+  var jobProfiles = {
+    rewire: {
+      keywords: ['rewire', 'wiring', 'electrical', 'socket', 'consumer unit', 'fuse board', 'fuse box'],
+      baseDays: 4.5,
+      dayMultiplier: function (floorArea) { return 1 + floorArea / 120; },
+      getMaterials: function (floorArea, wallArea) {
+        var sockets = Math.max(4, Math.round(floorArea / 5));
+        return [
+          { desc: '2.5mm² Twin & Earth Cable (100m drum)', qty: Math.ceil(floorArea / 35), unit: 'roll', price: 48.99 },
+          { desc: '1.5mm² Twin & Earth Cable (100m drum)', qty: Math.ceil(floorArea / 60), unit: 'roll', price: 38.50 },
+          { desc: 'Double Socket Outlet (white)', qty: sockets, unit: 'no.', price: 7.49 },
+          { desc: 'Pattress Back Box 35mm', qty: sockets, unit: 'no.', price: 1.89 },
+          { desc: 'Single Switch 1-Gang (white)', qty: Math.ceil(sockets / 3), unit: 'no.', price: 3.99 },
+          { desc: 'LED Recessed Downlight 7W', qty: Math.ceil(floorArea / 2.5), unit: 'no.', price: 12.50 },
+          { desc: 'Junction Box 30A 3-Terminal', qty: Math.ceil(floorArea / 10), unit: 'no.', price: 2.20 },
+          { desc: 'Electrical Tape 19mm (pack)', qty: 2, unit: 'pack', price: 3.75 },
+          { desc: 'Cable Clips (pack of 100)', qty: 3, unit: 'pack', price: 2.15 },
+          { desc: 'Consumer Unit MCB (32A)', qty: Math.ceil(floorArea / 30), unit: 'no.', price: 14.99 }
+        ];
+      }
+    },
+    replaster: {
+      keywords: ['plaster', 're-plaster', 'replaster', 'skim', 'render', 'bonding'],
+      baseDays: 2.5,
+      dayMultiplier: function (wallArea) { return 1 + wallArea / 80; },
+      getMaterials: function (floorArea, wallArea) {
+        var bags25kg = Math.ceil((wallArea * 1.2) / 8);
+        return [
+          { desc: 'Thistle Multi-Finish Plaster 25kg', qty: bags25kg, unit: 'bag', price: 14.50 },
+          { desc: 'Thistle Bonding Coat 25kg', qty: Math.ceil(bags25kg / 2), unit: 'bag', price: 13.20 },
+          { desc: 'Plasterers' Scrim Tape 48mm', qty: 2, unit: 'roll', price: 3.99 },
+          { desc: 'PVA Bond 5L', qty: Math.ceil(wallArea / 60), unit: 'tub', price: 11.50 },
+          { desc: 'Plasterers' Sand 25kg', qty: Math.ceil(bags25kg / 3), unit: 'bag', price: 4.20 },
+          { desc: 'Angle Bead 2.4m', qty: Math.ceil(wallArea / 12), unit: 'length', price: 2.49 },
+          { desc: 'Corner Bead 2.4m', qty: 4, unit: 'length', price: 3.10 },
+          { desc: 'Fine Surface Filler 3kg', qty: 2, unit: 'tub', price: 8.99 }
+        ];
+      }
+    },
+    bathroom: {
+      keywords: ['bathroom', 'bath', 'shower', 'toilet', 'wc', 'basin', 'suite', 'plumb'],
+      baseDays: 5,
+      dayMultiplier: function (floorArea) { return 1 + floorArea / 60; },
+      getMaterials: function (floorArea, wallArea) {
+        var tileArea = Math.min(wallArea, floorArea * 4);
+        return [
+          { desc: 'Close-Coupled WC Suite with Soft-Close Seat', qty: 1, unit: 'no.', price: 149.00 },
+          { desc: 'Pedestal Basin 560mm with Taps', qty: 1, unit: 'no.', price: 129.00 },
+          { desc: 'P-Shaped Shower Bath 1700×800mm', qty: 1, unit: 'no.', price: 289.00 },
+          { desc: 'Bath Screen 1400×900mm', qty: 1, unit: 'no.', price: 89.00 },
+          { desc: 'Thermostatic Shower Valve', qty: 1, unit: 'no.', price: 119.00 },
+          { desc: 'Ceramic Wall Tile 300×600mm', qty: Math.ceil(tileArea * 1.1), unit: 'm²', price: 18.50 },
+          { desc: 'Tile Adhesive 20kg', qty: Math.ceil(tileArea / 8), unit: 'bag', price: 13.99 },
+          { desc: 'Tile Grout 3kg', qty: Math.ceil(tileArea / 15), unit: 'tub', price: 9.99 },
+          { desc: 'Chrome Towel Rail Electric', qty: 1, unit: 'no.', price: 79.00 },
+          { desc: 'Isolation Valve 15mm (pack of 2)', qty: 3, unit: 'pack', price: 12.50 },
+          { desc: 'Compression Waste 40mm 1.5m', qty: 2, unit: 'length', price: 8.99 },
+          { desc: 'Silicone Sealant White (290ml)', qty: 3, unit: 'tube', price: 6.49 }
+        ];
+      }
+    },
+    redecorate: {
+      keywords: ['decorate', 'redecorate', 'paint', 'painting', 'emulsion', 'wallpaper', 'walls', 'ceiling'],
+      baseDays: 1.5,
+      dayMultiplier: function (wallArea) { return 1 + wallArea / 50; },
+      getMaterials: function (floorArea, wallArea) {
+        var litres = Math.ceil((wallArea + floorArea) / 10);
+        return [
+          { desc: 'Dulux Easycare Premium Emulsion 5L (walls)', qty: Math.ceil(litres * 0.6 / 5) * 2 + ' coats', unit: 'tin', price: 32.99 },
+          { desc: 'Dulux Pure Brilliant White Ceiling 5L', qty: Math.ceil(floorArea * 1.1 / 10) + ' tins', unit: 'tin', price: 24.50 },
+          { desc: 'Fine Surface Filler 1.5kg', qty: 2, unit: 'tub', price: 6.99 },
+          { desc: 'PVA Mist Coat 5L', qty: Math.ceil(wallArea / 40), unit: 'tub', price: 11.50 },
+          { desc: 'Sandpaper Mixed Grit Pack', qty: 2, unit: 'pack', price: 5.99 },
+          { desc: 'Masking Tape 25mm (2-pack)', qty: 3, unit: 'pack', price: 4.49 },
+          { desc: 'Roller Sleeve 9" Medium Pile', qty: 4, unit: 'no.', price: 3.99 },
+          { desc: 'Paint Brush Set (1", 2", 3")', qty: 1, unit: 'set', price: 12.99 },
+          { desc: 'Sugar Soap 500ml', qty: 1, unit: 'bottle', price: 3.99 },
+          { desc: 'Dust Sheet 3.6×2.7m', qty: 2, unit: 'no.', price: 8.50 }
+        ];
+      }
+    }
+  };
+
+  function detectJobType(desc) {
+    var lower = desc.toLowerCase();
+    var best = null;
+    var bestScore = 0;
+    for (var key in jobProfiles) {
+      var score = 0;
+      jobProfiles[key].keywords.forEach(function (kw) {
+        if (lower.indexOf(kw) !== -1) score++;
+      });
+      if (score > bestScore) { bestScore = score; best = key; }
+    }
+    // Fallback based on trade
+    if (!best || bestScore === 0) {
+      var tradeMap = { Electrician: 'rewire', Plasterer: 'replaster', Plumber: 'bathroom', Painter: 'redecorate', Builder: 'redecorate' };
+      best = tradeMap[state.trade] || 'redecorate';
+    }
+    return best;
+  }
+
+  function fmt(n) {
+    return n.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function fmtInt(n) {
+    return Math.round(n).toLocaleString('en-GB');
+  }
+
+  function generateQuote() {
+    var l = state.length || 5.0;
+    var w = state.width || 4.0;
+    var h = state.height || 2.4;
+    var floorArea = l * w;
+    var wallArea = 2 * (l + w) * h;
+    var desc = state.jobDesc || '';
+    var jobType = detectJobType(desc);
+    var profile = jobProfiles[jobType];
+
+    // Days calculation
+    var multiplier = profile.dayMultiplier(floorArea > wallArea ? floorArea : wallArea);
+    var days = +(profile.baseDays * multiplier).toFixed(1);
+    var labourNet = days * state.dayRate;
+
+    // Materials
+    var rawMats = profile.getMaterials(floorArea, wallArea);
+    var matsForCalc = rawMats.map(function (item) {
+      var qty = typeof item.qty === 'string' ? parseFloat(item.qty) : item.qty;
+      if (isNaN(qty)) qty = 1;
+      return { desc: item.desc, qty: qty, unit: item.unit, price: item.price, total: +(qty * item.price).toFixed(2) };
+    });
+
+    var matsNet = matsForCalc.reduce(function (s, i) { return s + i.total; }, 0);
+    var subTotal = labourNet + matsNet;
+    var vatAmount = state.vatRegistered ? subTotal * 0.20 : 0;
+    var grandTotal = subTotal + vatAmount;
+
+    return {
+      jobType: jobType,
+      days: days,
+      labourNet: labourNet,
+      matsNet: matsNet,
+      vatAmount: vatAmount,
+      grandTotal: grandTotal,
+      materials: matsForCalc,
+      floorArea: floorArea,
+      wallArea: wallArea
+    };
+  }
+
+  // ── RENDER QUOTE ──
+  function renderQuote(data) {
+    // Ref number
+    document.getElementById('q-ref').textContent = 'AQ-' + String(Math.floor(1000 + Math.random() * 9000));
+    var now = new Date();
+    document.getElementById('q-date').textContent = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
+    // Business name based on trade
+    var bizNames = {
+      Electrician: 'Ashford Electrical Services',
+      Plasterer: 'Premier Plastering Ltd',
+      Plumber: 'Meridian Plumbing & Heating',
+      Painter: 'Prestige Decorating Co.',
+      Builder: 'Keystone Building Ltd'
+    };
+    document.getElementById('q-biz-name').textContent = bizNames[state.trade] || 'Your Business Name';
+
+    // Grand total
+    document.getElementById('q-grand-total').textContent = fmtInt(data.grandTotal);
+    document.getElementById('q-vat-note').textContent = state.vatRegistered
+      ? 'Inc. VAT (£' + fmt(data.vatAmount) + ')'
+      : 'No VAT — not VAT registered';
+
+    // Job tags
+    var tagsEl = document.getElementById('q-job-tags');
+    tagsEl.innerHTML = '';
+    var tags = [
+      { text: state.roomType, cls: 'room' },
+      { text: data.floorArea.toFixed(1) + ' m² floor', cls: 'area' },
+      { text: data.wallArea.toFixed(1) + ' m² walls', cls: 'area' },
+      { text: data.days + ' days labour', cls: 'room' }
+    ];
+    tags.forEach(function (t) {
+      var span = document.createElement('span');
+      span.className = 'quote-tag ' + t.cls;
+      span.textContent = t.text;
+      tagsEl.appendChild(span);
+    });
+
+    // Summary row
+    var summaryEl = document.getElementById('q-summary');
+    summaryEl.innerHTML = '';
+    var summaryItems = [
+      { label: 'Labour', value: '£' + fmtInt(data.labourNet) },
+      { label: 'Materials', value: '£' + fmtInt(data.matsNet) }
+    ];
+    if (state.vatRegistered) summaryItems.push({ label: 'VAT (20%)', value: '£' + fmtInt(data.vatAmount) });
+    summaryItems.push({ label: 'Total', value: '£' + fmtInt(data.grandTotal) });
+    summaryItems.forEach(function (s) {
+      var div = document.createElement('div');
+      div.className = 'qs-item';
+      div.innerHTML = '<div class="qs-label">' + s.label + '</div><div class="qs-value">' + s.value + '</div>';
+      summaryEl.appendChild(div);
+    });
+
+    // Breakdown table
+    var tbody = document.getElementById('bd-tbody');
+    tbody.innerHTML = '';
+
+    function sectionRow(label) {
+      var tr = document.createElement('tr');
+      tr.className = 'section-row';
+      tr.innerHTML = '<td colspan="5">' + label + '</td>';
+      tbody.appendChild(tr);
+    }
+
+    function dataRow(desc, qty, unit, price, total) {
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td>' + desc + '</td><td>' + qty + '</td><td>' + unit + '</td><td>£' + fmt(price) + '</td><td>£' + fmt(total) + '</td>';
+      tbody.appendChild(tr);
+    }
+
+    sectionRow('Labour');
+    dataRow('Skilled labour — ' + state.trade + ' (' + data.days + ' days)', data.days, 'days', state.dayRate, data.labourNet);
+
+    sectionRow('Materials');
+    data.materials.forEach(function (m) {
+      dataRow(m.desc, m.qty, m.unit, m.price, m.total);
+    });
+
+    if (state.vatRegistered) {
+      sectionRow('VAT');
+      dataRow('Value Added Tax @ 20%', '—', '—', '—', data.vatAmount);
+    }
+
+    // Grand total row
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td colspan="4" style="font-weight:700;font-size:14px">Grand Total</td><td style="font-weight:800;font-size:15px;color:var(--dark)">£' + fmt(data.grandTotal) + '</td>';
+    tbody.appendChild(tr);
+  }
+
+  // ── LOADING SEQUENCE ──
+  var loadingSteps = [
+    'Reading room dimensions…',
+    'Scoping the job…',
+    'Calculating materials…',
+    'Writing your quote…'
+  ];
+
+  function runLoading(callback) {
+    var card = document.getElementById('loading-card');
+    card.classList.add('visible');
+    var items = card.querySelectorAll('.ltrack-item');
+    var stepText = document.getElementById('loading-step-text');
+    var current = 0;
+
+    items.forEach(function (it) {
+      it.classList.remove('active', 'done');
+    });
+    items[0].classList.add('active');
+    stepText.textContent = loadingSteps[0];
+
+    var interval = setInterval(function () {
+      items[current].classList.remove('active');
+      items[current].classList.add('done');
+      current++;
+      if (current < items.length) {
+        items[current].classList.add('active');
+        stepText.textContent = loadingSteps[current];
+      }
+      if (current >= items.length) {
+        clearInterval(interval);
+        setTimeout(function () {
+          card.classList.remove('visible');
+          callback();
+        }, 400);
+      }
+    }, 700);
+  }
+
+  // ── GENERATE BUTTON ──
+  document.getElementById('generate-btn').addEventListener('click', function () {
+    // Scroll to loading
+    var self = this;
+    self.disabled = true;
+
+    // Reset quote
+    var qr = document.getElementById('quote-result');
+    qr.classList.remove('visible', 'shown');
+    document.getElementById('real-app-section').style.display = 'none';
+    document.getElementById('breakdown-body').classList.remove('open');
+    document.getElementById('breakdown-toggle').classList.remove('open');
+    document.getElementById('breakdown-toggle').setAttribute('aria-expanded', 'false');
+
+    // Scroll to loading area
+    setTimeout(function () {
+      document.getElementById('loading-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 50);
+
+    runLoading(function () {
+      var data = generateQuote();
+      renderQuote(data);
+
+      qr.classList.add('visible');
+      setTimeout(function () {
+        qr.classList.add('shown');
+        qr.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 30);
+
+      document.getElementById('real-app-section').style.display = 'block';
+      self.disabled = false;
+    });
+  });
+
+  // ── BREAKDOWN TOGGLE ──
+  document.getElementById('breakdown-toggle').addEventListener('click', function () {
+    var body = document.getElementById('breakdown-body');
+    var isOpen = body.classList.contains('open');
+    body.classList.toggle('open', !isOpen);
+    this.classList.toggle('open', !isOpen);
+    this.setAttribute('aria-expanded', String(!isOpen));
+    this.querySelector('.chevron').innerHTML = isOpen ? '&#x2303;' : '&#x2304;';
+  });
+
+  // ── PDF BUTTON ──
+  document.getElementById('pdf-btn').addEventListener('click', function () {
+    var msg = document.getElementById('pdf-msg');
+    msg.style.display = 'block';
+    setTimeout(function () { msg.style.display = 'none'; }, 4000);
+  });
+
+  // ── INITIAL DIAGRAM ──
+  drawRoomSVG(null, null);
+
+})();
+</script>
+</body>
+</html>

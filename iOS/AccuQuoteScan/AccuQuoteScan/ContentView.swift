@@ -1,23 +1,27 @@
 import SwiftUI
 
-// Minimum personalisation % before scanning is unlocked
-let profileUnlockThreshold = 70
+// Threshold below which we prompt for quick-setup before generating a quote
+let profileQuickSetupThreshold = 50
 
 struct ContentView: View {
     @StateObject private var coordinator = ScanCoordinator()
     @EnvironmentObject var questionEngine: QuestionEngine
 
-    var profileReady: Bool { questionEngine.personalisation >= profileUnlockThreshold }
+    // Guest mode: bypasses profile, goes straight to scan-only flow
+    @State private var showGuest = false
 
     var body: some View {
         ZStack {
-            if !profileReady {
-                ProfileGateView()
-                    .transition(.opacity)
+            if showGuest {
+                // ── Guest / free tool flow ──────────────────────────────
+                GuestLandingView(showGuest: $showGuest)
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
+
             } else {
+                // ── Full app flow (no gate) ──────────────────────────────
                 switch coordinator.state {
                 case .ready:
-                    ReadyView(coordinator: coordinator)
+                    ReadyView(coordinator: coordinator, onGuestTap: { showGuest = true })
                 case .scanning:
                     ScanningView(coordinator: coordinator)
                 case .processing:
@@ -29,7 +33,7 @@ struct ContentView: View {
                 }
             }
         }
-        .animation(.easeInOut(duration: 0.4), value: profileReady)
+        .animation(.easeInOut(duration: 0.4), value: showGuest)
         .preferredColorScheme(.light)
     }
 }
