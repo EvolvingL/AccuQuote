@@ -487,6 +487,20 @@
       max-width: 280px;
     }
 
+    .hero__calc-nudge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      margin-top: 14px;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: rgba(200,146,42,0.8);
+      border-bottom: 1px dashed rgba(200,146,42,0.35);
+      padding-bottom: 1px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .hero__calc-nudge:hover { color: var(--gold); border-color: rgba(200,146,42,0.7); }
+
     /* =====================
        HOW IT WORKS
     ===================== */
@@ -1422,6 +1436,7 @@
       <div class="nav__links" role="list">
         <a href="./how-it-works.html" class="nav__link" role="listitem">How It Works</a>
         <a href="./blog.html" class="nav__link" role="listitem">Blog</a>
+        <a href="./quote-cost-calculator.html" class="nav__link" role="listitem">Cost Calculator</a>
         <a href="./demo.html" class="nav__demo" role="listitem">Try Demo</a>
         <a href="#pricing" class="nav__cta" role="listitem">Start Free Trial</a>
       </div>
@@ -1437,6 +1452,7 @@
   <nav class="nav__mobile" id="mobile-menu" aria-label="Mobile navigation">
     <a href="./how-it-works.html">How It Works</a>
     <a href="./blog.html">Blog</a>
+    <a href="./quote-cost-calculator.html">Cost Calculator</a>
     <a href="./demo.html">Try Demo</a>
     <a href="#pricing" class="mobile-cta">Start Free Trial</a>
   </nav>
@@ -1464,6 +1480,11 @@
         <a href="#pricing" class="btn btn-gold">Try Free — No Card, No Call</a>
         <a href="./demo.html" class="btn btn-outline">See it in action first</a>
       </div>
+
+      <a href="./quote-cost-calculator.html" class="hero__calc-nudge">
+        <svg viewBox="0 0 18 18" fill="none" width="16" height="16" aria-hidden="true"><rect x="2" y="2" width="14" height="14" rx="3" stroke="currentColor" stroke-width="1.5"/><path d="M6 6h2M10 6h2M6 9h2M10 9h2M6 12h2M10 12h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Or find out what quoting is costing you first &rarr;
+      </a>
 
       <div class="hero__social-proof" aria-label="Tradesmen using AccuQuote">
         <div class="hero__avatars" aria-hidden="true">

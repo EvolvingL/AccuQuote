@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>What Is Quoting Costing You? — AccuQuote Calculator</title>
+  <meta name="description" content="Enter your average quote time and win rate — see exactly what quoting is costing you per month in unbillable hours and lost jobs." />
+  <link rel="canonical" href="https://accuquote.app/quote-cost-calculator.html" />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="What Is Quoting Costing You? Free Calculator for UK Tradesmen" />
+  <meta property="og:description" content="Enter your quote time and win rate. See the real monthly cost of your current quoting process — in pounds and hours." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://accuquote.app/quote-cost-calculator.html" />
+
+  <style>
+    :root {
+      --gold: #C8922A;
+      --gold-hover: #b07e22;
+      --dark: #1D1D1F;
+      --secondary: #6E6E73;
+      --navy: #0A0A1A;
+      --navy-mid: #0f1a2e;
+      --white: #FFFFFF;
+      --off-white: #F5F5F7;
+      --border: #E0E0E5;
+      --green: #22c55e;
+      --red: #ef4444;
+      --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { font-family: var(--font); background: var(--off-white); color: var(--dark); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+    a { text-decoration: none; color: inherit; }
+
+    /* ── NAV ── */
+    nav { background: var(--navy); padding: 0 32px; height: 60px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid rgba(255,255,255,0.07); }
+    .nav-logo { font-size: 18px; font-weight: 800; color: var(--white); letter-spacing: -0.5px; }
+    .nav-logo span { color: var(--gold); }
+    .nav-links { display: flex; gap: 28px; align-items: center; }
+    .nav-links a { font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.7); transition: color 0.15s; }
+    .nav-links a:hover { color: var(--white); }
+    .nav-links .nav-cta { background: var(--gold); color: var(--white); border-radius: 100px; padding: 7px 16px; font-weight: 600; }
+    .nav-links .nav-cta:hover { background: var(--gold-hover); }
+    .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; background: none; border: none; padding: 4px; }
+    .hamburger span { display: block; width: 22px; height: 2px; background: var(--white); border-radius: 2px; }
+    .nav-mobile { display: none; flex-direction: column; background: #0f0f2a; padding: 12px 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.07); }
+    .nav-mobile a { color: rgba(255,255,255,0.75); font-size: 15px; font-weight: 500; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.07); }
+    .nav-mobile a.mob-gold { color: var(--gold); border-bottom: none; margin-top: 8px; font-weight: 700; }
+    .nav-mobile.open { display: flex; }
+    @media (max-width: 640px) { .nav-links { display: none; } .hamburger { display: flex; } }
+
+    /* ── HERO ── */
+    .hero { background: var(--navy); padding: 56px 24px 52px; text-align: center; }
+    .hero-label { display: inline-block; background: rgba(200,146,42,0.15); border: 1px solid rgba(200,146,42,0.3); color: var(--gold); font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; border-radius: 100px; padding: 5px 14px; margin-bottom: 20px; }
+    .hero h1 { font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 800; color: var(--white); letter-spacing: -0.03em; line-height: 1.15; margin-bottom: 16px; }
+    .hero h1 span { color: var(--gold); }
+    .hero p { font-size: 1.05rem; color: rgba(255,255,255,0.6); max-width: 500px; margin: 0 auto; line-height: 1.65; }
+
+    /* ── LAYOUT ── */
+    .calc-outer { max-width: 860px; margin: 0 auto; padding: 40px 20px 80px; }
+
+    /* ── INPUT CARD ── */
+    .input-card { background: var(--white); border-radius: 18px; padding: 36px; box-shadow: 0 2px 20px rgba(0,0,0,0.07); margin-bottom: 24px; }
+    .input-card h2 { font-size: 1.1rem; font-weight: 700; color: var(--dark); margin-bottom: 28px; letter-spacing: -0.02em; }
+
+    .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 540px) { .fields { grid-template-columns: 1fr; } }
+
+    .field { display: flex; flex-direction: column; gap: 8px; }
+    .field label { font-size: 13px; font-weight: 600; color: var(--dark); }
+    .field .hint { font-size: 11px; color: var(--secondary); margin-top: -4px; }
+
+    .input-wrap { position: relative; display: flex; align-items: center; }
+    .input-wrap input { width: 100%; padding: 12px 48px 12px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 15px; font-family: var(--font); color: var(--dark); background: var(--white); transition: border-color 0.15s; -moz-appearance: textfield; }
+    .input-wrap input::-webkit-outer-spin-button,
+    .input-wrap input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .input-wrap input:focus { outline: none; border-color: var(--gold); }
+    .input-unit { position: absolute; right: 14px; font-size: 13px; font-weight: 600; color: var(--secondary); pointer-events: none; }
+
+    .slider-wrap { display: flex; flex-direction: column; gap: 6px; }
+    .slider-row { display: flex; align-items: center; gap: 12px; }
+    .slider-row input[type=range] { flex: 1; -webkit-appearance: none; height: 4px; border-radius: 2px; background: var(--border); outline: none; cursor: pointer; }
+    .slider-row input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--gold); border: 2px solid var(--white); box-shadow: 0 1px 4px rgba(0,0,0,0.2); cursor: pointer; }
+    .slider-val { font-size: 16px; font-weight: 700; color: var(--gold); min-width: 42px; text-align: right; }
+
+    .calc-btn { width: 100%; margin-top: 28px; background: var(--gold); color: var(--white); border: none; border-radius: 12px; padding: 16px; font-size: 17px; font-weight: 700; font-family: var(--font); cursor: pointer; transition: background 0.15s, transform 0.1s; letter-spacing: -0.2px; }
+    .calc-btn:hover { background: var(--gold-hover); }
+    .calc-btn:active { transform: scale(0.98); }
+
+    /* ── RESULTS CARD ── */
+    .results-card { background: var(--navy); border-radius: 18px; padding: 36px; box-shadow: 0 4px 32px rgba(0,0,0,0.18); display: none; }
+    .results-card.visible { display: block; animation: fadeUp 0.4s ease; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+    .results-headline { font-size: 1rem; font-weight: 700; color: rgba(255,255,255,0.5); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
+    .results-title { font-size: clamp(1.4rem, 3vw, 1.9rem); font-weight: 800; color: var(--white); letter-spacing: -0.03em; line-height: 1.2; margin-bottom: 28px; }
+    .results-title span { color: var(--gold); }
+
+    /* Cost grid */
+    .cost-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 28px; }
+    @media (max-width: 480px) { .cost-grid { grid-template-columns: 1fr; } }
+
+    .cost-box { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 18px 20px; }
+    .cost-box.bad { border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.06); }
+    .cost-box.good { border-color: rgba(34,197,94,0.35); background: rgba(34,197,94,0.06); }
+    .cost-box.neutral { border-color: rgba(200,146,42,0.3); background: rgba(200,146,42,0.06); }
+
+    .cost-box-label { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; }
+    .cost-box.bad .cost-box-label { color: #fca5a5; }
+    .cost-box.good .cost-box-label { color: #86efac; }
+    .cost-box.neutral .cost-box-label { color: rgba(200,146,42,0.85); }
+
+    .cost-box-value { font-size: clamp(1.6rem, 4vw, 2.2rem); font-weight: 800; letter-spacing: -0.04em; line-height: 1; margin-bottom: 4px; }
+    .cost-box.bad .cost-box-value { color: #fca5a5; }
+    .cost-box.good .cost-box-value { color: #86efac; }
+    .cost-box.neutral .cost-box-value { color: var(--gold); }
+
+    .cost-box-sub { font-size: 12px; color: rgba(255,255,255,0.45); line-height: 1.45; }
+
+    /* Divider */
+    .results-divider { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 24px 0; }
+
+    /* Savings section */
+    .savings-label { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #86efac; margin-bottom: 14px; }
+    .savings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 28px; }
+    @media (max-width: 480px) { .savings-grid { grid-template-columns: 1fr; } }
+
+    /* Narrative */
+    .narrative { background: rgba(200,146,42,0.1); border: 1px solid rgba(200,146,42,0.25); border-radius: 12px; padding: 20px 22px; margin-bottom: 28px; font-size: 0.9375rem; color: rgba(255,255,255,0.8); line-height: 1.7; }
+    .narrative strong { color: var(--gold); }
+
+    /* Share card */
+    .share-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px 22px; margin-bottom: 24px; }
+    .share-card-label { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 10px; }
+    .share-text { font-size: 13px; color: rgba(255,255,255,0.65); line-height: 1.6; font-style: italic; }
+
+    /* CTAs */
+    .results-ctas { display: flex; gap: 12px; flex-wrap: wrap; }
+    .btn-primary { flex: 1; min-width: 200px; background: var(--gold); color: var(--white); border: none; border-radius: 12px; padding: 15px 20px; font-size: 16px; font-weight: 700; font-family: var(--font); cursor: pointer; transition: background 0.15s; text-align: center; display: block; }
+    .btn-primary:hover { background: var(--gold-hover); }
+    .btn-share { flex: 1; min-width: 160px; background: #25D366; color: var(--white); border: none; border-radius: 12px; padding: 15px 20px; font-size: 15px; font-weight: 700; font-family: var(--font); cursor: pointer; transition: background 0.15s; text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-share:hover { background: #1da851; }
+    .btn-reset { background: none; border: none; color: rgba(255,255,255,0.35); font-size: 13px; font-family: var(--font); cursor: pointer; padding: 8px 0; width: 100%; text-align: center; margin-top: 8px; }
+    .btn-reset:hover { color: rgba(255,255,255,0.6); }
+
+    /* Trust strip */
+    .trust-strip { display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; margin-top: 32px; padding-top: 28px; border-top: 1px solid rgba(255,255,255,0.08); }
+    .trust-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: rgba(255,255,255,0.4); }
+
+    /* Benchmark bar */
+    .benchmark { margin-bottom: 28px; }
+    .benchmark-label { font-size: 12px; color: rgba(255,255,255,0.45); margin-bottom: 10px; }
+    .bar-wrap { position: relative; height: 8px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 4px; transition: width 0.8s ease; }
+    .bar-markers { display: flex; justify-content: space-between; margin-top: 6px; }
+    .bar-marker { font-size: 10px; color: rgba(255,255,255,0.3); }
+
+    /* Footer */
+    footer { background: var(--navy); color: rgba(255,255,255,0.35); text-align: center; padding: 28px 24px; font-size: 13px; border-top: 1px solid rgba(255,255,255,0.07); }
+    footer a { color: var(--gold); }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="./website.html" class="nav-logo">Accu<span>Quote</span></a>
+  <div class="nav-links">
+    <a href="./website.html">Home</a>
+    <a href="./demo.html">Try Demo</a>
+    <a href="./blog.html">Blog</a>
+    <a href="./website.html#pricing" class="nav-cta">Try Free</a>
+  </div>
+  <button class="hamburger" id="hamburger" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+<div class="nav-mobile" id="mobile-nav">
+  <a href="./website.html">Home</a>
+  <a href="./demo.html">Try Demo</a>
+  <a href="./blog.html">Blog</a>
+  <a href="./website.html#pricing" class="mob-gold">Try Free</a>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-label">Free Calculator</div>
+  <h1>What is quoting<br>costing you <span>per month?</span></h1>
+  <p>Enter how long your quotes take and how often you win. We'll show you the real cost — in hours and pounds — and what you'd get back with AccuQuote.</p>
+</section>
+
+<div class="calc-outer">
+
+  <!-- INPUT CARD -->
+  <div class="input-card">
+    <h2>Tell us about your current quoting process</h2>
+
+    <div class="fields">
+
+      <div class="field">
+        <label for="quotes-per-week">Quotes per week</label>
+        <span class="hint">How many jobs do you typically quote?</span>
+        <div class="input-wrap">
+          <input type="number" id="quotes-per-week" min="1" max="50" value="5" inputmode="numeric" />
+          <span class="input-unit">/ wk</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="time-per-quote">Time per quote</label>
+        <span class="hint">Start to finish — site visit notes, typing it up, sending</span>
+        <div class="input-wrap">
+          <input type="number" id="time-per-quote" min="0.25" max="24" step="0.25" value="2" inputmode="decimal" />
+          <span class="input-unit">hrs</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="day-rate">Your day rate</label>
+        <span class="hint">What do you charge per day on the tools?</span>
+        <div class="input-wrap">
+          <input type="number" id="day-rate" min="50" max="2000" step="10" value="300" inputmode="numeric" />
+          <span class="input-unit" style="right:10px">£/day</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Current win rate</label>
+        <span class="hint">How many quotes turn into paid jobs?</span>
+        <div class="slider-wrap">
+          <div class="slider-row">
+            <input type="range" id="win-rate" min="5" max="95" step="5" value="40" />
+            <span class="slider-val" id="win-rate-val">40%</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <button class="calc-btn" id="calc-btn">Calculate my quoting cost &rarr;</button>
+  </div>
+
+  <!-- RESULTS CARD -->
+  <div class="results-card" id="results-card">
+
+    <div class="results-headline">Your results</div>
+    <div class="results-title" id="results-title">Loading...</div>
+
+    <!-- Cost grid -->
+    <div class="cost-grid">
+      <div class="cost-box bad">
+        <div class="cost-box-label">Hours lost to quoting</div>
+        <div class="cost-box-value" id="res-hours">—</div>
+        <div class="cost-box-sub">per month, unbillable</div>
+      </div>
+      <div class="cost-box bad">
+        <div class="cost-box-label">Value of that time</div>
+        <div class="cost-box-value" id="res-time-cost">—</div>
+        <div class="cost-box-sub">at your day rate, unrecovered</div>
+      </div>
+      <div class="cost-box bad">
+        <div class="cost-box-label">Jobs lost per month</div>
+        <div class="cost-box-value" id="res-jobs-lost">—</div>
+        <div class="cost-box-sub" id="res-jobs-lost-sub">vs. 70% industry win rate</div>
+      </div>
+      <div class="cost-box bad">
+        <div class="cost-box-label">Revenue walking out the door</div>
+        <div class="cost-box-value" id="res-revenue-lost">—</div>
+        <div class="cost-box-sub">per month in unconverted quotes</div>
+      </div>
+    </div>
+
+    <!-- Benchmark bar -->
+    <div class="benchmark">
+      <div class="benchmark-label">Your win rate vs. tradesmen using AccuQuote</div>
+      <div class="bar-wrap">
+        <div class="bar-fill" id="bar-yours" style="background: #ef4444; width: 0%;"></div>
+      </div>
+      <div class="bar-markers">
+        <span class="bar-marker">0%</span>
+        <span class="bar-marker" id="bar-label-yours" style="color: #fca5a5;"></span>
+        <span class="bar-marker" style="color: #86efac;">AccuQuote avg: 70%</span>
+        <span class="bar-marker">100%</span>
+      </div>
+    </div>
+
+    <hr class="results-divider" />
+
+    <!-- Savings section -->
+    <div class="savings-label">What AccuQuote gives back</div>
+    <div class="savings-grid">
+      <div class="cost-box good">
+        <div class="cost-box-label">Hours saved per month</div>
+        <div class="cost-box-value" id="res-hours-saved">—</div>
+        <div class="cost-box-sub">back on the tools or at home</div>
+      </div>
+      <div class="cost-box good">
+        <div class="cost-box-label">Time recovered</div>
+        <div class="cost-box-value" id="res-money-saved">—</div>
+        <div class="cost-box-sub">per month at your rate</div>
+      </div>
+      <div class="cost-box neutral">
+        <div class="cost-box-label">Extra jobs you could win</div>
+        <div class="cost-box-value" id="res-extra-jobs">—</div>
+        <div class="cost-box-sub">if win rate hits 70%</div>
+      </div>
+      <div class="cost-box neutral">
+        <div class="cost-box-label">Potential extra revenue</div>
+        <div class="cost-box-value" id="res-extra-revenue">—</div>
+        <div class="cost-box-sub">per month from better conversion</div>
+      </div>
+    </div>
+
+    <!-- Narrative -->
+    <div class="narrative" id="narrative">
+      Loading...
+    </div>
+
+    <!-- Share card -->
+    <div class="share-card">
+      <div class="share-card-label">Share with a mate</div>
+      <div class="share-text" id="share-text">Loading...</div>
+    </div>
+
+    <!-- CTAs -->
+    <div class="results-ctas">
+      <a href="./website.html#pricing" class="btn-primary">Try AccuQuote free — no card needed &rarr;</a>
+      <button class="btn-share" id="whatsapp-btn">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.119.548 4.107 1.504 5.836L0 24l6.335-1.483A11.944 11.944 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.885 0-3.651-.516-5.165-1.414l-.371-.22-3.754.879.893-3.659-.242-.382A9.944 9.944 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+        Send to a mate
+      </button>
+    </div>
+
+    <button class="btn-reset" id="reset-btn">← Change my numbers</button>
+
+    <!-- Trust -->
+    <div class="trust-strip">
+      <div class="trust-item">
+        <svg viewBox="0 0 16 16" fill="none" width="14" height="14"><path d="M3 8 L6 11 L13 5" stroke="#22c55e" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        No sign-up to see your results
+      </div>
+      <div class="trust-item">
+        <svg viewBox="0 0 16 16" fill="none" width="14" height="14"><path d="M3 8 L6 11 L13 5" stroke="#22c55e" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Built with 200+ UK tradesmen
+      </div>
+      <div class="trust-item">
+        <svg viewBox="0 0 16 16" fill="none" width="14" height="14"><path d="M3 8 L6 11 L13 5" stroke="#22c55e" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Free to try — no card
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<footer>
+  &copy; 2025 AccuQuote. &nbsp;|&nbsp; <a href="./website.html">Home</a> &nbsp;|&nbsp; <a href="./demo.html">Try Demo</a> &nbsp;|&nbsp; <a href="./blog.html">Blog</a>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  // ── NAV ──
+  document.getElementById('hamburger').addEventListener('click', function () {
+    document.getElementById('mobile-nav').classList.toggle('open');
+  });
+
+  // ── SLIDER ──
+  var winRateSlider = document.getElementById('win-rate');
+  var winRateVal = document.getElementById('win-rate-val');
+  winRateSlider.addEventListener('input', function () {
+    winRateVal.textContent = this.value + '%';
+  });
+
+  // ── HELPERS ──
+  function fmt(n) {
+    // Format large numbers with commas
+    return Math.round(n).toLocaleString('en-GB');
+  }
+
+  function fmtPounds(n) {
+    if (n >= 1000) return '£' + (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+    return '£' + fmt(n);
+  }
+
+  function fmtHours(n) {
+    if (n >= 100) return fmt(n) + ' hrs';
+    return n.toFixed(1).replace(/\.0$/, '') + ' hrs';
+  }
+
+  // ── CALCULATION ──
+  function calculate() {
+    var quotesPerWeek  = Math.max(1, parseFloat(document.getElementById('quotes-per-week').value) || 5);
+    var timePerQuote   = Math.max(0.25, parseFloat(document.getElementById('time-per-quote').value) || 2);
+    var dayRate        = Math.max(50, parseFloat(document.getElementById('day-rate').value) || 300);
+    var winRate        = parseInt(winRateSlider.value, 10) / 100;
+
+    var hourlyRate     = dayRate / 8;
+    var quotesPerMonth = quotesPerWeek * 4.33;
+
+    // Current state
+    var hoursPerMonth       = quotesPerMonth * timePerQuote;
+    var timeCostPerMonth     = hoursPerMonth * hourlyRate;
+
+    // Industry benchmark win rate: 70% (AccuQuote users)
+    var benchmarkWinRate    = 0.70;
+    var jobsWonNow           = quotesPerMonth * winRate;
+    var jobsWonBenchmark     = quotesPerMonth * benchmarkWinRate;
+    var jobsLostPerMonth     = Math.max(0, jobsWonBenchmark - jobsWonNow);
+
+    // Avg job value: derive from day rate × estimated days per job
+    // Assume average job = 2.5 days labour + ~£800 materials
+    var avgJobValue          = (dayRate * 2.5) + 800;
+    var revenueLostPerMonth  = jobsLostPerMonth * avgJobValue;
+
+    // AccuQuote saves ~80% of quote time (benchmark: 12 min avg vs ~2 hr avg)
+    var aqTimePerQuote       = 0.2; // hours
+    var hoursSavedPerMonth   = quotesPerMonth * (timePerQuote - aqTimePerQuote);
+    var moneySavedPerMonth   = hoursSavedPerMonth * hourlyRate;
+
+    // Extra jobs from improved win rate
+    var extraJobsPerMonth    = Math.max(0, jobsWonBenchmark - jobsWonNow);
+    var extraRevenuePerMonth = extraJobsPerMonth * avgJobValue;
+
+    // Total monthly upside
+    var totalUpside          = moneySavedPerMonth + extraRevenuePerMonth;
+
+    // ── Render headline ──
+    var headline;
+    if (timeCostPerMonth + revenueLostPerMonth >= 2000) {
+      headline = 'Quoting is costing you <span>' + fmtPounds(timeCostPerMonth + revenueLostPerMonth) + ' a month.</span>';
+    } else if (hoursPerMonth >= 20) {
+      headline = 'You\'re spending <span>' + fmtHours(hoursPerMonth) + ' a month</span> just on quotes.';
+    } else {
+      headline = 'Here\'s what your current quoting process is costing you.';
+    }
+    document.getElementById('results-title').innerHTML = headline;
+
+    // ── Render cost boxes ──
+    document.getElementById('res-hours').textContent      = fmtHours(hoursPerMonth);
+    document.getElementById('res-time-cost').textContent  = fmtPounds(timeCostPerMonth);
+
+    if (winRate >= benchmarkWinRate) {
+      document.getElementById('res-jobs-lost').textContent    = '0';
+      document.getElementById('res-jobs-lost-sub').textContent = 'Your win rate is already above average';
+      document.querySelector('.cost-grid .cost-box.bad:nth-child(3)').className = 'cost-box good';
+    } else {
+      document.getElementById('res-jobs-lost').textContent    = fmt(jobsLostPerMonth) + ' jobs';
+      document.getElementById('res-jobs-lost-sub').textContent = 'vs. 70% win rate with AccuQuote';
+    }
+
+    document.getElementById('res-revenue-lost').textContent  = fmtPounds(revenueLostPerMonth);
+
+    // ── Benchmark bar ──
+    var pct = Math.min(100, Math.round(winRate * 100));
+    document.getElementById('bar-yours').style.width = pct + '%';
+    document.getElementById('bar-label-yours').textContent = 'Yours: ' + pct + '%';
+
+    // ── Savings boxes ──
+    document.getElementById('res-hours-saved').textContent    = fmtHours(hoursSavedPerMonth);
+    document.getElementById('res-money-saved').textContent    = fmtPounds(moneySavedPerMonth);
+    document.getElementById('res-extra-jobs').textContent     = extraJobsPerMonth > 0 ? '+' + fmt(extraJobsPerMonth) + ' jobs' : 'Already there';
+    document.getElementById('res-extra-revenue').textContent  = extraRevenuePerMonth > 0 ? fmtPounds(extraRevenuePerMonth) : '—';
+
+    // ── Narrative ──
+    var hours = hoursPerMonth.toFixed(1).replace(/\.0$/, '');
+    var winPct = Math.round(winRate * 100);
+    var narrativeLines = [];
+
+    narrativeLines.push(
+      'Right now you\'re spending <strong>' + hours + ' hours every month</strong> on quotes that don\'t pay you a penny. At your rate, that\'s <strong>' + fmtPounds(timeCostPerMonth) + ' of unbillable time</strong> gone every month — time you could be on the tools, or at home.'
+    );
+
+    if (winRate < benchmarkWinRate) {
+      narrativeLines.push(
+        'Your ' + winPct + '% win rate is below the 70% average we see from tradesmen using AccuQuote. That gap represents roughly <strong>' + fmtPounds(revenueLostPerMonth) + ' a month in jobs that are going to someone who quoted faster or looked more professional.'
+      );
+    }
+
+    narrativeLines.push(
+      'With AccuQuote, most tradesmen are done in under 20 minutes — quote built on site, PDF in the customer\'s WhatsApp before you\'ve left the drive. <strong>That\'s ' + fmtHours(hoursSavedPerMonth) + ' back every month</strong>' + (totalUpside >= 500 ? ', and up to <strong>' + fmtPounds(totalUpside) + ' in recovered time and extra jobs</strong>.' : '.')
+    );
+
+    document.getElementById('narrative').innerHTML = narrativeLines.join(' ');
+
+    // ── Share text ──
+    var shareMsg =
+      'Just did this calculator — apparently quoting is costing me ' +
+      fmtPounds(timeCostPerMonth + revenueLostPerMonth) +
+      ' a month in wasted time and lost jobs. ' +
+      'AccuQuote reckons it can give back ' + fmtHours(hoursSavedPerMonth) + ' a month. ' +
+      'Free to try: accuquote.app/quote-cost-calculator.html';
+
+    document.getElementById('share-text').textContent = '"' + shareMsg + '"';
+
+    // WhatsApp share
+    document.getElementById('whatsapp-btn').onclick = function () {
+      var url = 'https://wa.me/?text=' + encodeURIComponent(shareMsg);
+      window.open(url, '_blank');
+    };
+
+    // ── Show results ──
+    var card = document.getElementById('results-card');
+    card.classList.add('visible');
+    setTimeout(function () {
+      card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+  }
+
+  // ── EVENTS ──
+  document.getElementById('calc-btn').addEventListener('click', calculate);
+
+  document.getElementById('reset-btn').addEventListener('click', function () {
+    document.getElementById('results-card').classList.remove('visible');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  // Allow Enter key on inputs
+  document.querySelectorAll('input[type=number]').forEach(function (inp) {
+    inp.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') calculate();
+    });
+  });
+
+})();
+</script>
+
+</body>
+</html>
