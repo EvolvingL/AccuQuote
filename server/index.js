@@ -101,25 +101,25 @@ app.post('/api/claude', async (req, res) => {
   }
 });
 
-// ── Serve static web app ─────────────────────────────────────────────────────
-// Serves index.html, sw.js, manifest.json, icons/, etc. from project root
 const ROOT = join(__dirname, '..');
+
+// ── Root route — must come BEFORE express.static ─────────────────────────────
+app.get('/', (req, res) => {
+  res.sendFile(join(ROOT, 'website.html'));
+});
+
+// ── Serve static files (js, css, images, other .html pages) ──────────────────
 app.use(express.static(ROOT, {
   maxAge: '1y',
+  index: false, // prevent express.static from serving index.html for /
   setHeaders: (res, filePath) => {
-    // Never cache index.html or sw.js
-    if (filePath.endsWith('index.html') || filePath.endsWith('sw.js')) {
+    if (filePath.endsWith('.html') || filePath.endsWith('sw.js')) {
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     }
   },
 }));
 
-// Root — serve website.html as the homepage
-app.get('/', (req, res) => {
-  res.sendFile(join(ROOT, 'website.html'));
-});
-
-// SPA fallback — all other unmatched routes serve website.html
+// ── Fallback — unmatched routes serve website.html ───────────────────────────
 app.get('*', (req, res) => {
   res.sendFile(join(ROOT, 'website.html'));
 });
