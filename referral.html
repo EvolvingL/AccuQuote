@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Refer a Mate — AccuQuote</title>
+  <meta name="description" content="Refer 3 mates and get 3 months free. Every tradesman you bring gets the app. You get rewarded. No catch." />
+  <style>
+    :root {
+      --gold: #C8922A; --gold-hover: #b07e22;
+      --dark: #1D1D1F; --secondary: #6E6E73;
+      --navy: #0A0A1A; --white: #FFFFFF;
+      --off-white: #F5F5F7; --border: #E0E0E5;
+      --green: #22c55e;
+      --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { font-family: var(--font); background: var(--off-white); color: var(--dark); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+    a { text-decoration: none; color: inherit; }
+
+    nav { background: var(--navy); padding: 0 32px; height: 60px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid rgba(255,255,255,0.07); }
+    .nav-logo { font-size: 18px; font-weight: 800; color: var(--white); letter-spacing: -0.5px; }
+    .nav-logo span { color: var(--gold); }
+    .nav-links { display: flex; gap: 28px; align-items: center; }
+    .nav-links a { font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.7); }
+    .nav-links .nav-cta { background: var(--gold); color: var(--white); border-radius: 100px; padding: 7px 16px; font-weight: 600; }
+    .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; background: none; border: none; padding: 4px; }
+    .hamburger span { display: block; width: 22px; height: 2px; background: var(--white); border-radius: 2px; }
+    .nav-mobile { display: none; flex-direction: column; background: #0f0f2a; padding: 12px 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.07); }
+    .nav-mobile a { color: rgba(255,255,255,0.75); font-size: 15px; font-weight: 500; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.07); }
+    .nav-mobile a.mob-gold { color: var(--gold); border-bottom: none; margin-top: 8px; font-weight: 700; }
+    .nav-mobile.open { display: flex; }
+    @media (max-width: 640px) { .nav-links { display: none; } .hamburger { display: flex; } }
+
+    /* HERO */
+    .hero { background: var(--navy); padding: 64px 24px 56px; text-align: center; }
+    .hero-badge { display: inline-block; background: rgba(200,146,42,0.15); border: 1px solid rgba(200,146,42,0.3); color: var(--gold); font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; border-radius: 100px; padding: 5px 14px; margin-bottom: 20px; }
+    .hero h1 { font-size: clamp(1.9rem, 4vw, 2.8rem); font-weight: 800; color: var(--white); letter-spacing: -0.03em; line-height: 1.15; margin-bottom: 16px; }
+    .hero h1 span { color: var(--gold); }
+    .hero p { font-size: 1.05rem; color: rgba(255,255,255,0.6); max-width: 500px; margin: 0 auto 32px; line-height: 1.65; }
+
+    .hero-tiers { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; margin-bottom: 32px; }
+    .hero-tier { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 16px 20px; text-align: center; min-width: 140px; }
+    .hero-tier__num { font-size: 1.6rem; font-weight: 800; color: var(--gold); letter-spacing: -0.04em; display: block; }
+    .hero-tier__label { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 4px; line-height: 1.4; }
+    .hero-tier--highlight { border-color: rgba(200,146,42,0.4); background: rgba(200,146,42,0.1); }
+    .hero-tier--highlight .hero-tier__label { color: rgba(200,146,42,0.8); }
+
+    .hero-share-btn { display: inline-flex; align-items: center; gap: 10px; background: #25D366; color: var(--white); border: none; border-radius: 100px; padding: 14px 28px; font-size: 16px; font-weight: 700; font-family: var(--font); cursor: pointer; transition: background 0.15s; }
+    .hero-share-btn:hover { background: #1da851; }
+    .hero-note { font-size: 12px; color: rgba(255,255,255,0.3); margin-top: 14px; }
+
+    /* OUTER */
+    .outer { max-width: 860px; margin: 0 auto; padding: 48px 20px 80px; }
+
+    /* HOW IT WORKS */
+    .how-card { background: var(--white); border-radius: 16px; padding: 32px; box-shadow: 0 2px 20px rgba(0,0,0,0.06); margin-bottom: 28px; }
+    .how-card h2 { font-size: 1.1rem; font-weight: 700; color: var(--dark); margin-bottom: 24px; letter-spacing: -0.02em; }
+    .steps { display: flex; flex-direction: column; gap: 20px; }
+    .step-row { display: flex; align-items: flex-start; gap: 16px; }
+    .step-num { width: 32px; height: 32px; border-radius: 50%; background: rgba(200,146,42,0.1); border: 1.5px solid rgba(200,146,42,0.3); color: var(--gold); font-size: 14px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+    .step-body h3 { font-size: 0.9375rem; font-weight: 700; color: var(--dark); margin-bottom: 4px; }
+    .step-body p { font-size: 0.875rem; color: var(--secondary); line-height: 1.6; }
+
+    /* TIERS TABLE */
+    .tiers-card { background: var(--navy); border-radius: 16px; padding: 32px; box-shadow: 0 4px 32px rgba(0,0,0,0.18); margin-bottom: 28px; }
+    .tiers-card h2 { font-size: 1.1rem; font-weight: 700; color: var(--white); margin-bottom: 24px; letter-spacing: -0.02em; }
+    .tiers-table { width: 100%; border-collapse: collapse; }
+    .tiers-table th { text-align: left; padding: 10px 14px; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.4); border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .tiers-table td { padding: 14px 14px; font-size: 0.9375rem; color: rgba(255,255,255,0.75); border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .tiers-table tr:last-child td { border-bottom: none; }
+    .tiers-table td:first-child { font-weight: 700; color: var(--gold); font-size: 1rem; }
+    .tiers-table tr.highlight td { background: rgba(200,146,42,0.08); }
+    .tier-badge { display: inline-block; background: rgba(200,146,42,0.2); color: var(--gold); font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; border-radius: 4px; padding: 2px 7px; margin-left: 8px; }
+
+    /* LEADERBOARD */
+    .lb-card { background: var(--white); border-radius: 16px; padding: 32px; box-shadow: 0 2px 20px rgba(0,0,0,0.06); margin-bottom: 28px; }
+    .lb-card h2 { font-size: 1.1rem; font-weight: 700; color: var(--dark); margin-bottom: 6px; letter-spacing: -0.02em; }
+    .lb-subtitle { font-size: 13px; color: var(--secondary); margin-bottom: 24px; }
+    .lb-row { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .lb-row:last-child { border-bottom: none; }
+    .lb-rank { font-size: 16px; font-weight: 800; color: var(--secondary); min-width: 28px; text-align: center; }
+    .lb-rank--1 { color: #f59e0b; font-size: 20px; }
+    .lb-rank--2 { color: #94a3b8; }
+    .lb-rank--3 { color: #b45309; }
+    .lb-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #1a2a4a, #2a4070); border: 2px solid rgba(200,146,42,0.4); color: var(--gold); font-size: 0.65rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .lb-name { flex: 1; }
+    .lb-name strong { font-size: 14px; font-weight: 700; color: var(--dark); display: block; }
+    .lb-name span { font-size: 12px; color: var(--secondary); }
+    .lb-count { text-align: right; }
+    .lb-count strong { font-size: 15px; font-weight: 800; color: var(--dark); display: block; }
+    .lb-count span { font-size: 11px; color: var(--secondary); }
+    .lb-reward { font-size: 11px; font-weight: 600; color: var(--gold); background: rgba(200,146,42,0.1); border-radius: 4px; padding: 2px 7px; }
+    .lb-you { background: rgba(200,146,42,0.05); border: 1.5px dashed rgba(200,146,42,0.3); border-radius: 10px; padding: 14px 16px; margin-top: 16px; text-align: center; font-size: 13px; color: var(--secondary); }
+    .lb-you strong { color: var(--dark); }
+
+    /* PDF FOOTER PREVIEW */
+    .pdf-card { background: var(--white); border-radius: 16px; padding: 32px; box-shadow: 0 2px 20px rgba(0,0,0,0.06); margin-bottom: 28px; }
+    .pdf-card h2 { font-size: 1.1rem; font-weight: 700; color: var(--dark); margin-bottom: 8px; }
+    .pdf-card .pdf-sub { font-size: 13px; color: var(--secondary); margin-bottom: 24px; line-height: 1.5; }
+    .pdf-preview { border: 1.5px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .pdf-preview-header { background: var(--navy); padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; }
+    .pdf-preview-header span { font-size: 13px; color: rgba(255,255,255,0.7); }
+    .pdf-preview-header strong { font-size: 15px; font-weight: 700; color: var(--white); }
+    .pdf-preview-body { padding: 16px 20px; background: #fff; }
+    .pdf-line { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--dark); }
+    .pdf-line:last-of-type { border-bottom: none; }
+    .pdf-line span { color: var(--secondary); }
+    .pdf-footer-strip { background: var(--off-white); border-top: 1.5px solid rgba(200,146,42,0.25); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+    .pdf-footer-strip .pfs-left { font-size: 11px; color: var(--secondary); font-style: italic; }
+    .pdf-footer-strip .pfs-right { font-size: 11px; font-weight: 600; color: var(--gold); }
+
+    /* CTA */
+    .cta-card { background: var(--navy); border-radius: 16px; padding: 36px; text-align: center; }
+    .cta-card h2 { font-size: clamp(1.3rem, 3vw, 1.8rem); font-weight: 800; color: var(--white); letter-spacing: -0.03em; margin-bottom: 12px; }
+    .cta-card p { font-size: 0.9375rem; color: rgba(255,255,255,0.55); margin-bottom: 28px; line-height: 1.65; }
+    .cta-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .btn-gold { display: inline-block; background: var(--gold); color: var(--white); border: none; border-radius: 100px; padding: 14px 28px; font-size: 15px; font-weight: 700; font-family: var(--font); cursor: pointer; transition: background 0.15s; }
+    .btn-gold:hover { background: var(--gold-hover); }
+    .btn-wa { display: inline-flex; align-items: center; gap: 8px; background: #25D366; color: var(--white); border: none; border-radius: 100px; padding: 14px 28px; font-size: 15px; font-weight: 700; font-family: var(--font); cursor: pointer; transition: background 0.15s; }
+    .btn-wa:hover { background: #1da851; }
+    .cta-note { font-size: 12px; color: rgba(255,255,255,0.3); margin-top: 16px; }
+
+    footer { background: var(--navy); color: rgba(255,255,255,0.35); text-align: center; padding: 28px 24px; font-size: 13px; border-top: 1px solid rgba(255,255,255,0.07); }
+    footer a { color: var(--gold); }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="./website.html" class="nav-logo">Accu<span>Quote</span></a>
+  <div class="nav-links">
+    <a href="./website.html">Home</a>
+    <a href="./demo.html">Try Demo</a>
+    <a href="./website.html#pricing">Pricing</a>
+    <a href="./website.html#pricing" class="nav-cta">Get Started Free</a>
+  </div>
+  <button class="hamburger" id="hamburger" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+<div class="nav-mobile" id="mobile-nav">
+  <a href="./website.html">Home</a>
+  <a href="./demo.html">Try Demo</a>
+  <a href="./website.html#pricing">Pricing</a>
+  <a href="./website.html#pricing" class="mob-gold">Get Started Free</a>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">Refer a Mate</div>
+  <h1>Bring your mates.<br><span>Get months free.</span></h1>
+  <p>Every tradesman you refer who signs up gets the app. You get rewarded. The more you refer, the better it gets.</p>
+
+  <div class="hero-tiers">
+    <div class="hero-tier">
+      <span class="hero-tier__num">1 mate</span>
+      <div class="hero-tier__label">1 free month added<br>to your account</div>
+    </div>
+    <div class="hero-tier hero-tier--highlight">
+      <span class="hero-tier__num">3 mates</span>
+      <div class="hero-tier__label">3 months free<br>— a full quarter on us</div>
+    </div>
+    <div class="hero-tier">
+      <span class="hero-tier__num">10 mates</span>
+      <div class="hero-tier__label">Lifetime 50% off<br>forever</div>
+    </div>
+  </div>
+
+  <button class="hero-share-btn" id="hero-share-btn">
+    <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.119.548 4.107 1.504 5.836L0 24l6.335-1.483A11.944 11.944 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.885 0-3.651-.516-5.165-1.414l-.371-.22-3.754.879.893-3.659-.242-.382A9.944 9.944 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+    Share on WhatsApp
+  </button>
+  <p class="hero-note">Share your unique link — every sign-up from your link counts automatically</p>
+</section>
+
+<div class="outer">
+
+  <!-- HOW IT WORKS -->
+  <div class="how-card">
+    <h2>How it works</h2>
+    <div class="steps">
+      <div class="step-row">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h3>Get your referral link</h3>
+          <p>Every AccuQuote account has a unique referral link in Settings → Refer a Mate. Share it however you like — WhatsApp, text, in person.</p>
+        </div>
+      </div>
+      <div class="step-row">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h3>Your mate signs up</h3>
+          <p>They download the app, use your link, and start their free trial. Nothing else needed — it tracks automatically.</p>
+        </div>
+      </div>
+      <div class="step-row">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h3>You both get rewarded</h3>
+          <p>Your free months are added the moment they activate. Stack them up — refer more, earn more. There's no cap.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REWARD TIERS -->
+  <div class="tiers-card">
+    <h2>Reward tiers</h2>
+    <table class="tiers-table">
+      <thead>
+        <tr>
+          <th>Referrals</th>
+          <th>What you get</th>
+          <th>What they get</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1 mate</td>
+          <td>1 free month</td>
+          <td>Standard free trial (3 quotes)</td>
+        </tr>
+        <tr class="highlight">
+          <td>3 mates <span class="tier-badge">Most popular</span></td>
+          <td>3 months free — a full quarter</td>
+          <td>Standard free trial (3 quotes)</td>
+        </tr>
+        <tr>
+          <td>5 mates</td>
+          <td>5 months free</td>
+          <td>Standard free trial (3 quotes)</td>
+        </tr>
+        <tr>
+          <td>10 mates <span class="tier-badge">Top tier</span></td>
+          <td>Lifetime 50% off — forever</td>
+          <td>Standard free trial (3 quotes)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- LEADERBOARD -->
+  <div class="lb-card">
+    <h2>Top referrers this month</h2>
+    <p class="lb-subtitle">Updated weekly. Your position appears when you refer your first mate.</p>
+
+    <div class="lb-row">
+      <div class="lb-rank lb-rank--1">🥇</div>
+      <div class="lb-avatar">DH</div>
+      <div class="lb-name"><strong>Dave H.</strong><span>Electrician · Manchester</span></div>
+      <div class="lb-count"><strong>14 referrals</strong><span class="lb-reward">Lifetime 50% off</span></div>
+    </div>
+    <div class="lb-row">
+      <div class="lb-rank lb-rank--2">🥈</div>
+      <div class="lb-avatar">JC</div>
+      <div class="lb-name"><strong>Jamie C.</strong><span>Builder · Sheffield</span></div>
+      <div class="lb-count"><strong>9 referrals</strong><span class="lb-reward">Lifetime 50% off</span></div>
+    </div>
+    <div class="lb-row">
+      <div class="lb-rank lb-rank--3">🥉</div>
+      <div class="lb-avatar">TP</div>
+      <div class="lb-name"><strong>Tom P.</strong><span>Plumber · Leeds</span></div>
+      <div class="lb-count"><strong>7 referrals</strong><span class="lb-reward">5 free months banked</span></div>
+    </div>
+    <div class="lb-row">
+      <div class="lb-rank">4</div>
+      <div class="lb-avatar">SR</div>
+      <div class="lb-name"><strong>Scott R.</strong><span>Plasterer · Leeds</span></div>
+      <div class="lb-count"><strong>5 referrals</strong><span class="lb-reward">5 free months banked</span></div>
+    </div>
+    <div class="lb-row">
+      <div class="lb-rank">5</div>
+      <div class="lb-avatar">MK</div>
+      <div class="lb-name"><strong>Mo K.</strong><span>Plumber · Birmingham</span></div>
+      <div class="lb-count"><strong>4 referrals</strong><span class="lb-reward">4 free months banked</span></div>
+    </div>
+
+    <div class="lb-you">
+      <strong>Your position:</strong> Sign up and refer your first mate to appear on the board.
+    </div>
+  </div>
+
+  <!-- PDF FOOTER PREVIEW -->
+  <div class="pdf-card">
+    <h2>Every quote carries your referral</h2>
+    <p class="pdf-sub">When you send a quote PDF, a small footer is automatically included. Every customer who gets your quote sees it — and if they know a tradesman, it spreads itself.</p>
+    <div class="pdf-preview">
+      <div class="pdf-preview-header">
+        <strong>Quote — Bathroom Refit</strong>
+        <span>Dave Howarth Electrical</span>
+      </div>
+      <div class="pdf-preview-body">
+        <div class="pdf-line"><span>Labour — full bathroom refit (4 days)</span> £1,280</div>
+        <div class="pdf-line"><span>Materials — Screwfix / Toolstation</span> £847</div>
+        <div class="pdf-line"><span>VAT (20%)</span> £425</div>
+        <div class="pdf-line"><strong>Total</strong> <strong>£2,552</strong></div>
+      </div>
+      <div class="pdf-footer-strip">
+        <span class="pfs-left">Quote generated with AccuQuote · accuquote.app</span>
+        <span class="pfs-right">Refer a mate → get 3 months free</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-card">
+    <h2>Start referring today</h2>
+    <p>Sign up free, get your referral link from Settings, and share it with any tradesman you know. No limit on how many months you can earn.</p>
+    <div class="cta-btns">
+      <a href="./website.html#pricing" class="btn-gold">Get started free &rarr;</a>
+      <button class="btn-wa" id="cta-share-btn">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.119.548 4.107 1.504 5.836L0 24l6.335-1.483A11.944 11.944 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.885 0-3.651-.516-5.165-1.414l-.371-.22-3.754.879.893-3.659-.242-.382A9.944 9.944 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+        Share the referral page
+      </button>
+    </div>
+    <p class="cta-note">No salesperson will call you. No Calendly. Cancel in 2 taps.</p>
+  </div>
+
+</div>
+
+<footer>
+  &copy; 2025 AccuQuote. &nbsp;|&nbsp; <a href="./website.html">Home</a> &nbsp;|&nbsp; <a href="./demo.html">Try Demo</a> &nbsp;|&nbsp; <a href="./website.html#pricing">Pricing</a>
+</footer>
+
+<script>
+  document.getElementById('hamburger').addEventListener('click', function () {
+    document.getElementById('mobile-nav').classList.toggle('open');
+  });
+
+  var shareMsg = 'Just signed up to AccuQuote — quoting software built for tradesmen. 3 free quotes, no card needed. If you sign up through my link I get a free month: accuquote.app/referral.html';
+
+  document.getElementById('hero-share-btn').addEventListener('click', function () {
+    window.open('https://wa.me/?text=' + encodeURIComponent(shareMsg), '_blank');
+  });
+
+  document.getElementById('cta-share-btn').addEventListener('click', function () {
+    window.open('https://wa.me/?text=' + encodeURIComponent(shareMsg), '_blank');
+  });
+</script>
+
+</body>
+</html>
