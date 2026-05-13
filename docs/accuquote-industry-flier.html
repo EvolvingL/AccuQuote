@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AccuQuote — Industry Flier</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #fff;
+    color: #1D1D1F;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ── Two A4 pages ── */
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+    page-break-after: always;
+  }
+
+  @media print {
+    body { margin: 0; }
+    .page { margin: 0; page-break-after: always; }
+    .no-print { display: none; }
+  }
+
+  /* ─────────────────────────────────────────────
+     PAGE 1 — THE PROBLEM
+  ───────────────────────────────────────────── */
+  .page-1 {
+    background: #0A0A1A;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Top brand bar */
+  .brand-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 28px 36px 24px;
+    border-bottom: 1px solid rgba(200,146,42,0.2);
+  }
+  .brand-name {
+    font-size: 22px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.3px;
+  }
+  .brand-tag {
+    font-size: 11px;
+    font-weight: 500;
+    color: #C8922A;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  /* Hero problem statement */
+  .problem-hero {
+    padding: 44px 36px 36px;
+    flex: 0 0 auto;
+  }
+  .problem-hero h1 {
+    font-size: 38px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.15;
+    letter-spacing: -0.5px;
+    max-width: 480px;
+  }
+  .problem-hero h1 em {
+    color: #C8922A;
+    font-style: normal;
+  }
+  .problem-hero .subhead {
+    margin-top: 16px;
+    font-size: 15px;
+    color: rgba(255,255,255,0.55);
+    line-height: 1.6;
+    max-width: 420px;
+  }
+
+  /* Stats row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: rgba(200,146,42,0.15);
+    margin: 0 36px;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .stat-box {
+    background: rgba(255,255,255,0.04);
+    padding: 22px 20px;
+    text-align: center;
+  }
+  .stat-num {
+    font-size: 32px;
+    font-weight: 700;
+    color: #C8922A;
+    letter-spacing: -1px;
+    line-height: 1;
+  }
+  .stat-label {
+    margin-top: 6px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+    line-height: 1.4;
+  }
+
+  /* Problem sections */
+  .problem-sections {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    padding: 28px 36px;
+    flex: 1;
+  }
+  .problem-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .problem-card .icon {
+    font-size: 22px;
+    margin-bottom: 10px;
+  }
+  .problem-card h3 {
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 8px;
+    letter-spacing: -0.1px;
+  }
+  .problem-card p {
+    font-size: 11.5px;
+    color: rgba(255,255,255,0.5);
+    line-height: 1.55;
+  }
+  .problem-card .source {
+    margin-top: 10px;
+    font-size: 9.5px;
+    color: rgba(200,146,42,0.7);
+    font-style: italic;
+  }
+  .problem-card .highlight {
+    color: #C8922A;
+    font-weight: 600;
+  }
+
+  /* Market size footer */
+  .market-bar {
+    margin: 0 36px 32px;
+    background: rgba(200,146,42,0.08);
+    border: 1px solid rgba(200,146,42,0.2);
+    border-radius: 10px;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .market-bar .market-num {
+    font-size: 26px;
+    font-weight: 700;
+    color: #C8922A;
+    white-space: nowrap;
+  }
+  .market-bar p {
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+    line-height: 1.5;
+  }
+  .market-bar p span {
+    color: rgba(255,255,255,0.85);
+    font-weight: 500;
+  }
+
+  /* ─────────────────────────────────────────────
+     PAGE 2 — THE SOLUTION
+  ───────────────────────────────────────────── */
+  .page-2 {
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .solution-top {
+    background: #0A0A1A;
+    padding: 28px 36px 32px;
+  }
+  .solution-top .brand-name { color: #fff; }
+  .solution-top .page-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #C8922A;
+    margin-bottom: 14px;
+  }
+  .solution-top h2 {
+    font-size: 32px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.2;
+    letter-spacing: -0.4px;
+    max-width: 460px;
+  }
+  .solution-top h2 em {
+    color: #C8922A;
+    font-style: normal;
+  }
+
+  /* How it works steps */
+  .how-section {
+    padding: 28px 36px 0;
+  }
+  .how-section h3 {
+    font-size: 11px;
+    font-weight: 600;
+    color: #6E6E73;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+  .steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .step {
+    display: flex;
+    gap: 16px;
+    position: relative;
+    padding-bottom: 20px;
+  }
+  .step:last-child { padding-bottom: 0; }
+  .step-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    width: 28px;
+  }
+  .step-num {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #0A0A1A;
+    color: #C8922A;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .step-line {
+    width: 1px;
+    flex: 1;
+    background: #E8E8E8;
+    margin-top: 4px;
+  }
+  .step:last-child .step-line { display: none; }
+  .step-content {
+    padding-top: 4px;
+    padding-bottom: 0;
+  }
+  .step-content h4 {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1D1D1F;
+    margin-bottom: 4px;
+  }
+  .step-content p {
+    font-size: 11.5px;
+    color: #6E6E73;
+    line-height: 1.55;
+  }
+
+  /* Feature grid */
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    padding: 24px 36px 0;
+  }
+  .feature-pill {
+    background: #F5F5F7;
+    border-radius: 10px;
+    padding: 14px 14px;
+  }
+  .feature-pill .fp-icon {
+    font-size: 18px;
+    margin-bottom: 6px;
+  }
+  .feature-pill h4 {
+    font-size: 12px;
+    font-weight: 600;
+    color: #1D1D1F;
+    margin-bottom: 4px;
+    line-height: 1.3;
+  }
+  .feature-pill p {
+    font-size: 10.5px;
+    color: #6E6E73;
+    line-height: 1.5;
+  }
+
+  /* Quote comparison */
+  .compare-section {
+    margin: 20px 36px 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .compare-card {
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .compare-card.before {
+    background: #FFF5F5;
+    border: 1px solid #FFCDD2;
+  }
+  .compare-card.after {
+    background: #F0FFF4;
+    border: 1px solid #C3E6CB;
+  }
+  .compare-card .compare-label {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .compare-card.before .compare-label { color: #C0392B; }
+  .compare-card.after .compare-label { color: #1E8449; }
+  .compare-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    font-size: 10.5px;
+  }
+  .compare-row:last-child { border-bottom: none; }
+  .compare-row .task { color: #444; }
+  .compare-row .time-before { color: #C0392B; font-weight: 600; }
+  .compare-row .time-after { color: #1E8449; font-weight: 600; }
+
+  /* Total row */
+  .compare-total {
+    margin-top: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0 0;
+    border-top: 1.5px solid rgba(0,0,0,0.1);
+    font-size: 11.5px;
+    font-weight: 700;
+  }
+  .compare-total.before { color: #C0392B; }
+  .compare-total.after { color: #1E8449; }
+
+  /* CTA footer */
+  .solution-footer {
+    margin: 20px 36px 28px;
+    background: #0A0A1A;
+    border-radius: 12px;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .solution-footer .footer-left h4 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+  .solution-footer .footer-left p {
+    font-size: 11px;
+    color: rgba(255,255,255,0.45);
+  }
+  .footer-cta {
+    background: #C8922A;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 10px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    white-space: nowrap;
+    letter-spacing: 0.2px;
+  }
+
+  /* Print button */
+  .print-btn {
+    display: block;
+    width: 200px;
+    margin: 24px auto;
+    padding: 12px;
+    background: #0A0A1A;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+  }
+  @media print { .print-btn { display: none; } }
+</style>
+</head>
+<body>
+
+<button class="print-btn no-print" onclick="window.print()">Print / Save as PDF</button>
+
+<!-- ══════════════════════════════════════════
+     PAGE 1 — THE PROBLEM
+══════════════════════════════════════════ -->
+<div class="page page-1">
+
+  <div class="brand-bar">
+    <span class="brand-name">AccuQuote</span>
+    <span class="brand-tag">Quote any job in 20 minutes</span>
+  </div>
+
+  <div class="problem-hero">
+    <h1>The trades are losing <em>billions</em> to a problem that's been ignored for decades.</h1>
+    <p class="subhead">Quoting, estimating, chasing payments. The skilled work nobody got into the trades to do — but that every tradesperson does, every single week. The data paints a clear picture.</p>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-box">
+      <div class="stat-num">£6,210</div>
+      <div class="stat-label">Average owed in unpaid invoices per tradesperson<br><em style="color:rgba(200,146,42,0.6)">Direct Line, Oct 2024</em></div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num">870k</div>
+      <div class="stat-label">Construction SMEs in the UK — largest sector by number<br><em style="color:rgba(200,146,42,0.6)">BEIS Business Population, 2024</em></div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num">£11bn</div>
+      <div class="stat-label">Cost of late payments to the UK economy each year<br><em style="color:rgba(200,146,42,0.6)">GOV.UK / London Economics, 2025</em></div>
+    </div>
+  </div>
+
+  <div class="problem-sections">
+
+    <div class="problem-card">
+      <div class="icon">⏱</div>
+      <h3>Admin is eating the working week</h3>
+      <p>UK small businesses waste an average of <span class="highlight">33 hours per month</span> on admin tasks. Field service workers — including tradespeople — spend up to <span class="highlight">7 hours every week</span> on low-value administrative tasks instead of billable work.</p>
+      <p class="source">Sources: Sage Hidden Admin Burden Report, May 2025 · Salesforce Field Service Agentic AI Report, 2025</p>
+    </div>
+
+    <div class="problem-card">
+      <div class="icon">📄</div>
+      <h3>Quoting is the biggest time sink</h3>
+      <p>A properly written trade estimate — site visit, material calculations, pricing, formatting, sending — takes <span class="highlight">30–60 minutes per job</span>. At 3–5 quotes a week, that's up to <span class="highlight">4 hours of unpaid admin</span> every single week. Trade software providers report saving users "a full day a week" on paperwork.</p>
+      <p class="source">Sources: YourTradebase · QuoteSmith Blog, 2026 · MyBuilder community data</p>
+    </div>
+
+    <div class="problem-card">
+      <div class="icon">💸</div>
+      <h3>Late payments threaten livelihoods</h3>
+      <p><span class="highlight">81% of tradespeople</span> are currently owed money, chasing an average of <span class="highlight">7 overdue invoices</span> at once. 23% worry they can't cover personal expenses. <span class="highlight">14,000 UK businesses close every year</span> — approximately 38 per day — directly because of late payments.</p>
+      <p class="source">Sources: Direct Line / Opinium, Oct 2024 · GOV.UK Late Payments Research, 2025</p>
+    </div>
+
+    <div class="problem-card">
+      <div class="icon">🏗</div>
+      <h3>The industry is the last to go digital</h3>
+      <p><span class="highlight">70% of UK sole traders</span> are still unaware of Making Tax Digital changes. CITB research found that innovative technology "is generally limited to small pilots or trials." <span class="highlight">81% of tradespeople</span> believe AI could help them do their jobs more efficiently — but almost none have access to tools built for them.</p>
+      <p class="source">Sources: Sage & Checkatrade Parliamentary Event, 2025 · CITB Digital Future Report · Salesforce, 2025</p>
+    </div>
+
+    <div class="problem-card">
+      <div class="icon">📉</div>
+      <h3>Slow quotes mean lost work</h3>
+      <p>Construction had the <span class="highlight">longest average payment delays of any sector: 38.2 days</span>. Only 57% of construction firms report invoices paid within agreed terms. Tradespeople who are slow to quote lose jobs to competitors who respond faster — yet most are still doing it by hand.</p>
+      <p class="source">Sources: Coface 2025 UK Payment Survey · QuickBooks UK Late Payments Report, 2025</p>
+    </div>
+
+    <div class="problem-card">
+      <div class="icon">📈</div>
+      <h3>Demand is growing faster than supply</h3>
+      <p>The home improvement and repair sector is expected to <span class="highlight">grow 40% over the next 10 years</span>. The UK needs <span class="highlight">1.3 million new tradespeople</span> to meet that demand. The tradespeople who exist need to work smarter, not harder — and quoting is the most fixable bottleneck.</p>
+      <p class="source">Source: Checkatrade Trade Skills Index, 2024</p>
+    </div>
+
+  </div>
+
+  <div class="market-bar">
+    <div class="market-num">745k</div>
+    <p><span>Self-employed construction workers in the UK</span> — the largest self-employed group in any industry (ONS, 2024). Every one of them writes quotes. Most still do it with a notepad, a spreadsheet, or their memory.</p>
+  </div>
+
+</div><!-- /page-1 -->
+
+
+<!-- ══════════════════════════════════════════
+     PAGE 2 — THE SOLUTION
+══════════════════════════════════════════ -->
+<div class="page page-2">
+
+  <div class="solution-top">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <span class="brand-name">AccuQuote</span>
+      <span style="font-size:11px;color:rgba(255,255,255,0.4);">accuquote.app</span>
+    </div>
+    <p class="page-label">The solution</p>
+    <h2>Built by a PM and master tradesmen.<br>Finally, a quoting tool that works <em>the way you work</em>.</h2>
+  </div>
+
+  <div class="how-section">
+    <h3>How it works</h3>
+    <div class="steps">
+      <div class="step">
+        <div class="step-left">
+          <div class="step-num">1</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-content">
+          <h4>Tell AccuQuote how you work — once</h4>
+          <p>Answer plain-English questions: your trade, day rate, preferred supplier, material markup, what you include in a quote. AccuQuote builds an AI profile that prices every future quote exactly the way you would.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-left">
+          <div class="step-num">2</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-content">
+          <h4>Scan the room with your iPhone</h4>
+          <p>LiDAR technology maps dimensions in seconds. No tape measure, no manual data entry. Falls back to camera sweep or manual entry on older devices.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-left">
+          <div class="step-num">3</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-content">
+          <h4>Describe the job in plain English</h4>
+          <p>"Full rewire, 3-bed semi." "Skim two bedrooms and landing." The AI generates a complete, itemised bill of materials from your supplier catalogue — real SKUs, real prices, real quantities.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-left">
+          <div class="step-num">4</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-content">
+          <h4>Send a professional PDF to your client</h4>
+          <p>Review, adjust anything, and export a branded PDF with your business name and contact details. From scan to send in under 20 minutes.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="feature-grid">
+    <div class="feature-pill">
+      <div class="fp-icon">📐</div>
+      <h4>LiDAR room scanning</h4>
+      <p>Accurate dimensions without a tape measure. Works on iPhone 12 Pro and later.</p>
+    </div>
+    <div class="feature-pill">
+      <div class="fp-icon">🤖</div>
+      <h4>AI bill of materials</h4>
+      <p>Real products, real SKUs, real prices from your preferred supplier.</p>
+    </div>
+    <div class="feature-pill">
+      <div class="fp-icon">📄</div>
+      <h4>Branded PDF quotes</h4>
+      <p>Professional document with your business details, ready to email from the job site.</p>
+    </div>
+    <div class="feature-pill">
+      <div class="fp-icon">🛒</div>
+      <h4>Order direct</h4>
+      <p>Tap through to Screwfix, Toolstation or Travis Perkins with your materials ready.</p>
+    </div>
+    <div class="feature-pill">
+      <div class="fp-icon">✏️</div>
+      <h4>Custom room shapes</h4>
+      <p>Draw L-shapes, T-shapes or any floor plan. Area calculated automatically.</p>
+    </div>
+    <div class="feature-pill">
+      <div class="fp-icon">📱</div>
+      <h4>iPhone-first</h4>
+      <p>Everything from the job site. No laptop, no spreadsheet, no going back to the office.</p>
+    </div>
+  </div>
+
+  <div class="compare-section">
+    <div class="compare-card before">
+      <div class="compare-label">❌ Without AccuQuote</div>
+      <div class="compare-row"><span class="task">Site visit + measuring</span><span class="time-before">45 min</span></div>
+      <div class="compare-row"><span class="task">Pricing materials manually</span><span class="time-before">40 min</span></div>
+      <div class="compare-row"><span class="task">Writing up the quote</span><span class="time-before">30 min</span></div>
+      <div class="compare-row"><span class="task">Formatting &amp; sending PDF</span><span class="time-before">15 min</span></div>
+      <div class="compare-row"><span class="task">Chasing the client</span><span class="time-before">20 min</span></div>
+      <div class="compare-total before"><span>Total per quote</span><span>~2.5 hours</span></div>
+    </div>
+    <div class="compare-card after">
+      <div class="compare-label">✅ With AccuQuote</div>
+      <div class="compare-row"><span class="task">LiDAR room scan</span><span class="time-after">3 min</span></div>
+      <div class="compare-row"><span class="task">AI generates BOM</span><span class="time-after">2 min</span></div>
+      <div class="compare-row"><span class="task">Review &amp; adjust</span><span class="time-after">5 min</span></div>
+      <div class="compare-row"><span class="task">PDF auto-generated &amp; sent</span><span class="time-after">2 min</span></div>
+      <div class="compare-row"><span class="task">Professional quote delivered</span><span class="time-after">—</span></div>
+      <div class="compare-total after"><span>Total per quote</span><span>~12 minutes</span></div>
+    </div>
+  </div>
+
+  <div class="solution-footer">
+    <div class="footer-left">
+      <h4>Start free. 3 quotes included. No card required.</h4>
+      <p>Then £59/month for unlimited quotes · £119/month for teams</p>
+    </div>
+    <a href="https://accuquote.app" class="footer-cta">accuquote.app</a>
+  </div>
+
+</div><!-- /page-2 -->
+
+<button class="print-btn no-print" onclick="window.print()">Print / Save as PDF</button>
+
+</body>
+</html>

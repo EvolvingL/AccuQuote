@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AccuQuote Beta Trial — Participant Guide</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f5f5f0;
+      color: #1a1a1a;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto 20px;
+      background: #ffffff;
+      position: relative;
+      overflow: hidden;
+    }
+
+    @media print {
+      body { background: white; }
+      .page { margin: 0; page-break-after: always; }
+      .page:last-child { page-break-after: avoid; }
+    }
+
+    /* ───── COVER PAGE ───── */
+    .cover {
+      background: #0D1120;
+      display: flex;
+      flex-direction: column;
+      padding: 52px 52px 48px;
+    }
+
+    .cover-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 64px;
+    }
+
+    .brand-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #C8922A;
+    }
+
+    .brand-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: #ffffff;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .cover-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(200,146,42,0.15);
+      border: 1px solid rgba(200,146,42,0.35);
+      border-radius: 100px;
+      padding: 6px 16px;
+      margin-bottom: 28px;
+      width: fit-content;
+    }
+
+    .cover-badge span {
+      font-size: 12px;
+      font-weight: 500;
+      color: #C8922A;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .cover h1 {
+      font-size: 38px;
+      font-weight: 700;
+      color: #ffffff;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      max-width: 460px;
+      margin-bottom: 20px;
+    }
+
+    .cover h1 em {
+      font-style: normal;
+      color: #C8922A;
+    }
+
+    .cover-subtitle {
+      font-size: 16px;
+      font-weight: 400;
+      color: rgba(255,255,255,0.55);
+      line-height: 1.6;
+      max-width: 420px;
+      margin-bottom: 56px;
+    }
+
+    .cover-divider {
+      width: 48px;
+      height: 2px;
+      background: #C8922A;
+      margin-bottom: 36px;
+    }
+
+    .cover-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .meta-item {
+      padding: 20px 24px;
+      border-right: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .meta-item:last-child { border-right: none; }
+
+    .meta-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.35);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+
+    .meta-value {
+      font-size: 14px;
+      font-weight: 600;
+      color: #ffffff;
+    }
+
+    .cover-spacer { flex: 1; }
+
+    .cover-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-top: 48px;
+      padding-top: 24px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .cover-footer-note {
+      font-size: 12px;
+      color: rgba(255,255,255,0.3);
+      line-height: 1.5;
+    }
+
+    .cover-footer-url {
+      font-size: 13px;
+      font-weight: 500;
+      color: #C8922A;
+      letter-spacing: 0.02em;
+    }
+
+    /* ───── CONTENT PAGE ───── */
+    .content {
+      padding: 52px 52px 48px;
+    }
+
+    .section {
+      margin-bottom: 40px;
+    }
+
+    .section-eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .eyebrow-number {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #C8922A;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: #ffffff;
+      flex-shrink: 0;
+    }
+
+    .eyebrow-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #C8922A;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .section h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #0D1120;
+      letter-spacing: -0.01em;
+      margin-bottom: 10px;
+    }
+
+    .section p {
+      font-size: 13.5px;
+      font-weight: 400;
+      color: #444;
+      line-height: 1.7;
+    }
+
+    /* Task grid */
+    .task-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .task-card {
+      border: 1px solid #e8e8e0;
+      border-radius: 10px;
+      padding: 16px 18px;
+      position: relative;
+    }
+
+    .task-card::before {
+      content: attr(data-step);
+      position: absolute;
+      top: 14px;
+      right: 16px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #C8922A;
+      background: rgba(200,146,42,0.1);
+      border-radius: 100px;
+      padding: 2px 8px;
+    }
+
+    .task-card h4 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0D1120;
+      margin-bottom: 5px;
+    }
+
+    .task-card p {
+      font-size: 12px;
+      color: #666;
+      line-height: 1.55;
+    }
+
+    /* Timeline */
+    .timeline {
+      margin-top: 14px;
+      border-left: 2px solid #e8e8e0;
+      padding-left: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .timeline-item {
+      position: relative;
+      padding-bottom: 20px;
+    }
+
+    .timeline-item:last-child { padding-bottom: 0; }
+
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -25px;
+      top: 5px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #C8922A;
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 0 1px #C8922A;
+    }
+
+    .timeline-week {
+      font-size: 11px;
+      font-weight: 600;
+      color: #C8922A;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 3px;
+    }
+
+    .timeline-desc {
+      font-size: 13px;
+      font-weight: 500;
+      color: #0D1120;
+      margin-bottom: 3px;
+    }
+
+    .timeline-sub {
+      font-size: 12px;
+      color: #777;
+      line-height: 1.5;
+    }
+
+    /* Benefits */
+    .benefits-list {
+      margin-top: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .benefit-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .benefit-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: #f5f5f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .benefit-text strong {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #0D1120;
+      margin-bottom: 1px;
+    }
+
+    .benefit-text span {
+      font-size: 12px;
+      color: #777;
+      line-height: 1.5;
+    }
+
+    /* Feedback box */
+    .feedback-box {
+      background: #0D1120;
+      border-radius: 12px;
+      padding: 22px 24px;
+      margin-top: 14px;
+    }
+
+    .feedback-box h4 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 8px;
+    }
+
+    .feedback-channels {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .channel-pill {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 100px;
+      padding: 8px 14px;
+    }
+
+    .channel-pill .icon { font-size: 14px; }
+    .channel-pill .label { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.75); }
+    .channel-pill .value { font-size: 12px; font-weight: 600; color: #C8922A; }
+
+    /* NDA note */
+    .nda-banner {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(200,146,42,0.08);
+      border: 1px solid rgba(200,146,42,0.25);
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin-top: 32px;
+    }
+
+    .nda-banner .icon { font-size: 18px; flex-shrink: 0; }
+    .nda-banner p { font-size: 12px; color: #555; line-height: 1.55; }
+    .nda-banner p strong { color: #0D1120; }
+
+    /* Page header for page 2 */
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 20px;
+      margin-bottom: 32px;
+      border-bottom: 1px solid #e8e8e0;
+    }
+
+    .page-header-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .page-header-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #C8922A;
+    }
+
+    .page-header-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0D1120;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .page-header-label {
+      font-size: 12px;
+      color: #999;
+      font-weight: 400;
+    }
+
+    /* Page footer */
+    .page-footer {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid #e8e8e0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .page-footer p {
+      font-size: 11px;
+      color: #aaa;
+    }
+
+    .page-footer .url {
+      font-size: 12px;
+      font-weight: 600;
+      color: #C8922A;
+    }
+
+    /* Two-column layout */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+    }
+
+    .col-section { margin-bottom: 0; }
+
+    /* Highlight stat */
+    .highlight-stat {
+      background: #f9f9f6;
+      border-radius: 10px;
+      padding: 18px 20px;
+      margin-top: 12px;
+      text-align: center;
+      border: 1px solid #eee;
+    }
+
+    .highlight-stat .number {
+      font-size: 32px;
+      font-weight: 700;
+      color: #C8922A;
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+
+    .highlight-stat .label {
+      font-size: 12px;
+      color: #888;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════ PAGE 1 — COVER ═══════════════════════════════════ -->
+  <div class="page cover">
+
+    <div class="cover-brand">
+      <div class="brand-dot"></div>
+      <div class="brand-name">AccuQuote</div>
+    </div>
+
+    <div class="cover-badge">
+      <span>Closed Beta · May 2025</span>
+    </div>
+
+    <h1>Welcome to the <em>Founding Beta</em> Trial</h1>
+
+    <p class="cover-subtitle">
+      You're one of the first tradespeople to test AccuQuote in the real world.
+      This guide covers everything you need to know — what to do, when to do it,
+      and what you'll get in return.
+    </p>
+
+    <div class="cover-divider"></div>
+
+    <div class="cover-meta">
+      <div class="meta-item">
+        <div class="meta-label">Trial Duration</div>
+        <div class="meta-value">2 Weeks</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Beta Group Size</div>
+        <div class="meta-value">100 Tradespeople</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Platform</div>
+        <div class="meta-value">iOS (iPhone)</div>
+      </div>
+    </div>
+
+    <div class="cover-spacer"></div>
+
+    <div class="cover-footer">
+      <div class="cover-footer-note">
+        Distributed via Apple TestFlight.<br>
+        Confidential — not for wider circulation.
+      </div>
+      <div class="cover-footer-url">accuquote.app</div>
+    </div>
+
+  </div>
+
+
+  <!-- ═══════════════════════════════════ PAGE 2 — DETAIL ═══════════════════════════════════ -->
+  <div class="page content">
+
+    <div class="page-header">
+      <div class="page-header-brand">
+        <div class="page-header-dot"></div>
+        <div class="page-header-name">AccuQuote</div>
+      </div>
+      <div class="page-header-label">Beta Participant Guide · Confidential</div>
+    </div>
+
+    <div class="two-col">
+
+      <!-- LEFT COLUMN -->
+      <div>
+
+        <!-- Section 1 -->
+        <div class="section col-section" style="margin-bottom:32px;">
+          <div class="section-eyebrow">
+            <div class="eyebrow-number">1</div>
+            <div class="eyebrow-label">What is AccuQuote?</div>
+          </div>
+          <h2>Quotes in minutes, not hours</h2>
+          <p>AccuQuote lets you scan or photograph a room, answer a few quick questions about the job, and generates a full itemised quote — complete with materials list — in under 12 minutes. No spreadsheets. No guesswork.</p>
+          <div class="highlight-stat">
+            <div class="number">12 min</div>
+            <div class="label">Average quote time vs. 2.5 hours today</div>
+          </div>
+        </div>
+
+        <!-- Section 2 -->
+        <div class="section col-section" style="margin-bottom:32px;">
+          <div class="section-eyebrow">
+            <div class="eyebrow-number">2</div>
+            <div class="eyebrow-label">Your Tasks</div>
+          </div>
+          <h2>What we're asking you to do</h2>
+          <p>Over two weeks, complete five short tasks at your own pace. Each one takes 5–20 minutes.</p>
+
+          <div class="task-grid">
+            <div class="task-card" data-step="Task 1">
+              <h4>Set Up Your Profile</h4>
+              <p>Tell AccuQuote about your trade, your usual supplier, and the materials you order most.</p>
+            </div>
+            <div class="task-card" data-step="Task 2">
+              <h4>Quote a Real Job</h4>
+              <p>Use AccuQuote on an actual upcoming job — scan the room or enter dimensions manually.</p>
+            </div>
+            <div class="task-card" data-step="Task 3">
+              <h4>Send the PDF</h4>
+              <p>Generate and send the quote PDF to your customer, just as you would a normal quote.</p>
+            </div>
+            <div class="task-card" data-step="Task 4">
+              <h4>Try a Custom Shape</h4>
+              <p>Use the "Draw Room" feature to map an L-shaped or irregular space.</p>
+            </div>
+            <div class="task-card" data-step="Task 5" style="grid-column: 1/-1;">
+              <h4>Complete the Exit Survey</h4>
+              <p>A 5-minute form covering what worked, what didn't, and what you'd pay for it. Your single most important contribution to the product.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT COLUMN -->
+      <div>
+
+        <!-- Section 3 — Timeline -->
+        <div class="section col-section" style="margin-bottom:32px;">
+          <div class="section-eyebrow">
+            <div class="eyebrow-number">3</div>
+            <div class="eyebrow-label">Timeline</div>
+          </div>
+          <h2>Two-week schedule</h2>
+
+          <div class="timeline">
+            <div class="timeline-item">
+              <div class="timeline-week">Day 1</div>
+              <div class="timeline-desc">Install via TestFlight & set up profile</div>
+              <div class="timeline-sub">You'll receive a TestFlight invite link by email. The app installs like any other.</div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-week">Days 2–7</div>
+              <div class="timeline-desc">Complete Tasks 1–4 on real jobs</div>
+              <div class="timeline-sub">No minimum — quote as many jobs as you like. Each quote improves accuracy for your trade.</div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-week">Days 8–12</div>
+              <div class="timeline-desc">Continue quoting &amp; note any issues</div>
+              <div class="timeline-sub">Drop any bugs or ideas into the feedback channel as you go — no need to batch them up.</div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-week">Day 14</div>
+              <div class="timeline-desc">Exit survey &amp; debrief call (optional)</div>
+              <div class="timeline-sub">Survey link sent by email. Optional 15-min call for those who want to discuss in depth.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 4 — Benefits -->
+        <div class="section col-section" style="margin-bottom:0;">
+          <div class="section-eyebrow">
+            <div class="eyebrow-number">4</div>
+            <div class="eyebrow-label">What You Get</div>
+          </div>
+          <h2>Your benefits as a Founder</h2>
+
+          <div class="benefits-list">
+            <div class="benefit-row">
+              <div class="benefit-icon">🔓</div>
+              <div class="benefit-text">
+                <strong>Free Premium Access</strong>
+                <span>Full app — unlimited quotes, all features — free for the entire trial and 3 months beyond launch.</span>
+              </div>
+            </div>
+            <div class="benefit-row">
+              <div class="benefit-icon">💰</div>
+              <div class="benefit-text">
+                <strong>Founding Member Rate</strong>
+                <span>Lock in 50% off the subscription price forever, as a thank-you for testing before launch.</span>
+              </div>
+            </div>
+            <div class="benefit-row">
+              <div class="benefit-icon">🎙️</div>
+              <div class="benefit-text">
+                <strong>Direct Line to the Team</strong>
+                <span>Your feedback shapes the product. Features you request go straight onto the roadmap.</span>
+              </div>
+            </div>
+            <div class="benefit-row">
+              <div class="benefit-icon">⭐</div>
+              <div class="benefit-text">
+                <strong>Founder Credit</strong>
+                <span>Your name listed as a Founding Beta Tester in the app and on the AccuQuote website.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Feedback Box -->
+    <div class="feedback-box">
+      <h4>How to share feedback during the trial</h4>
+      <div class="feedback-channels">
+        <div class="channel-pill">
+          <span class="icon">📱</span>
+          <span class="label">In-app button</span>
+          <span class="value">Tap "Feedback" on the home screen</span>
+        </div>
+        <div class="channel-pill">
+          <span class="icon">✉️</span>
+          <span class="label">Email</span>
+          <span class="value">beta@accuquote.app</span>
+        </div>
+        <div class="channel-pill">
+          <span class="icon">💬</span>
+          <span class="label">WhatsApp group</span>
+          <span class="value">Link sent with your TestFlight invite</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- NDA Note -->
+    <div class="nda-banner">
+      <div class="icon">🔒</div>
+      <p><strong>Confidentiality:</strong> AccuQuote is in pre-launch beta. Please don't share screenshots, the TestFlight link, or pricing details publicly. You're welcome to tell other tradespeople you're testing a new quoting app — just hold off on specifics until we launch. Thank you.</p>
+    </div>
+
+    <div class="page-footer">
+      <p>AccuQuote Founding Beta · May 2025 · Confidential</p>
+      <div class="url">accuquote.app</div>
+    </div>
+
+  </div>
+
+</body>
+</html>

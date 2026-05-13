@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>How AccuQuote Works — Quoting Software for UK Tradespeople</title>
+  <meta name="description" content="See exactly how AccuQuote works. Scan the room, describe the job, get a full itemised quote with real supplier prices in minutes. Built for UK tradespeople." />
+  <meta name="keywords" content="how quoting software works tradesmen, quoting app for electricians, trades quoting software UK, how to quote faster as a tradesman, job quoting app iPhone" />
+  <link rel="canonical" href="https://accuquote.app/how-it-works.html" />
+
+  <meta property="og:title" content="How AccuQuote Works — Quoting Done in Minutes" />
+  <meta property="og:description" content="Scan the room, describe the job, send a branded PDF quote. See every step." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://accuquote.app/how-it-works.html" />
+
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --gold: #C8922A;
+      --gold-hover: #b07e22;
+      --gold-light: rgba(200,146,42,0.1);
+      --gold-border: rgba(200,146,42,0.28);
+      --dark: #1D1D1F;
+      --secondary: #6E6E73;
+      --navy: #0A0A1A;
+      --white: #FFFFFF;
+      --off-white: #F5F5F7;
+      --border: #E0E0E5;
+      --radius: 14px;
+      --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      font-size: 16px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--white);
+      color: var(--dark);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+
+    /* ── NAV (identical to main site) ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: var(--navy);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-logo svg {
+      width: 32px;
+      height: 32px;
+      flex-shrink: 0;
+      border-radius: 7px;
+      overflow: hidden;
+    }
+
+    .nav-logo-wordmark {
+      font-size: 1.125rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--white);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 36px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: rgba(255,255,255,0.75);
+      font-size: 0.9375rem;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      transition: color 0.2s ease;
+    }
+
+    .nav-links a:hover { color: var(--white); }
+
+    .nav-links a.active { color: var(--white); }
+
+    .nav-cta {
+      background: var(--gold);
+      color: var(--white) !important;
+      padding: 9px 20px;
+      border-radius: 100px;
+      font-weight: 600 !important;
+      font-size: 0.875rem !important;
+      transition: background 0.2s ease, transform 0.15s ease !important;
+    }
+
+    .nav-cta:hover {
+      background: var(--gold-hover) !important;
+      transform: translateY(-1px);
+    }
+
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 8px;
+    }
+
+    .hamburger span {
+      display: block;
+      width: 22px;
+      height: 1.5px;
+      background: rgba(255,255,255,0.8);
+      border-radius: 2px;
+      transition: all 0.25s ease;
+    }
+
+    .hamburger.open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity: 0; }
+    .hamburger.open span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+
+    .mobile-menu {
+      display: none;
+      flex-direction: column;
+      background: var(--navy);
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding: 16px 24px 24px;
+      gap: 4px;
+    }
+
+    .mobile-menu.open { display: flex; }
+
+    .mobile-menu a {
+      color: rgba(255,255,255,0.75);
+      font-size: 1.0625rem;
+      font-weight: 500;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      transition: color 0.2s ease;
+    }
+
+    .mobile-menu a:last-child { border-bottom: none; }
+    .mobile-menu a:hover { color: var(--white); }
+
+    .mobile-menu .nav-cta {
+      margin-top: 12px;
+      text-align: center;
+      display: block;
+      border-bottom: none !important;
+    }
+
+    /* ── LAYOUT ── */
+    section { padding: 100px 24px; }
+
+    .section-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 16px;
+    }
+
+    h1, h2, h3 {
+      letter-spacing: -0.025em;
+      line-height: 1.12;
+    }
+
+    h1 { font-size: clamp(2.2rem, 5vw, 3.5rem); font-weight: 700; }
+    h2 { font-size: clamp(1.6rem, 3.5vw, 2.5rem); font-weight: 700; }
+    h3 { font-size: clamp(1.1rem, 2vw, 1.35rem); font-weight: 600; }
+
+    p { font-size: 1.0625rem; color: var(--secondary); line-height: 1.75; }
+
+    .btn-primary {
+      display: inline-block;
+      background: var(--gold);
+      color: var(--white);
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 15px 34px;
+      border-radius: 100px;
+      letter-spacing: -0.01em;
+      transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+      box-shadow: 0 4px 20px rgba(200,146,42,0.3);
+    }
+
+    .btn-primary:hover {
+      background: var(--gold-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(200,146,42,0.4);
+    }
+
+    .btn-secondary {
+      display: inline-block;
+      background: transparent;
+      color: var(--gold);
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 14px 32px;
+      border-radius: 100px;
+      border: 1.5px solid var(--gold);
+      letter-spacing: -0.01em;
+      transition: all 0.2s ease;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(200,146,42,0.08);
+      transform: translateY(-1px);
+    }
+
+    /* ── HERO ── */
+    .page-hero {
+      background: var(--navy);
+      padding: 80px 24px 90px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .page-hero::before {
+      content: '';
+      position: absolute;
+      top: -150px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 700px;
+      height: 700px;
+      background: radial-gradient(circle, rgba(200,146,42,0.07) 0%, transparent 65%);
+      pointer-events: none;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--gold-light);
+      border: 1px solid var(--gold-border);
+      border-radius: 100px;
+      padding: 6px 18px;
+      margin-bottom: 28px;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--gold);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+
+    .page-hero h1 {
+      color: var(--white);
+      max-width: 740px;
+      margin: 0 auto 18px;
+    }
+
+    .page-hero h1 span { color: var(--gold); }
+
+    .page-hero .hero-sub {
+      font-size: clamp(1rem, 2vw, 1.2rem);
+      color: rgba(255,255,255,0.55);
+      max-width: 540px;
+      margin: 0 auto 44px;
+      line-height: 1.65;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* ── STAT STRIP ── */
+    .stat-strip {
+      background: var(--off-white);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+    }
+
+    .stat-strip .section-inner {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      divide-x: 1px solid var(--border);
+    }
+
+    .stat-cell {
+      padding: 44px 32px;
+      text-align: center;
+      border-right: 1px solid var(--border);
+    }
+
+    .stat-cell:last-child { border-right: none; }
+
+    .stat-cell .num {
+      font-size: 2.75rem;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: -0.03em;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .stat-cell .desc {
+      font-size: 0.9375rem;
+      color: var(--secondary);
+      line-height: 1.5;
+    }
+
+    /* ── HOW IT WORKS ── */
+    .steps-section { background: var(--white); }
+
+    .steps-header {
+      text-align: center;
+      margin-bottom: 72px;
+    }
+
+    .steps-header h2 { color: var(--dark); margin-bottom: 14px; }
+    .steps-header p { max-width: 580px; margin: 0 auto; }
+
+    .steps-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .step-row {
+      display: grid;
+      grid-template-columns: 80px 1fr 1fr;
+      gap: 48px;
+      align-items: start;
+      padding: 52px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .step-row:last-child { border-bottom: none; }
+
+    .step-row:nth-child(even) .step-text { order: -1; }
+    .step-row:nth-child(even) .step-vis { order: 1; }
+
+    .step-number-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 6px;
+    }
+
+    .step-num-badge {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--navy);
+      color: var(--gold);
+      font-size: 1.125rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .step-connector {
+      width: 1px;
+      height: 40px;
+      background: var(--border);
+      margin-top: 8px;
+    }
+
+    .step-row:last-child .step-connector { display: none; }
+
+    .step-text { padding-top: 6px; }
+
+    .step-text .step-label {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--gold);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 10px;
+    }
+
+    .step-text h3 {
+      color: var(--dark);
+      margin-bottom: 14px;
+    }
+
+    .step-text p {
+      font-size: 1rem;
+      line-height: 1.7;
+    }
+
+    .step-text .step-detail {
+      margin-top: 16px;
+      padding: 14px 18px;
+      background: var(--off-white);
+      border-radius: 10px;
+      border-left: 3px solid var(--gold);
+      font-size: 0.9375rem;
+      color: var(--secondary);
+      font-style: italic;
+    }
+
+    .step-vis {
+      background: var(--off-white);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 36px 32px;
+      min-height: 200px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .mock-phone {
+      background: var(--navy);
+      border-radius: 12px;
+      padding: 20px;
+      color: rgba(255,255,255,0.85);
+    }
+
+    .mock-label {
+      font-size: 0.75rem;
+      color: var(--gold);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 14px;
+    }
+
+    .mock-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      font-size: 0.875rem;
+    }
+
+    .mock-row:last-child { border-bottom: none; }
+
+    .mock-row .key { color: rgba(255,255,255,0.45); }
+    .mock-row .val { font-weight: 600; color: #fff; }
+
+    .mock-items {
+      margin-top: 4px;
+    }
+
+    .mock-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      font-size: 0.8125rem;
+    }
+
+    .mock-item:last-child { border-bottom: none; }
+
+    .mock-item .name { color: rgba(255,255,255,0.8); max-width: 160px; line-height: 1.35; }
+    .mock-item .price { color: var(--gold); font-weight: 700; white-space: nowrap; padding-left: 8px; }
+
+    .mock-shape {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .shape-canvas {
+      width: 100%;
+      max-width: 220px;
+      height: 140px;
+      border: 1.5px solid rgba(200,146,42,0.4);
+      border-radius: 8px;
+      position: relative;
+      background: rgba(200,146,42,0.04);
+    }
+
+    .shape-outline {
+      position: absolute;
+      inset: 18px 24px 18px 24px;
+      border: 2px dashed rgba(200,146,42,0.6);
+      border-right: none;
+      border-bottom: none;
+      border-radius: 2px;
+    }
+
+    .shape-outline::after {
+      content: '';
+      position: absolute;
+      bottom: -50px;
+      left: 50%;
+      width: 50%;
+      height: 50px;
+      border: 2px dashed rgba(200,146,42,0.6);
+      border-top: none;
+      border-left: none;
+    }
+
+    .shape-label {
+      font-size: 0.8125rem;
+      color: var(--secondary);
+      text-align: center;
+    }
+
+    .pdf-preview {
+      background: #fff;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      padding: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+
+    .pdf-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #eee;
+      margin-bottom: 12px;
+    }
+
+    .pdf-biz { font-size: 0.875rem; font-weight: 700; color: var(--dark); }
+    .pdf-biz-sub { font-size: 0.75rem; color: var(--secondary); margin-top: 2px; }
+    .pdf-total { font-size: 0.9375rem; font-weight: 700; color: var(--gold); }
+
+    .pdf-line {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8125rem;
+      padding: 4px 0;
+      border-bottom: 1px solid #f5f5f5;
+      color: var(--secondary);
+    }
+
+    .pdf-line:last-child { border-bottom: none; }
+    .pdf-line .pname { max-width: 200px; }
+    .pdf-line .pprice { font-weight: 600; color: var(--dark); white-space: nowrap; padding-left: 8px; }
+
+    /* ── FEATURES GRID ── */
+    .features-section { background: var(--off-white); }
+
+    .features-header {
+      text-align: center;
+      margin-bottom: 56px;
+    }
+
+    .features-header h2 { color: var(--dark); margin-bottom: 12px; }
+    .features-header p { max-width: 560px; margin: 0 auto; }
+
+    .feature-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .feature-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 36px 28px;
+      border: 1px solid var(--border);
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+    }
+
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      background: var(--gold-light);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 22px;
+    }
+
+    .feature-card h3 { color: var(--dark); margin-bottom: 10px; font-size: 1.125rem; }
+    .feature-card p { font-size: 0.9375rem; }
+
+    /* ── BEFORE / AFTER ── */
+    .compare-section { background: var(--navy); }
+
+    .compare-inner { max-width: 1100px; margin: 0 auto; }
+
+    .compare-section .section-label { color: rgba(200,146,42,0.8); }
+
+    .compare-section h2 {
+      color: var(--white);
+      margin-bottom: 14px;
+    }
+
+    .compare-section > div > p {
+      color: rgba(255,255,255,0.45);
+      max-width: 520px;
+    }
+
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 52px;
+    }
+
+    .compare-col {
+      border-radius: var(--radius);
+      padding: 36px 32px;
+    }
+
+    .compare-col.before {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .compare-col.after {
+      background: var(--gold-light);
+      border: 1px solid var(--gold-border);
+    }
+
+    .col-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 24px;
+    }
+
+    .compare-col.before .col-label { color: rgba(255,255,255,0.3); }
+    .compare-col.after .col-label { color: var(--gold); }
+
+    .compare-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .compare-item:last-child { margin-bottom: 0; }
+
+    .ci-dot {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 1px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.6875rem;
+      font-weight: 700;
+    }
+
+    .compare-col.before .ci-dot {
+      background: rgba(255,255,255,0.07);
+      color: rgba(255,255,255,0.25);
+    }
+
+    .compare-col.after .ci-dot {
+      background: var(--gold);
+      color: #fff;
+    }
+
+    .ci-text {
+      font-size: 0.9375rem;
+      line-height: 1.55;
+    }
+
+    .compare-col.before .ci-text { color: rgba(255,255,255,0.45); }
+    .compare-col.after .ci-text { color: rgba(255,255,255,0.88); }
+
+    /* ── PROFILE ── */
+    .profile-section { background: var(--white); }
+
+    .profile-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 72px;
+      align-items: center;
+    }
+
+    .profile-text h2 { color: var(--dark); margin-bottom: 18px; }
+
+    .profile-card {
+      background: var(--navy);
+      border-radius: var(--radius);
+      padding: 36px;
+    }
+
+    .profile-card-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--gold);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 24px;
+    }
+
+    .profile-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+
+    .profile-row:last-child { border-bottom: none; }
+
+    .pr-key { font-size: 0.875rem; color: rgba(255,255,255,0.38); white-space: nowrap; }
+    .pr-val { font-size: 0.875rem; font-weight: 600; color: #fff; text-align: right; }
+
+    /* ── FAQ ── */
+    .faq-section { background: var(--off-white); }
+
+    .faq-header {
+      text-align: center;
+      margin-bottom: 56px;
+    }
+
+    .faq-header h2 { color: var(--dark); margin-bottom: 12px; }
+
+    .faq-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
+    }
+
+    .faq-item {
+      margin-bottom: 32px;
+    }
+
+    .faq-item:last-child { margin-bottom: 0; }
+
+    .faq-item h4 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--dark);
+      letter-spacing: -0.01em;
+      margin-bottom: 8px;
+    }
+
+    .faq-item p { font-size: 0.9375rem; }
+
+    /* ── CTA BANNER ── */
+    .cta-banner {
+      background: var(--navy);
+      padding: 100px 24px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-banner::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(200,146,42,0.08) 0%, transparent 65%);
+      pointer-events: none;
+    }
+
+    .cta-banner h2 {
+      color: var(--white);
+      margin-bottom: 14px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .cta-banner p {
+      color: rgba(255,255,255,0.45);
+      max-width: 480px;
+      margin: 0 auto 40px;
+    }
+
+    .cta-actions {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--navy);
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding: 60px 24px 40px;
+      text-align: center;
+    }
+
+    .footer-logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .footer-logo svg {
+      width: 48px;
+      height: 48px;
+      border-radius: 11px;
+      overflow: hidden;
+    }
+
+    .footer-logo-wordmark {
+      font-size: 1.375rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      color: var(--white);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 32px;
+      justify-content: center;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+    }
+
+    .footer-links a {
+      color: rgba(255,255,255,0.45);
+      font-size: 0.9375rem;
+      font-weight: 500;
+      transition: color 0.2s ease;
+    }
+
+    .footer-links a:hover { color: rgba(255,255,255,0.8); }
+
+    .footer-copy p {
+      font-size: 0.875rem;
+      color: rgba(255,255,255,0.2);
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .stat-strip .section-inner {
+        grid-template-columns: 1fr;
+      }
+      .stat-cell {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        padding: 32px 24px;
+      }
+      .stat-cell:last-child { border-bottom: none; }
+
+      .step-row {
+        grid-template-columns: 48px 1fr;
+        gap: 24px;
+      }
+      .step-vis { grid-column: 2; }
+      .step-row:nth-child(even) .step-text { order: 0; }
+      .step-row:nth-child(even) .step-vis { order: 0; }
+
+      .feature-cards { grid-template-columns: 1fr 1fr; }
+      .compare-grid { grid-template-columns: 1fr; }
+      .profile-inner { grid-template-columns: 1fr; }
+      .faq-cols { grid-template-columns: 1fr; }
+
+      .nav-links { display: none; }
+      .hamburger { display: flex; }
+    }
+
+    @media (max-width: 600px) {
+      section { padding: 72px 20px; }
+      .feature-cards { grid-template-columns: 1fr; }
+      .step-row { grid-template-columns: 40px 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ INLINE SVG SYMBOL (AccuQuote compass icon) ══ -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+  <symbol id="aq-icon" viewBox="0 0 632 632">
+    <defs>
+      <radialGradient id="aq-gbg" cx="50%" cy="38%" r="62%"><stop offset="0%" stop-color="#1e1a2e"/><stop offset="100%" stop-color="#0a0612"/></radialGradient>
+      <radialGradient id="aq-gbg-glow" cx="50%" cy="32%" r="44%"><stop offset="0%" stop-color="rgba(200,146,42,0.13)"/><stop offset="100%" stop-color="rgba(200,146,42,0)"/></radialGradient>
+      <linearGradient id="aq-gv" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#FFD84D"/><stop offset="38%" stop-color="#C8922A"/><stop offset="72%" stop-color="#8B5E10"/><stop offset="100%" stop-color="#5A3A08"/></linearGradient>
+      <linearGradient id="aq-gxL" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="rgba(255,255,180,0.0)"/><stop offset="45%" stop-color="rgba(255,255,180,0.22)"/><stop offset="100%" stop-color="rgba(255,255,180,0.0)"/></linearGradient>
+      <linearGradient id="aq-gxR" x1="100%" y1="0%" x2="0%" y2="0%"><stop offset="0%" stop-color="rgba(255,255,180,0.0)"/><stop offset="45%" stop-color="rgba(255,255,180,0.22)"/><stop offset="100%" stop-color="rgba(255,255,180,0.0)"/></linearGradient>
+      <linearGradient id="aq-gcb" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#FFD84D"/><stop offset="100%" stop-color="#8B5E10"/></linearGradient>
+      <linearGradient id="aq-gtip" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#C8922A"/><stop offset="100%" stop-color="#FFD070"/></linearGradient>
+      <radialGradient id="aq-grs" cx="35%" cy="30%" r="65%"><stop offset="0%" stop-color="#FFE87A"/><stop offset="55%" stop-color="#C8922A"/><stop offset="100%" stop-color="#7A4800"/></radialGradient>
+      <radialGradient id="aq-grh" cx="38%" cy="28%" r="62%"><stop offset="0%" stop-color="#FFD84D"/><stop offset="60%" stop-color="#B07820"/><stop offset="100%" stop-color="#5A3A08"/></radialGradient>
+      <radialGradient id="aq-gri" cx="35%" cy="30%" r="65%"><stop offset="0%" stop-color="#FFFDE0"/><stop offset="100%" stop-color="#C8922A"/></radialGradient>
+      <linearGradient id="aq-gwood" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#c49a56"/><stop offset="50%" stop-color="#e8c078"/><stop offset="100%" stop-color="#c49a56"/></linearGradient>
+      <linearGradient id="aq-ggraph" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#e8e8e8"/><stop offset="100%" stop-color="#bdbdbd"/></linearGradient>
+      <filter id="aq-glow"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      <filter id="aq-hglow"><feGaussianBlur stdDeviation="7" result="g"/><feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      <filter id="aq-blur2"><feGaussianBlur stdDeviation="1.8"/></filter>
+      <filter id="aq-dshadow"><feDropShadow dx="3" dy="5" stdDeviation="8" flood-color="#000" flood-opacity="0.45"/></filter>
+    </defs>
+    <rect width="632" height="632" fill="url(#aq-gbg)" rx="126"/>
+    <rect width="632" height="632" fill="url(#aq-gbg-glow)" rx="126"/>
+    <g transform="translate(6,6)">
+      <g filter="url(#aq-dshadow)" opacity="0.75">
+        <polygon points="298.58,32.55 321.42,43.45 60.46,574.61 49.54,569.39" fill="#7A4800"/>
+        <polygon points="298.58,43.45 321.42,32.55 570.46,569.39 559.54,574.61" fill="#7A4800"/>
+        <line x1="203.0" y1="262" x2="417.0" y2="262" stroke="#7A4800" stroke-width="18.7" stroke-linecap="round"/>
+      </g>
+      <polygon points="298.58,32.55 321.42,43.45 60.46,574.61 49.54,569.39" fill="url(#aq-gv)" opacity="0.88"/>
+      <polygon points="298.58,32.55 321.42,43.45 60.46,574.61 49.54,569.39" fill="url(#aq-gxL)" opacity="0.68"/>
+      <polygon points="298.58,32.55 321.42,43.45 60.46,574.61 49.54,569.39" fill="none" stroke="rgba(70,35,0,0.52)" stroke-width="1.3"/>
+      <line x1="313.2" y1="39.5" x2="58.2" y2="573.5" stroke="rgba(255,252,185,0.85)" stroke-width="3.0" stroke-linecap="round" filter="url(#aq-blur2)"/>
+      <polygon points="298.58,43.45 321.42,32.55 570.46,569.39 559.54,574.61" fill="url(#aq-gv)" opacity="0.88"/>
+      <polygon points="298.58,43.45 321.42,32.55 570.46,569.39 559.54,574.61" fill="url(#aq-gxR)" opacity="0.68"/>
+      <polygon points="298.58,43.45 321.42,32.55 570.46,569.39 559.54,574.61" fill="none" stroke="rgba(70,35,0,0.52)" stroke-width="1.3"/>
+      <line x1="306.8" y1="39.5" x2="561.8" y2="573.5" stroke="rgba(255,252,185,0.85)" stroke-width="3.0" stroke-linecap="round" filter="url(#aq-blur2)"/>
+      <polygon points="45.3,510.4 64.7,510.4 60.3,564.3 49.7,564.3" fill="url(#aq-gtip)"/>
+      <polygon points="49.7,564.3 60.3,564.3 55,585.2" fill="url(#aq-gtip)"/>
+      <rect x="545.6" y="440.0" width="38.7" height="33.0" rx="4.8" fill="url(#aq-gri)"/>
+      <rect x="548.7" y="473.0" width="32.6" height="55.0" fill="url(#aq-gwood)" rx="3.3"/>
+      <polygon points="548.7,528.0 581.3,528.0 576.0,572.0 554.0,572.0" fill="url(#aq-gwood)" opacity="0.88"/>
+      <polygon points="554.0,572.0 576.0,572.0 565,605.0" fill="url(#aq-ggraph)"/>
+      <rect x="203.0" y="251.0" width="213.9" height="22.0" fill="rgba(0,0,0,0.38)" rx="8.8" transform="translate(2.5,4)"/>
+      <rect x="203.0" y="251.0" width="213.9" height="22.0" fill="url(#aq-gcb)" rx="8.8" stroke="rgba(70,35,0,0.48)" stroke-width="0.9"/>
+      <rect x="205.0" y="253.2" width="209.9" height="6.6" fill="rgba(255,250,185,0.52)" rx="4.8"/>
+      <circle cx="310" cy="262" r="30.8" fill="rgba(0,0,0,0.62)" filter="url(#aq-glow)"/>
+      <circle cx="310" cy="262" r="27.3" fill="url(#aq-grs)"/>
+      <circle cx="310" cy="262" r="20.2" fill="rgba(8,4,0,0.90)" stroke="#FFE135" stroke-width="3.7"/>
+      <circle cx="310" cy="262" r="13.2" fill="url(#aq-grs)"/>
+      <circle cx="310" cy="262" r="5.5" fill="rgba(255,253,200,0.88)"/>
+      <circle cx="203.0" cy="262.0" r="19.8" fill="rgba(0,0,0,0.82)" stroke="#C8920A" stroke-width="4.4"/><circle cx="203.0" cy="262.0" r="11.9" fill="url(#aq-grs)"/><circle cx="203.0" cy="262.0" r="4.4" fill="rgba(255,250,170,0.82)"/>
+      <circle cx="417.0" cy="262.0" r="19.8" fill="rgba(0,0,0,0.82)" stroke="#C8920A" stroke-width="4.4"/><circle cx="417.0" cy="262.0" r="11.9" fill="url(#aq-grs)"/><circle cx="417.0" cy="262.0" r="4.4" fill="rgba(255,250,170,0.82)"/>
+      <circle cx="310" cy="38" r="46.6" fill="url(#aq-grh)" filter="url(#aq-hglow)"/>
+      <circle cx="310" cy="38" r="36.3" fill="rgba(8,4,0,0.90)" stroke="#C8920A" stroke-width="4.6"/>
+      <circle cx="310" cy="38" r="29.5" fill="url(#aq-grh)"/>
+      <circle cx="310" cy="38" r="19.8" fill="rgba(8,4,0,0.86)" stroke="#FFE135" stroke-width="3.3"/>
+      <circle cx="310" cy="38" r="12.1" fill="url(#aq-gri)"/>
+      <circle cx="310" cy="38" r="4.2" fill="rgba(255,255,220,0.92)"/>
+      <ellipse cx="295.7" cy="23.7" rx="16.5" ry="9.7" fill="rgba(255,255,242,0.80)" transform="rotate(-43,310,38)" filter="url(#aq-blur2)"/>
+    </g>
+  </symbol>
+</svg>
+
+
+<!-- ══ NAV ══ -->
+<nav role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a href="./index.html" class="nav-logo" aria-label="AccuQuote home">
+      <svg width="32" height="32" viewBox="0 0 632 632" aria-hidden="true" focusable="false"><use href="#aq-icon"/></svg>
+      <span class="nav-logo-wordmark">AccuQuote</span>
+    </a>
+    <ul class="nav-links" role="list">
+      <li><a href="./index.html">Home</a></li>
+      <li><a href="./how-it-works.html" class="active">How It Works</a></li>
+      <li><a href="./index.html#pricing">Pricing</a></li>
+      <li><a href="./index.html#story">Our Story</a></li>
+      <li><a href="./index.html#testimonials">Testimonials</a></li>
+      <li><a href="./index.html#pricing" class="nav-cta">Start Free Trial</a></li>
+    </ul>
+    <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="mobile-menu" id="mobile-menu" role="menu">
+    <a href="./index.html" role="menuitem">Home</a>
+    <a href="./how-it-works.html" role="menuitem">How It Works</a>
+    <a href="./index.html#pricing" role="menuitem">Pricing</a>
+    <a href="./index.html#story" role="menuitem">Our Story</a>
+    <a href="./index.html#testimonials" role="menuitem">Testimonials</a>
+    <a href="./index.html#pricing" class="nav-cta" role="menuitem">Start Free Trial</a>
+  </div>
+</nav>
+
+
+<!-- ══ HERO ══ -->
+<div class="page-hero">
+  <div class="hero-badge">Built for the trades</div>
+  <h1>Stop spending your evenings<br><span>writing quotes</span></h1>
+  <p class="hero-sub">
+    Walk on site, scan the room, describe the work — and AccuQuote builds you
+    a professional, itemised quote with a full materials list in minutes. Not hours.
+  </p>
+  <div class="hero-actions">
+    <a href="./index.html#pricing" class="btn-primary">Start Free Trial</a>
+    <a href="#how-it-works" class="btn-secondary">See the steps</a>
+  </div>
+</div>
+
+
+<!-- ══ STAT STRIP ══ -->
+<div class="stat-strip">
+  <div class="section-inner">
+    <div class="stat-cell">
+      <div class="num">12 min</div>
+      <div class="desc">Average time to produce a full quote with AccuQuote</div>
+    </div>
+    <div class="stat-cell">
+      <div class="num">2.5 hrs</div>
+      <div class="desc">Average time tradespeople spend quoting manually today</div>
+    </div>
+    <div class="stat-cell">
+      <div class="num">£6,210</div>
+      <div class="desc">Average outstanding invoices owed to UK tradespeople</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ HOW IT WORKS ══ -->
+<section class="steps-section" id="how-it-works">
+  <div class="section-inner">
+    <div class="steps-header">
+      <p class="section-label">How it works</p>
+      <h2>Three steps. Done before the kettle boils.</h2>
+      <p>No training needed. If you can use WhatsApp, you can use AccuQuote.</p>
+    </div>
+
+    <div class="steps-list">
+
+      <!-- Step 1 -->
+      <div class="step-row">
+        <div class="step-number-col">
+          <div class="step-num-badge">1</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-text">
+          <div class="step-label">Step One</div>
+          <h3>Scan or measure the space</h3>
+          <p>
+            Point your phone at the room and AccuQuote captures the dimensions automatically —
+            length, width, height, the lot. Already have the measurements? Type them in instead.
+            Works for any room shape: square, L-shaped, extensions, anything.
+          </p>
+          <div class="step-detail">
+            No tape measure needed. No sketching on the back of an envelope.
+            The measurements go straight into the quote.
+          </div>
+        </div>
+        <div class="step-vis">
+          <div class="mock-phone">
+            <div class="mock-label">Room dimensions</div>
+            <div class="mock-row"><span class="key">Length</span><span class="val">4.8 m</span></div>
+            <div class="mock-row"><span class="key">Width</span><span class="val">3.6 m</span></div>
+            <div class="mock-row"><span class="key">Ceiling height</span><span class="val">2.4 m</span></div>
+            <div class="mock-row"><span class="key">Floor area</span><span class="val">17.3 m²</span></div>
+            <div class="mock-row"><span class="key">Wall area</span><span class="val">39.8 m²</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="step-row">
+        <div class="step-number-col">
+          <div class="step-num-badge">2</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-text">
+          <div class="step-label">Step Two</div>
+          <h3>Describe the job in your own words</h3>
+          <p>
+            Tell AccuQuote what the job involves — just like you'd explain it to a mate.
+            "Full rewire, 3-bed semi." "Skim two bedrooms and the landing." It turns that into
+            a complete, itemised list of every material you'll need, with part codes and
+            up-to-date prices from your usual supplier.
+          </p>
+          <div class="step-detail">
+            No product codes to look up. No catalogue to flick through.
+            Just describe it and let AccuQuote do the rest.
+          </div>
+        </div>
+        <div class="step-vis">
+          <div class="mock-phone">
+            <div class="mock-label">Materials list</div>
+            <div class="mock-items">
+              <div class="mock-item"><span class="name">2.5mm Twin &amp; Earth 100m</span><span class="price">£32.49</span></div>
+              <div class="mock-item"><span class="name">Double socket outlet (white) ×12</span><span class="price">£47.88</span></div>
+              <div class="mock-item"><span class="name">20mm conduit 3m ×8</span><span class="price">£18.40</span></div>
+              <div class="mock-item"><span class="name">6A MCB ×4</span><span class="price">£12.60</span></div>
+              <div class="mock-item"><span class="name">Cable clips ×100</span><span class="price">£4.20</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="step-row">
+        <div class="step-number-col">
+          <div class="step-num-badge">3</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-text">
+          <div class="step-label">Step Three</div>
+          <h3>Send the quote and collect the deposit</h3>
+          <p>
+            AccuQuote builds a professional, branded PDF with your business name, logo,
+            and contact details. Fully itemised — the customer can see exactly what's included
+            and what it costs. Send it directly from the app. They pay the deposit online
+            before you've left the driveway.
+          </p>
+          <div class="step-detail">
+            Branded to your business. Looks like a proper company sent it —
+            because it did.
+          </div>
+        </div>
+        <div class="step-vis">
+          <div class="pdf-preview">
+            <div class="pdf-header">
+              <div>
+                <div class="pdf-biz">Smith Electrical Ltd</div>
+                <div class="pdf-biz-sub">NICEIC Registered · 07700 900123</div>
+              </div>
+              <div class="pdf-total">£1,842.00</div>
+            </div>
+            <div class="pdf-line"><span class="pname">Labour — First fix electrics (2 days)</span><span class="pprice">£640.00</span></div>
+            <div class="pdf-line"><span class="pname">Materials (see itemised list)</span><span class="pprice">£1,022.00</span></div>
+            <div class="pdf-line"><span class="pname">Call-out &amp; site visit</span><span class="pprice">£80.00</span></div>
+            <div class="pdf-line"><span class="pname">VAT (20%)</span><span class="pprice">£348.40</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ══ BEFORE / AFTER ══ -->
+<section class="compare-section">
+  <div class="section-inner">
+    <p class="section-label">The difference</p>
+    <h2 style="color:#fff; margin-bottom:12px;">Before. And after.</h2>
+    <p style="color:rgba(255,255,255,0.45); max-width:500px;">Most tradespeople still quote the same way their dad did. AccuQuote changes that.</p>
+
+    <div class="compare-grid">
+      <div class="compare-col before">
+        <div class="col-label">Without AccuQuote</div>
+        <div class="compare-item"><div class="ci-dot">✕</div><div class="ci-text">Drive home, sit at the kitchen table, start from scratch</div></div>
+        <div class="compare-item"><div class="ci-dot">✕</div><div class="ci-text">Dig through old quotes to remember what you charged last time</div></div>
+        <div class="compare-item"><div class="ci-dot">✕</div><div class="ci-text">Look up material prices one by one — guess where you're not sure</div></div>
+        <div class="compare-item"><div class="ci-dot">✕</div><div class="ci-text">Type it all up. Realise you forgot something. Start again.</div></div>
+        <div class="compare-item"><div class="ci-dot">✕</div><div class="ci-text">Send a Word doc or worse — a photo of a handwritten note</div></div>
+        <div class="compare-item"><div class="ci-dot">✕</div><div class="ci-text">Wait weeks to get paid. Argue about what was agreed.</div></div>
+      </div>
+
+      <div class="compare-col after">
+        <div class="col-label">With AccuQuote</div>
+        <div class="compare-item"><div class="ci-dot">✓</div><div class="ci-text">Scan the room on site, there and then</div></div>
+        <div class="compare-item"><div class="ci-dot">✓</div><div class="ci-text">Describe the job in plain English — AccuQuote builds the list</div></div>
+        <div class="compare-item"><div class="ci-dot">✓</div><div class="ci-text">Materials priced automatically from your supplier's catalogue</div></div>
+        <div class="compare-item"><div class="ci-dot">✓</div><div class="ci-text">Branded PDF quote ready to go, on the spot</div></div>
+        <div class="compare-item"><div class="ci-dot">✓</div><div class="ci-text">Customer gets a proper quote by email — looks professional</div></div>
+        <div class="compare-item"><div class="ci-dot">✓</div><div class="ci-text">Deposit paid online before you've driven to the next job</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══ FEATURES ══ -->
+<section class="features-section">
+  <div class="section-inner">
+    <div class="features-header">
+      <p class="section-label">What's included</p>
+      <h2>Everything in one app</h2>
+      <p>You shouldn't need six different tools to run your business. AccuQuote puts measuring, quoting, pricing, invoicing, and chasing payment all in one place.</p>
+    </div>
+
+    <div class="feature-cards">
+
+      <article class="feature-card">
+        <div class="feature-icon">📡</div>
+        <h3>Instant Room Measurement</h3>
+        <p>Point your phone at any room and capture exact dimensions automatically. No tape, no ladder, no measurements you can't read later. Works on any room shape — square, L-shaped, odd extensions, the lot.</p>
+      </article>
+
+      <article class="feature-card">
+        <div class="feature-icon">🧠</div>
+        <h3>Smart Job Planner</h3>
+        <p>Tell AccuQuote what the job involves in plain language and it works out every material, quantity, and product code you'll need. Like having your sharpest apprentice do the takeoff for you.</p>
+      </article>
+
+      <article class="feature-card">
+        <div class="feature-icon">🛒</div>
+        <h3>Live Materials Pricing</h3>
+        <p>Automatically pulls current prices from your usual trade supplier. No more guessing, no more checking the website while the customer's watching. Every quote is priced on what things actually cost today.</p>
+      </article>
+
+      <article class="feature-card">
+        <div class="feature-icon">📋</div>
+        <h3>Branded Quote PDF</h3>
+        <p>Every quote goes out with your business name, logo, and contact details. Fully itemised. Professional enough that customers stop asking "is this all included?" — because it clearly is.</p>
+      </article>
+
+      <article class="feature-card">
+        <div class="feature-icon">💳</div>
+        <h3>Online Deposit Payments</h3>
+        <p>Customers click a link in the quote and pay the deposit straight away. No bank transfers to chase. No "I'll sort it when I'm home." Money lands before you've driven to the next job.</p>
+      </article>
+
+      <article class="feature-card">
+        <div class="feature-icon">🤝</div>
+        <h3>Knows Your Business</h3>
+        <p>Tell AccuQuote how you work — your trade, your day rate, your usual suppliers, the materials you rely on — and every quote it builds will reflect your way of doing things, not some generic template.</p>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ══ PROFILE ══ -->
+<section class="profile-section">
+  <div class="section-inner">
+    <div class="profile-inner">
+      <div class="profile-text">
+        <p class="section-label">Built around you</p>
+        <h2>It learns how you work</h2>
+        <p style="margin-bottom:16px;">
+          AccuQuote isn't a generic tool. You set it up once — your trade, your rates, your
+          supplier, the materials you use on almost every job — and from then on, every quote
+          it builds is tailored to the way <em>you</em> do things.
+        </p>
+        <p>
+          Got a job with unusual specs? Tell AccuQuote about it before it starts — any quirks,
+          customer requirements, or site conditions — and the quote will reflect that specific
+          job, not a one-size-fits-all estimate.
+        </p>
+      </div>
+
+      <div class="profile-card">
+        <div class="profile-card-label">Your AccuQuote profile</div>
+        <div class="profile-row"><span class="pr-key">Trade</span><span class="pr-val">Electrician — Domestic &amp; Light Commercial</span></div>
+        <div class="profile-row"><span class="pr-key">Day rate</span><span class="pr-val">£320 / day</span></div>
+        <div class="profile-row"><span class="pr-key">Usual supplier</span><span class="pr-val">Screwfix / Toolstation</span></div>
+        <div class="profile-row"><span class="pr-key">Regular materials</span><span class="pr-val">2.5mm T&amp;E, 20mm conduit, double sockets, 6A MCBs</span></div>
+        <div class="profile-row"><span class="pr-key">Labour markup</span><span class="pr-val">20% on materials</span></div>
+        <div class="profile-row"><span class="pr-key">Quote footer</span><span class="pr-val">Smith Electrical Ltd, NICEIC Reg.</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══ FAQ ══ -->
+<section class="faq-section">
+  <div class="section-inner">
+    <div class="faq-header">
+      <p class="section-label">Questions</p>
+      <h2>Plain answers</h2>
+    </div>
+
+    <div class="faq-cols">
+      <div>
+        <div class="faq-item">
+          <h4>Do I need to be good with technology?</h4>
+          <p>No. If you can use WhatsApp, you can use AccuQuote. It's designed for tradespeople who are on the tools, not sitting at a desk. No jargon, no complicated setup.</p>
+        </div>
+        <div class="faq-item">
+          <h4>What trades does it work for?</h4>
+          <p>Electricians, plumbers, plasterers, carpenters, decorators — anyone who needs to quote jobs and buy materials. You tell AccuQuote your trade and it adjusts to your way of working.</p>
+        </div>
+        <div class="faq-item">
+          <h4>What if the room shape is unusual?</h4>
+          <p>Draw it. AccuQuote has a custom room tool where you tap to add corners and walls — L-shapes, T-shapes, extensions, anything. It works out the area automatically.</p>
+        </div>
+      </div>
+      <div>
+        <div class="faq-item">
+          <h4>How does it know the price of materials?</h4>
+          <p>AccuQuote links up with trade supplier catalogues to pull current prices. You set your usual supplier once in your profile and it prices everything from there by default.</p>
+        </div>
+        <div class="faq-item">
+          <h4>Can I change the quote before I send it?</h4>
+          <p>Yes — you're always in control. AccuQuote builds the first draft, you review it, tweak anything you like, then send it. Your name, your numbers, your call.</p>
+        </div>
+        <div class="faq-item">
+          <h4>Is there a contract or minimum term?</h4>
+          <p>No contract. Pay monthly, cancel any time. If it's not saving you time, cancel — no questions asked.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══ CTA ══ -->
+<div class="cta-banner">
+  <div class="section-inner">
+    <h2>Ready to quote faster<br>than anyone on your patch?</h2>
+    <p>Start with 3 free quotes. No card required. See exactly how much time you save before you spend a penny.</p>
+    <div class="cta-actions">
+      <a href="./index.html#pricing" class="btn-primary">Start Free Trial</a>
+      <a href="./index.html#pricing" class="btn-secondary">View Pricing</a>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ FOOTER ══ -->
+<footer role="contentinfo">
+  <div class="footer-logo" role="img" aria-label="AccuQuote">
+    <svg width="48" height="48" viewBox="0 0 632 632" aria-hidden="true" focusable="false"><use href="#aq-icon"/></svg>
+    <span class="footer-logo-wordmark">AccuQuote</span>
+  </div>
+  <nav class="footer-links" aria-label="Footer navigation">
+    <a href="./index.html">Home</a>
+    <a href="./how-it-works.html">How It Works</a>
+    <a href="./index.html#pricing">Pricing</a>
+    <a href="./privacy-policy.html">Privacy Policy</a>
+    <a href="mailto:hello@accuquote.app">Contact</a>
+  </nav>
+  <div class="footer-copy">
+    <p>&copy; 2025 AccuQuote. All rights reserved.</p>
+  </div>
+</footer>
+
+
+<script>
+  const hamburger = document.getElementById('hamburger');
+  const mobileMenu = document.getElementById('mobile-menu');
+
+  hamburger.addEventListener('click', function () {
+    const isOpen = mobileMenu.classList.toggle('open');
+    hamburger.classList.toggle('open', isOpen);
+    hamburger.setAttribute('aria-expanded', isOpen.toString());
+  });
+
+  mobileMenu.querySelectorAll('a').forEach(function (link) {
+    link.addEventListener('click', function () {
+      mobileMenu.classList.remove('open');
+      hamburger.classList.remove('open');
+      hamburger.setAttribute('aria-expanded', 'false');
+    });
+  });
+</script>
+
+</body>
+</html>

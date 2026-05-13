@@ -1,0 +1,16 @@
+AccuQuote Backlog Items 
+
+Prompt the user to mention the specific items they usually order from their trade supplier to make the BOM exact and more accurate 
+
+Pricing:
+ £59 a month / £119 for premium 
+ Extra quote £25 each 
+ Bundle of 4 quotes £75
+ Free trial that gives users 3 free tokens
+ Users collect tokens for each quote taken once scan is initiated or measurements are entered. 
+ Members have unlimited credits 
+ Free month every 3 new users you sign up 
+
+Add feature option that allows users to build a non rectangle/square shaped room. (Default is 3 dimensions but add a “different room shape” button that lets the users tap to go to a screen that lets them draw a custom shape by adding and removing different positioned lines for those adding manual details 
+
+Do some reasearch on how we could actually allow users to sign into their trade supplier to pull live prices and potentially build orders from the app
