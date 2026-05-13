@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AccuQuote — AI-powered quoting for UK tradesmen | Founding 200</title>
+  <meta name="description" content="Materials eating your margin? AccuQuote scans live UK supplier prices, scopes the job with AI, and sends a pro PDF quote in 5 minutes. Join the founding 200 — lifetime 50% off." />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="AccuQuote — Join the Founding 200" />
+  <meta property="og:description" content="Materials eating your margin? AccuQuote scans live UK supplier prices, scopes the job with AI, and sends a pro PDF quote in 5 minutes. Lifetime 50% off for the first 200." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://accuquote.app/prelaunch" />
+  <meta property="og:image" content="https://accuquote.app/og-image.png" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="AccuQuote — Join the Founding 200" />
+  <meta name="twitter:description" content="Materials eating your margin? AI-powered quoting for UK tradesmen. Lifetime 50% off for founding members." />
+
+  <!-- JSON-LD -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "AccuQuote",
+    "url": "https://accuquote.app",
+    "description": "AI-powered quoting software for UK tradesmen",
+    "founder": { "@type": "Person", "name": "Luke Ashton" },
+    "location": { "@type": "Place", "name": "Watford, UK" }
+  }
+  </script>
+
+  <!-- Preconnect for fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── Reset & tokens ─────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-dark:    #0F0F12;
+      --bg-mid:     #1A1A1F;
+      --bg-light:   #2A2A2F;
+      --accent:     #F4B82A;
+      --accent-hover: #e0a820;
+      --white:      #F5F5F0;
+      --muted:      #7A7A82;
+      --red:        #E63946;
+      --green:      #3FA796;
+      --cream:      #F5F1E8;
+      --border:     rgba(255,255,255,0.08);
+      --font: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+      --radius: 12px;
+      --max-w: 1100px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg-dark);
+      color: var(--white);
+      line-height: 1.6;
+      font-size: 17px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    img { max-width: 100%; display: block; }
+
+    .container {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ── Utility ─────────────────────────────────────────────────────────── */
+    .fade-up {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .fade-up.visible { opacity: 1; transform: none; }
+
+    /* ── Header ──────────────────────────────────────────────────────────── */
+    .site-header {
+      padding: 24px 0 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .site-header .container {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .wordmark {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      color: var(--white);
+      text-transform: uppercase;
+    }
+    .wordmark span { color: var(--accent); }
+    .tagline-small {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .header-sep { color: var(--muted); font-size: 18px; }
+
+    /* ── Hero ────────────────────────────────────────────────────────────── */
+    .hero {
+      padding: 72px 0 80px;
+      text-align: center;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(244,184,42,0.12);
+      border: 1px solid rgba(244,184,42,0.3);
+      border-radius: 100px;
+      padding: 6px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 32px;
+    }
+    .status-pill .dot { font-size: 10px; }
+
+    .hero h1 {
+      font-size: clamp(48px, 8vw, 88px);
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      margin-bottom: 24px;
+    }
+    .hero h1 em {
+      font-style: normal;
+      color: var(--accent);
+    }
+
+    .hero-subhead {
+      font-size: clamp(17px, 2.5vw, 21px);
+      color: var(--muted);
+      max-width: 640px;
+      margin: 0 auto 20px;
+      line-height: 1.55;
+    }
+    .hero-subhead strong {
+      color: var(--white);
+      font-weight: 600;
+    }
+
+    .founding-offer {
+      background: var(--bg-mid);
+      border: 1px solid rgba(244,184,42,0.25);
+      border-radius: var(--radius);
+      padding: 28px 32px;
+      max-width: 600px;
+      margin: 40px auto 0;
+      text-align: left;
+    }
+    .founding-offer__title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+    .founding-offer__body {
+      font-size: 15px;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+    .founding-offer__body strong { color: var(--white); }
+
+    /* ── Email form ──────────────────────────────────────────────────────── */
+    .email-form-wrap {
+      max-width: 540px;
+      margin: 36px auto 0;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .form-field {
+      position: relative;
+    }
+
+    .form-field input,
+    .form-field select {
+      width: 100%;
+      padding: 14px 18px;
+      background: var(--bg-mid);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--white);
+      font-family: var(--font);
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    .form-field input::placeholder { color: var(--muted); }
+    .form-field select { color: var(--muted); cursor: pointer; }
+    .form-field select.has-value { color: var(--white); }
+    .form-field input:focus,
+    .form-field select:focus { border-color: var(--accent); }
+    .form-field .select-arrow {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .field-error {
+      font-size: 12px;
+      color: var(--red);
+      margin-top: 4px;
+      display: none;
+    }
+    .field-error.visible { display: block; }
+
+    .btn-claim {
+      display: block;
+      width: 100%;
+      padding: 16px 24px;
+      background: var(--accent);
+      color: #0F0F12;
+      font-family: var(--font);
+      font-size: 17px;
+      font-weight: 700;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      letter-spacing: 0.01em;
+    }
+    .btn-claim:hover { background: var(--accent-hover); }
+    .btn-claim:active { transform: scale(0.98); }
+    .btn-claim:disabled { opacity: 0.6; cursor: default; }
+
+    .form-reassurance {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 12px;
+      text-align: center;
+    }
+
+    .counter-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    .counter-bar .bolt { font-size: 16px; }
+    .counter-track {
+      background: var(--bg-light);
+      border-radius: 100px;
+      height: 6px;
+      width: 120px;
+      overflow: hidden;
+      margin-left: 4px;
+    }
+    .counter-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 100px;
+      transition: width 0.8s ease;
+    }
+
+    /* ── Form success state ──────────────────────────────────────────────── */
+    .form-success {
+      display: none;
+      background: rgba(63,167,150,0.12);
+      border: 1px solid rgba(63,167,150,0.35);
+      border-radius: var(--radius);
+      padding: 24px 28px;
+      text-align: center;
+    }
+    .form-success.visible { display: block; }
+    .form-success__title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--green);
+      margin-bottom: 8px;
+    }
+    .form-success__body {
+      font-size: 15px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .form-success__body strong { color: var(--white); }
+
+    /* ── Founder story ───────────────────────────────────────────────────── */
+    .founder-section {
+      padding: 96px 0;
+      background: var(--bg-mid);
+    }
+    .founder-inner {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 64px;
+      align-items: start;
+    }
+    .founder-photo-wrap {
+      position: sticky;
+      top: 32px;
+    }
+    .founder-photo {
+      width: 100%;
+      border-radius: var(--radius);
+      aspect-ratio: 3/4;
+      object-fit: cover;
+      background: var(--bg-light);
+    }
+    .founder-photo-placeholder {
+      width: 100%;
+      border-radius: var(--radius);
+      aspect-ratio: 3/4;
+      background: var(--bg-light);
+      border: 2px dashed var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 14px;
+      text-align: center;
+      padding: 20px;
+    }
+    .founder-photo-placeholder .ph-icon { font-size: 36px; opacity: 0.4; }
+
+    .founder-story { max-width: 640px; }
+    .founder-story h2 {
+      font-size: clamp(28px, 4vw, 40px);
+      font-weight: 800;
+      margin-bottom: 32px;
+      letter-spacing: -0.02em;
+    }
+    .founder-story p {
+      font-size: 18px;
+      color: rgba(245,245,240,0.85);
+      line-height: 1.75;
+      margin-bottom: 20px;
+    }
+    .founder-story p strong {
+      color: var(--white);
+      font-weight: 700;
+    }
+    .founder-story p em { font-style: italic; }
+    .founder-signoff {
+      margin-top: 32px;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--white);
+    }
+    .founder-signoff span {
+      display: block;
+      font-size: 15px;
+      font-weight: 400;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* ── How it works ────────────────────────────────────────────────────── */
+    .how-section {
+      padding: 96px 0;
+    }
+    .section-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+    .section-title {
+      font-size: clamp(28px, 4vw, 44px);
+      font-weight: 800;
+      margin-bottom: 56px;
+      letter-spacing: -0.02em;
+    }
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+    }
+    .step-card {
+      background: var(--bg-mid);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 36px 28px;
+      position: relative;
+    }
+    .step-number {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      margin-bottom: 20px;
+    }
+    .step-icon {
+      width: 52px;
+      height: 52px;
+      background: rgba(244,184,42,0.1);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      font-size: 24px;
+    }
+    .step-card h3 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      letter-spacing: -0.01em;
+    }
+    .step-card p {
+      font-size: 15px;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    /* ── Anti-sales call ─────────────────────────────────────────────────── */
+    .promise-section {
+      padding: 96px 0;
+      background: var(--bg-mid);
+    }
+    .promise-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      max-width: 800px;
+    }
+    .promise-col h3 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      color: var(--white);
+    }
+    .promise-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .promise-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 15px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .promise-list li .icon {
+      font-size: 16px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .promise-list li .icon.yes { color: var(--green); }
+    .promise-list li .icon.no  { color: var(--red); }
+    .promise-list li strong { color: var(--white); }
+
+    /* ── Community wall ──────────────────────────────────────────────────── */
+    .community-section {
+      padding: 96px 0;
+    }
+    .community-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 40px;
+    }
+    .member-card {
+      background: var(--bg-mid);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .member-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--bg-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--accent);
+      flex-shrink: 0;
+      border: 2px solid rgba(244,184,42,0.2);
+    }
+    .member-info { min-width: 0; }
+    .member-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--white);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .member-meta {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .community-more {
+      background: var(--bg-mid);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    /* ── FAQ ─────────────────────────────────────────────────────────────── */
+    .faq-section {
+      padding: 96px 0;
+      background: var(--bg-mid);
+    }
+    .faq-list {
+      max-width: 720px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin-top: 40px;
+    }
+    .faq-item {
+      border-bottom: 1px solid var(--border);
+    }
+    .faq-item:first-child { border-top: 1px solid var(--border); }
+    .faq-question {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 22px 0;
+      cursor: pointer;
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--white);
+      gap: 16px;
+      user-select: none;
+    }
+    .faq-question:hover { color: var(--accent); }
+    .faq-icon {
+      font-size: 22px;
+      color: var(--accent);
+      flex-shrink: 0;
+      transition: transform 0.25s;
+      font-style: normal;
+    }
+    .faq-item.open .faq-icon { transform: rotate(45deg); }
+    .faq-answer {
+      font-size: 16px;
+      color: var(--muted);
+      line-height: 1.7;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.35s ease, padding 0.25s;
+      padding-bottom: 0;
+    }
+    .faq-answer.open {
+      max-height: 300px;
+      padding-bottom: 24px;
+    }
+
+    /* ── Final CTA ───────────────────────────────────────────────────────── */
+    .final-cta {
+      padding: 96px 0;
+      text-align: center;
+    }
+    .final-cta .pain-lines {
+      font-size: clamp(24px, 4vw, 40px);
+      font-weight: 800;
+      line-height: 1.25;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+    .final-cta .pain-lines span {
+      display: block;
+    }
+    .final-cta .pain-lines span:nth-child(2) { color: rgba(245,245,240,0.65); }
+    .final-cta .pain-lines span:nth-child(3) { color: rgba(245,245,240,0.4); }
+    .final-cta .subhead {
+      font-size: 20px;
+      color: var(--muted);
+      margin-bottom: 40px;
+    }
+    .final-cta .subhead strong { color: var(--accent); }
+
+    /* ── Footer ──────────────────────────────────────────────────────────── */
+    .site-footer {
+      background: var(--bg-mid);
+      border-top: 1px solid var(--border);
+      padding: 48px 0;
+    }
+    .footer-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      text-align: center;
+    }
+    .footer-wordmark {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      color: var(--white);
+      text-transform: uppercase;
+    }
+    .footer-wordmark span { color: var(--accent); }
+    .footer-tagline {
+      font-size: 13px;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .footer-built {
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .footer-built a { color: var(--muted); text-decoration: underline; }
+    .footer-built a:hover { color: var(--white); }
+    .footer-links {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .footer-links a {
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .footer-links a:hover { color: var(--white); text-decoration: none; }
+    .footer-sep { color: var(--bg-light); }
+    .footer-copy {
+      font-size: 12px;
+      color: var(--muted);
+      opacity: 0.6;
+    }
+
+    /* ── Responsive ──────────────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .hero { padding: 56px 0 64px; }
+
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+
+      .founding-offer { padding: 24px 20px; }
+
+      .founder-inner {
+        grid-template-columns: 1fr;
+        gap: 32px;
+      }
+      .founder-photo-wrap { position: static; }
+      .founder-photo, .founder-photo-placeholder { aspect-ratio: 4/3; }
+
+      .steps-grid { grid-template-columns: 1fr; }
+
+      .promise-grid { grid-template-columns: 1fr; gap: 32px; }
+
+      .community-grid { grid-template-columns: repeat(2, 1fr); }
+
+      .section-title { margin-bottom: 36px; }
+
+      .final-cta { padding: 72px 0; }
+    }
+
+    @media (max-width: 480px) {
+      .community-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Header ─────────────────────────────────────────────────────────── -->
+  <header class="site-header">
+    <div class="container">
+      <div class="wordmark">ACCU<span>QUOTE</span></div>
+      <span class="header-sep">•</span>
+      <div class="tagline-small">Measure. Scope. Quote.</div>
+    </div>
+  </header>
+
+  <!-- ── Hero ───────────────────────────────────────────────────────────── -->
+  <section class="hero">
+    <div class="container">
+
+      <div class="status-pill">
+        <span class="dot">🟡</span>
+        IN BUILD
+        <span style="color:rgba(244,184,42,0.4)">•</span>
+        LAUNCHING Q3 2026
+      </div>
+
+      <h1>Materials eating<br><em>your margin?</em></h1>
+
+      <p class="hero-subhead">
+        AccuQuote scans live UK supplier prices, scopes the job with AI,
+        and sends a pro PDF quote — in 5 minutes, from your van.<br><br>
+        <strong>Built WITH 200 UK tradies. Not pitched at them.</strong>
+      </p>
+
+      <div class="founding-offer fade-up">
+        <div class="founding-offer__title">⚡ Founding 200 — Lifetime 50% off + Name in credits</div>
+        <div class="founding-offer__body">
+          We're recruiting 200 UK tradies to shape AccuQuote before launch.
+          You get <strong>lifetime pricing locked at £19/month</strong> (half the public price),
+          <strong>your name in the in-app credits</strong>, and a direct line to me while we build.
+        </div>
+      </div>
+
+      <div class="email-form-wrap fade-up" id="hero-form-wrap">
+        <form id="hero-form" novalidate>
+          <div class="form-row">
+            <div class="form-field">
+              <input
+                type="email"
+                id="hero-email"
+                name="email"
+                placeholder="Your email address"
+                autocomplete="email"
+                required
+              />
+              <div class="field-error" id="hero-email-error">Please enter a valid email</div>
+            </div>
+            <div class="form-field">
+              <select id="hero-trade" name="trade" required>
+                <option value="" disabled selected>Your trade</option>
+                <option>Plumber</option>
+                <option>Electrician</option>
+                <option>Builder</option>
+                <option>Plasterer</option>
+                <option>Roofer</option>
+                <option>Carpenter</option>
+                <option>Heating Engineer</option>
+                <option>Decorator</option>
+                <option>Other</option>
+              </select>
+              <span class="select-arrow">▾</span>
+              <div class="field-error" id="hero-trade-error">Please select your trade</div>
+            </div>
+          </div>
+          <button type="submit" class="btn-claim" id="hero-submit">
+            Claim my founding spot →
+          </button>
+          <p class="form-reassurance">No card. No call. No spam. One update a month max.</p>
+        </form>
+        <div class="form-success" id="hero-success">
+          <div class="form-success__title">You're in. ⚡</div>
+          <div class="form-success__body">
+            Check your inbox — your spot is confirmed.<br>
+            <strong>Forward this to a mate who'd want in. They'll thank you.</strong>
+          </div>
+        </div>
+        <div class="counter-bar">
+          <span class="bolt">⚡</span>
+          <span id="hero-counter-text">47 / 200 founding spots claimed</span>
+          <div class="counter-track">
+            <div class="counter-fill" id="counter-fill" style="width: 23.5%"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── Founder story ───────────────────────────────────────────────────── -->
+  <section class="founder-section">
+    <div class="container">
+      <div class="founder-inner">
+
+        <div class="founder-photo-wrap fade-up">
+          <!--
+            PLACEHOLDER: Replace the div below with an <img> tag once Luke's photo is ready.
+            Example:
+            <img src="/images/luke-watford.jpg" alt="Luke Ashton, founder of AccuQuote, Watford" class="founder-photo" loading="eager" />
+          -->
+          <div class="founder-photo-placeholder">
+            <span class="ph-icon">📸</span>
+            <strong>Luke's photo</strong>
+            <span>Replace with<br>luke-watford.jpg</span>
+          </div>
+        </div>
+
+        <div class="founder-story fade-up">
+          <h2>Why I'm building this</h2>
+
+          <p>I'm Luke. I run a digital agency in Watford — <a href="https://slickdigital.co.uk" target="_blank" rel="noopener">Slick Digital</a>. For two years now, I've been building websites for UK tradesmen. Plumbers, sparkies, builders, plasterers, roofers.</p>
+
+          <p>That's a lot of conversations with a lot of tradies. Different trades, different towns. Same recurring problem.</p>
+
+          <p><strong>Quoting was killing them.</strong></p>
+
+          <p>Not the work itself — they love the work. The <em>quoting</em>. Sundays at the kitchen table. Two hours per quote. Materials prices that had moved 40% since they last updated their template. Customers ghosting after a Sunday lost to a proposal. Losing jobs to whoever quoted first.</p>
+
+          <p>And every time materials went up — which is constantly — the maths got worse. One of my clients put it bluntly: he was doing two days of unpaid work a week just to feed the rest of the work.</p>
+
+          <p><strong>Then I met Gary.</strong></p>
+
+          <p>Gary's a plasterer out of Kent. Twenty years on the tools, sharp as a tack. He'd built himself an absolute Frankenstein of a quoting system — one app to scan the room dimensions, ChatGPT to scope the job, a tool connected to his Travis Perkins account for live materials prices, and a fourth app to spit out a branded PDF.</p>
+
+          <p>Four apps. One quote.</p>
+
+          <p>But it worked. Sort of. Gary cut his quoting time from hours to minutes. He started getting home at 3pm with the day's quotes already sent. His evenings came back. His weekends came back. He told me he was happier than he'd been in years — transforming spaces during the day, then being a husband and dad in the evening instead of buried in spreadsheets and supplier websites.</p>
+
+          <p>The thing is, Gary's the kind of bloke who can stitch four apps together with duct tape. <strong>Most tradies can't, won't, and shouldn't have to.</strong></p>
+
+          <p>That was the moment. I'd watched my clients lose evenings, weekends, family time — to a process that, if Gary's setup was anything to go by, could take five minutes from a single app.</p>
+
+          <p><strong>So I'm building it.</strong></p>
+
+          <p>AccuQuote condenses Gary's whole hack into one tool. Measure the room with your phone camera. AI scopes the job. Live UK supplier prices populate the materials list. A pro PDF proposal lands in your customer's WhatsApp before you've left the driveway. Deposits, reminders, follow-ups — handled.</p>
+
+          <p>I'm building it with 200 founding tradies who've signed up to help shape it before launch. Lifetime pricing locked at half the public rate. Names in the in-app credits. Direct line to me while we build.</p>
+
+          <p>If you're a UK tradesman losing weekends to <em>quoting</em> — like Gary used to, like every one of my clients used to — I'd love you to be one of them.</p>
+
+          <div class="founder-signoff">
+            — Luke
+            <span>Watford</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── How it works ────────────────────────────────────────────────────── -->
+  <section class="how-section">
+    <div class="container">
+      <div class="section-label">How it works</div>
+      <h2 class="section-title">Quote sent before you leave the driveway</h2>
+
+      <div class="steps-grid">
+        <div class="step-card fade-up">
+          <div class="step-number">Step 01</div>
+          <div class="step-icon">📐</div>
+          <h3>SCAN</h3>
+          <p>Open AccuQuote on site. Point your camera at the room. The AI scopes the job.</p>
+        </div>
+        <div class="step-card fade-up">
+          <div class="step-number">Step 02</div>
+          <div class="step-icon">💷</div>
+          <h3>PRICE</h3>
+          <p>Live UK supplier prices populate the materials list. Your margin is locked in.</p>
+        </div>
+        <div class="step-card fade-up">
+          <div class="step-number">Step 03</div>
+          <div class="step-icon">📤</div>
+          <h3>SEND</h3>
+          <p>Pro PDF quote generated. WhatsApp it to the customer before you leave the driveway.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Anti-sales call ─────────────────────────────────────────────────── -->
+  <section class="promise-section">
+    <div class="container">
+      <div class="section-label">No sales calls. Ever.</div>
+      <h2 class="section-title">We built the promise into the product</h2>
+
+      <div class="promise-grid fade-up">
+        <div class="promise-col">
+          <h3>What you'll get from us:</h3>
+          <ul class="promise-list">
+            <li><span class="icon yes">✓</span> One monthly update on the build (skippable)</li>
+            <li><span class="icon yes">✓</span> An early-access invite when we open beta</li>
+            <li><span class="icon yes">✓</span> <strong>Lifetime founding-member pricing</strong></li>
+            <li><span class="icon yes">✓</span> A real human (me) replying to any question</li>
+          </ul>
+        </div>
+        <div class="promise-col">
+          <h3>What you'll never get from us:</h3>
+          <ul class="promise-list">
+            <li><span class="icon no">✗</span> <strong>A sales call. Ever.</strong></li>
+            <li><span class="icon no">✗</span> A "quick demo" booking pressure</li>
+            <li><span class="icon no">✗</span> Your email sold to anyone</li>
+            <li><span class="icon no">✗</span> Daily emails about webinars</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Community wall ─────────────────────────────────────────────────── -->
+  <section class="community-section">
+    <div class="container">
+      <div class="section-label">Founding tradies so far</div>
+      <h2 class="section-title">The people shaping AccuQuote</h2>
+
+      <!--
+        COMMUNITY WALL: Update this JSON array as signups come in.
+        Each object: { initials, name, trade, town }
+        The JS below renders the cards automatically.
+      -->
+      <div class="community-grid" id="community-grid">
+        <!-- Rendered by JS below -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FAQ ────────────────────────────────────────────────────────────── -->
+  <section class="faq-section">
+    <div class="container">
+      <div class="section-label">Got questions?</div>
+      <h2 class="section-title">Honest answers</h2>
+
+      <div class="faq-list" id="faq-list">
+        <!-- Rendered by JS below -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Final CTA ──────────────────────────────────────────────────────── -->
+  <section class="final-cta">
+    <div class="container">
+      <div class="pain-lines">
+        <span>Materials eating your margin?</span>
+        <span>Sunday gone to quoting?</span>
+        <span>Lost the job to a faster bloke?</span>
+      </div>
+      <p class="subhead">Be one of the <strong>first 200</strong> to fix it.</p>
+
+      <div class="email-form-wrap" id="bottom-form-wrap">
+        <form id="bottom-form" novalidate>
+          <div class="form-row">
+            <div class="form-field">
+              <input
+                type="email"
+                id="bottom-email"
+                name="email"
+                placeholder="Your email address"
+                autocomplete="email"
+                required
+              />
+              <div class="field-error" id="bottom-email-error">Please enter a valid email</div>
+            </div>
+            <div class="form-field">
+              <select id="bottom-trade" name="trade" required>
+                <option value="" disabled selected>Your trade</option>
+                <option>Plumber</option>
+                <option>Electrician</option>
+                <option>Builder</option>
+                <option>Plasterer</option>
+                <option>Roofer</option>
+                <option>Carpenter</option>
+                <option>Heating Engineer</option>
+                <option>Decorator</option>
+                <option>Other</option>
+              </select>
+              <span class="select-arrow">▾</span>
+              <div class="field-error" id="bottom-trade-error">Please select your trade</div>
+            </div>
+          </div>
+          <button type="submit" class="btn-claim" id="bottom-submit">
+            Claim my founding spot →
+          </button>
+          <p class="form-reassurance">No card. No call. No spam. One update a month max.</p>
+        </form>
+        <div class="form-success" id="bottom-success">
+          <div class="form-success__title">You're in. ⚡</div>
+          <div class="form-success__body">
+            Check your inbox — your spot is confirmed.<br>
+            <strong>Forward this to a mate who'd want in. They'll thank you.</strong>
+          </div>
+        </div>
+        <div class="counter-bar">
+          <span class="bolt">⚡</span>
+          <span id="bottom-counter-text">47 / 200 claimed • 153 spots left</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Footer ─────────────────────────────────────────────────────────── -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div>
+          <div class="footer-wordmark">ACCU<span>QUOTE</span></div>
+          <div class="footer-tagline" style="margin-top:6px">Measure. Scope. Quote.</div>
+        </div>
+        <div class="footer-built">
+          Built by <a href="https://slickdigital.co.uk" target="_blank" rel="noopener">Slick Digital</a> · Made in Watford
+        </div>
+        <div class="footer-links">
+          <a href="https://linkedin.com" target="_blank" rel="noopener">LinkedIn</a>
+          <span class="footer-sep">·</span>
+          <a href="https://x.com" target="_blank" rel="noopener">X</a>
+          <span class="footer-sep">·</span>
+          <a href="#">Building in public</a>
+          <span class="footer-sep">·</span>
+          <a href="#">Privacy</a>
+          <span class="footer-sep">·</span>
+          <a href="#">Terms</a>
+        </div>
+        <div class="footer-copy">© AccuQuote 2026 — pre-launch</div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ── Scripts ────────────────────────────────────────────────────────── -->
+  <script>
+    // ── Founding members data ──────────────────────────────────────────────
+    // UPDATE THIS ARRAY as real signups come in.
+    // Each entry: { initials, name, trade, town }
+    // Set showCount to total real signups (including any not listed publicly).
+    var FOUNDING_MEMBERS = [
+      { initials: 'DM', name: 'Dave M.',   trade: 'Plumber',      town: 'Leeds'      },
+      { initials: 'MR', name: 'Marcus R.', trade: 'Electrician',  town: 'Birmingham' },
+      { initials: 'TH', name: 'Tom H.',    trade: 'Builder',      town: 'Bristol'    },
+      { initials: 'SO', name: 'Sarah O.',  trade: 'Plasterer',    town: 'Watford'    },
+      { initials: 'JC', name: 'Jamie C.',  trade: 'Roofer',       town: 'Manchester' },
+    ];
+    var TOTAL_SIGNUPS    = 47;   // ← hand-update this number as signups come in
+    var TOTAL_SPOTS      = 200;
+
+    // ── Render community wall ──────────────────────────────────────────────
+    (function () {
+      var grid = document.getElementById('community-grid');
+      if (!grid) return;
+
+      // Colour palette for initials avatars
+      var colours = ['#F4B82A','#3FA796','#E63946','#7B61FF','#0EA5E9'];
+
+      FOUNDING_MEMBERS.forEach(function (m, i) {
+        var card = document.createElement('div');
+        card.className = 'member-card';
+        var colour = colours[i % colours.length];
+        card.innerHTML =
+          '<div class="member-avatar" style="color:' + colour + ';border-color:' + colour + '30">' + m.initials + '</div>' +
+          '<div class="member-info">' +
+            '<div class="member-name">' + m.name + '</div>' +
+            '<div class="member-meta">' + m.trade + ' · ' + m.town + '</div>' +
+          '</div>';
+        grid.appendChild(card);
+      });
+
+      var remaining = TOTAL_SIGNUPS - FOUNDING_MEMBERS.length;
+      if (remaining > 0) {
+        var more = document.createElement('div');
+        more.className = 'community-more';
+        more.textContent = '…and ' + remaining + ' others';
+        grid.appendChild(more);
+      }
+    })();
+
+    // ── Update counters ────────────────────────────────────────────────────
+    (function () {
+      var spotsLeft = TOTAL_SPOTS - TOTAL_SIGNUPS;
+      var pct = (TOTAL_SIGNUPS / TOTAL_SPOTS) * 100;
+      var fill = document.getElementById('counter-fill');
+      var heroText = document.getElementById('hero-counter-text');
+      var bottomText = document.getElementById('bottom-counter-text');
+      if (fill)       fill.style.width = pct + '%';
+      if (heroText)   heroText.textContent = TOTAL_SIGNUPS + ' / ' + TOTAL_SPOTS + ' founding spots claimed';
+      if (bottomText) bottomText.textContent = TOTAL_SIGNUPS + ' / ' + TOTAL_SPOTS + ' claimed \u2022 ' + spotsLeft + ' spots left';
+    })();
+
+    // ── FAQ ────────────────────────────────────────────────────────────────
+    var FAQS = [
+      {
+        q: "When's it actually launching?",
+        a: "We're targeting Q3 2026. Founding members get beta access in Q2 (about 6 weeks before public launch). I'll be honest if dates slip — you'll hear it from me first."
+      },
+      {
+        q: "What's it going to cost?",
+        a: "Public price will be £39/month. Founding members pay £19/month for life. Annual plans available with further discount."
+      },
+      {
+        q: "Why should I sign up now instead of waiting?",
+        a: "Three reasons: (1) lifetime 50% pricing locked, (2) you get to shape the product — I do user research calls with every founding member, (3) your name goes in the in-app credits permanently."
+      },
+      {
+        q: "Will my email be sold or shared?",
+        a: "No. Ever. We use Beehiiv for emails. You can unsubscribe in one tap. We will never share, sell, or 'partner' your data."
+      },
+      {
+        q: "Can I refer mates and get bumped up the queue?",
+        a: "Yes. Once you claim a founding spot, you get a personal link. Refer 3 mates who sign up, you get bumped to 'founding 50' (extra perks coming)."
+      },
+      {
+        q: "What if I sign up and decide it's not for me?",
+        a: "You unsubscribe in one tap. No follow-up, no guilt, no calls."
+      }
+    ];
+
+    (function () {
+      var list = document.getElementById('faq-list');
+      if (!list) return;
+      FAQS.forEach(function (faq, i) {
+        var item = document.createElement('div');
+        item.className = 'faq-item';
+        item.innerHTML =
+          '<div class="faq-question">' +
+            faq.q +
+            '<i class="faq-icon">+</i>' +
+          '</div>' +
+          '<div class="faq-answer">' + faq.a + '</div>';
+
+        var question = item.querySelector('.faq-question');
+        var answer   = item.querySelector('.faq-answer');
+        question.addEventListener('click', function () {
+          var isOpen = item.classList.contains('open');
+          // close all
+          document.querySelectorAll('.faq-item.open').forEach(function (el) {
+            el.classList.remove('open');
+            el.querySelector('.faq-answer').classList.remove('open');
+          });
+          if (!isOpen) {
+            item.classList.add('open');
+            answer.classList.add('open');
+          }
+        });
+
+        list.appendChild(item);
+      });
+    })();
+
+    // ── Form validation + submission ───────────────────────────────────────
+    function isValidEmail(v) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+    }
+
+    function handleFormSubmit(formId, emailId, tradeId, emailErrId, tradeErrId, submitId, successId) {
+      var form      = document.getElementById(formId);
+      var emailEl   = document.getElementById(emailId);
+      var tradeEl   = document.getElementById(tradeId);
+      var emailErr  = document.getElementById(emailErrId);
+      var tradeErr  = document.getElementById(tradeErrId);
+      var submitBtn = document.getElementById(submitId);
+      var success   = document.getElementById(successId);
+      if (!form) return;
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var valid = true;
+
+        if (!isValidEmail(emailEl.value)) {
+          emailErr.classList.add('visible');
+          emailEl.style.borderColor = 'var(--red)';
+          valid = false;
+        } else {
+          emailErr.classList.remove('visible');
+          emailEl.style.borderColor = '';
+        }
+
+        if (!tradeEl.value) {
+          tradeErr.classList.add('visible');
+          tradeEl.style.borderColor = 'var(--red)';
+          valid = false;
+        } else {
+          tradeErr.classList.remove('visible');
+          tradeEl.style.borderColor = '';
+        }
+
+        if (!valid) return;
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Claiming your spot…';
+
+        // ── BEEHIIV INTEGRATION ──────────────────────────────────────────
+        // TODO: Replace this block with your actual Beehiiv API call or embed.
+        // Option A (embed): replace the <form> entirely with Beehiiv's embed code,
+        //   styled to match (remove the default Beehiiv wrapper styles).
+        // Option B (API): POST to https://api.beehiiv.com/v2/publications/YOUR_PUB_ID/subscriptions
+        //   with body: { email, utm_source: 'prelaunch', custom_fields: [{ name: 'trade', value: tradeEl.value }] }
+        //   Header: Authorization: Bearer YOUR_BEEHIIV_API_KEY
+        //
+        // Example fetch (enable when API key is in place):
+        //
+        // fetch('https://api.beehiiv.com/v2/publications/REPLACE_PUB_ID/subscriptions', {
+        //   method: 'POST',
+        //   headers: {
+        //     'Content-Type': 'application/json',
+        //     'Authorization': 'Bearer REPLACE_API_KEY'
+        //   },
+        //   body: JSON.stringify({
+        //     email: emailEl.value.trim(),
+        //     utm_source: 'prelaunch',
+        //     custom_fields: [{ name: 'trade', value: tradeEl.value }]
+        //   })
+        // })
+        // .then(function(r) { return r.ok ? r.json() : Promise.reject(r); })
+        // .then(function() { showSuccess(); })
+        // .catch(function() {
+        //   submitBtn.disabled = false;
+        //   submitBtn.textContent = 'Claim my founding spot →';
+        //   alert('Something went wrong — please try again.');
+        // });
+        //
+        // ── END BEEHIIV INTEGRATION ──────────────────────────────────────
+
+        // Simulated success — REMOVE once real API is wired up
+        setTimeout(function () {
+          showSuccess();
+        }, 800);
+
+        function showSuccess() {
+          form.style.display = 'none';
+          success.classList.add('visible');
+          TOTAL_SIGNUPS++;
+          var spotsLeft = TOTAL_SPOTS - TOTAL_SIGNUPS;
+          var pct = (TOTAL_SIGNUPS / TOTAL_SPOTS) * 100;
+          var fill = document.getElementById('counter-fill');
+          var heroText = document.getElementById('hero-counter-text');
+          var bottomText = document.getElementById('bottom-counter-text');
+          if (fill)       fill.style.width = pct + '%';
+          if (heroText)   heroText.textContent = TOTAL_SIGNUPS + ' / ' + TOTAL_SPOTS + ' founding spots claimed';
+          if (bottomText) bottomText.textContent = TOTAL_SIGNUPS + ' / ' + TOTAL_SPOTS + ' claimed \u2022 ' + spotsLeft + ' spots left';
+        }
+      });
+
+      // live select colour fix
+      if (tradeEl) {
+        tradeEl.addEventListener('change', function () {
+          tradeEl.classList.toggle('has-value', !!tradeEl.value);
+        });
+      }
+    }
+
+    handleFormSubmit('hero-form',   'hero-email',   'hero-trade',   'hero-email-error',   'hero-trade-error',   'hero-submit',   'hero-success');
+    handleFormSubmit('bottom-form', 'bottom-email', 'bottom-trade', 'bottom-email-error', 'bottom-trade-error', 'bottom-submit', 'bottom-success');
+
+    // ── Fade-up on scroll ──────────────────────────────────────────────────
+    (function () {
+      var els = document.querySelectorAll('.fade-up');
+      if (!('IntersectionObserver' in window)) {
+        els.forEach(function (el) { el.classList.add('visible'); });
+        return;
+      }
+      var obs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            obs.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.12 });
+      els.forEach(function (el) { obs.observe(el); });
+    })();
+  </script>
+
+</body>
+</html>

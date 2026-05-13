@@ -108,6 +108,11 @@ app.get('/', (req, res) => {
   res.sendFile(join(ROOT, 'website.html'));
 });
 
+// ── Pre-launch landing page ───────────────────────────────────────────────────
+app.get('/prelaunch', (req, res) => {
+  res.sendFile(join(ROOT, 'prelaunch.html'));
+});
+
 // ── Serve static files (js, css, images, other .html pages) ──────────────────
 app.use(express.static(ROOT, {
   maxAge: '1y',
