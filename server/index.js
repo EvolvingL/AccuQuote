@@ -113,6 +113,54 @@ app.get('/prelaunch', (req, res) => {
   res.sendFile(join(ROOT, 'prelaunch.html'));
 });
 
+// ── Beehiiv subscribe proxy ───────────────────────────────────────────────────
+app.post('/api/subscribe', async (req, res) => {
+  const apiKey = process.env.BEEHIIV_API_KEY;
+  const pubId  = process.env.BEEHIIV_PUBLICATION_ID;
+
+  if (!apiKey || !pubId) {
+    return res.status(500).json({ error: 'Beehiiv credentials not configured' });
+  }
+
+  const { email, trade } = req.body || {};
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ error: 'Invalid email' });
+  }
+
+  try {
+    const response = await fetch(`https://api.beehiiv.com/v2/publications/${pubId}/subscriptions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        email,
+        utm_source: 'prelaunch',
+        utm_medium: 'organic',
+        custom_fields: trade ? [{ name: 'trade', value: trade }] : [],
+        send_welcome_email: true,
+        reactivate_existing: false,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (response.status === 201 || response.status === 200) {
+      return res.json({ ok: true });
+    }
+
+    // Already subscribed
+    if (response.status === 409 || data?.errors?.find?.(e => e.includes('already'))) {
+      return res.status(409).json({ error: 'already_subscribed' });
+    }
+
+    return res.status(response.status).json({ error: data?.message || 'Beehiiv error' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── Serve static files (js, css, images, other .html pages) ──────────────────
 app.use(express.static(ROOT, {
   maxAge: '1y',

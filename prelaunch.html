@@ -1194,42 +1194,35 @@
         submitBtn.disabled = true;
         submitBtn.textContent = 'Claiming your spot…';
 
-        // ── BEEHIIV INTEGRATION ──────────────────────────────────────────
-        // TODO: Replace this block with your actual Beehiiv API call or embed.
-        // Option A (embed): replace the <form> entirely with Beehiiv's embed code,
-        //   styled to match (remove the default Beehiiv wrapper styles).
-        // Option B (API): POST to https://api.beehiiv.com/v2/publications/YOUR_PUB_ID/subscriptions
-        //   with body: { email, utm_source: 'prelaunch', custom_fields: [{ name: 'trade', value: tradeEl.value }] }
-        //   Header: Authorization: Bearer YOUR_BEEHIIV_API_KEY
-        //
-        // Example fetch (enable when API key is in place):
-        //
-        // fetch('https://api.beehiiv.com/v2/publications/REPLACE_PUB_ID/subscriptions', {
-        //   method: 'POST',
-        //   headers: {
-        //     'Content-Type': 'application/json',
-        //     'Authorization': 'Bearer REPLACE_API_KEY'
-        //   },
-        //   body: JSON.stringify({
-        //     email: emailEl.value.trim(),
-        //     utm_source: 'prelaunch',
-        //     custom_fields: [{ name: 'trade', value: tradeEl.value }]
-        //   })
-        // })
-        // .then(function(r) { return r.ok ? r.json() : Promise.reject(r); })
-        // .then(function() { showSuccess(); })
-        // .catch(function() {
-        //   submitBtn.disabled = false;
-        //   submitBtn.textContent = 'Claim my founding spot →';
-        //   alert('Something went wrong — please try again.');
-        // });
-        //
-        // ── END BEEHIIV INTEGRATION ──────────────────────────────────────
-
-        // Simulated success — REMOVE once real API is wired up
-        setTimeout(function () {
-          showSuccess();
-        }, 800);
+        fetch('/api/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: emailEl.value.trim(),
+            trade: tradeEl.value
+          })
+        })
+        .then(function (r) { return r.json().then(function (d) { return { status: r.status, data: d }; }); })
+        .then(function (res) {
+          if (res.status === 200 || res.status === 201) {
+            showSuccess();
+          } else if (res.status === 409) {
+            form.style.display = 'none';
+            success.classList.add('visible');
+            success.querySelector('.form-success__title').textContent = "You're already in.";
+            success.querySelector('.form-success__body').innerHTML =
+              "Check your email for your referral link.<br><strong>Forward it to a mate who'd want in.</strong>";
+          } else {
+            throw new Error(res.data.error || 'Unknown error');
+          }
+        })
+        .catch(function () {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Claim my founding spot →';
+          submitBtn.insertAdjacentHTML('afterend',
+            '<p style="color:var(--red);font-size:13px;margin-top:8px">Something went wrong — please try again.</p>'
+          );
+        });
 
         function showSuccess() {
           form.style.display = 'none';
