@@ -248,7 +248,7 @@ struct GuestResultView: View {
         }
         .sheet(isPresented: $showShareSheet) {
             if let img = shareImage {
-                ShareSheet(items: [img])
+                GuestShareSheet(items: [img])
             }
         }
         .sheet(isPresented: $showUpsell) {
@@ -589,9 +589,9 @@ struct ShareDimPill: View {
     }
 }
 
-// MARK: - iOS Share Sheet wrapper
+// MARK: - iOS Share Sheet wrapper (guest flow)
 
-struct ShareSheet: UIViewControllerRepresentable {
+struct GuestShareSheet: UIViewControllerRepresentable {
     let items: [Any]
 
     func makeUIViewController(context: Context) -> UIActivityViewController {
