@@ -461,11 +461,17 @@ final class QuestionEngine: ObservableObject {
 
     // MARK: - Persistence
 
-    private func saveProfile() {
+    func saveProfile() {
         profile.answers = questions
         if let data = try? JSONEncoder().encode(profile) {
             UserDefaults.standard.set(data, forKey: Self.profileKey)
         }
+    }
+
+    func resetProfile() {
+        questions = foundationQuestions
+        profile = TradesmanProfile()
+        UserDefaults.standard.removeObject(forKey: Self.profileKey)
     }
 
     private func loadProfile() {

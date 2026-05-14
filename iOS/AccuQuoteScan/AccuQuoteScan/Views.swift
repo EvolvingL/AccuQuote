@@ -409,6 +409,7 @@ struct ReadyView: View {
     @State private var showOnboarding = false
     @State private var showManualEntry = false
     @State private var showHistory = false
+    @State private var showProfileMenu = false
     @State private var pulseIcon = false
     @ObservedObject private var historyStore = QuoteHistoryStore.shared
 
@@ -427,23 +428,14 @@ struct ReadyView: View {
                 }
                 Spacer()
                 HStack(spacing: 12) {
-                    if !historyStore.quotes.isEmpty {
-                        Button { showHistory = true } label: {
-                            ZStack(alignment: .topTrailing) {
-                                Image(systemName: "clock.arrow.circlepath")
-                                    .font(.system(size: 18, weight: .medium))
-                                    .foregroundColor(AQ.secondary)
-                                Circle()
-                                    .fill(AQ.blue)
-                                    .frame(width: 8, height: 8)
-                                    .offset(x: 3, y: -3)
-                            }
-                        }
-                    }
                     AIProfileButton(
                         answered: questionEngine.answeredCount,
                         pct: questionEngine.personalisation
                     ) { showOnboarding = true }
+
+                    ProfileIconButton(pct: questionEngine.personalisation) {
+                        showProfileMenu = true
+                    }
                 }
             }
             .padding(.horizontal, 24)
@@ -606,6 +598,13 @@ struct ReadyView: View {
         }
         .sheet(isPresented: $showHistory) {
             QuoteHistoryView(store: historyStore)
+        }
+        .sheet(isPresented: $showProfileMenu) {
+            ProfileMenuSheet().environmentObject(questionEngine)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .aqSignOut)) { _ in
+            showProfileMenu = false
+            questionEngine.resetProfile()
         }
     }
 }
