@@ -3829,8 +3829,7 @@ struct QuoteResultView: View {
                 .frame(width: 110)
 
                 Button {
-                    let url = buildPDF()
-                    pdfURL = url
+                    pdfURL = buildPDF(summarised: true)
                 } label: {
                     HStack(spacing: 8) {
                         Image(systemName: "paperplane.fill")
@@ -3848,22 +3847,41 @@ struct QuoteResultView: View {
             .padding(.horizontal, 24)
             .padding(.top, 12)
 
-            // Row 2: Request deposit
-            Button {
-                showDepositSheet = true
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "creditcard")
-                        .font(.system(size: 14, weight: .semibold))
-                    Text("Request deposit via Stripe")
-                        .font(.system(size: 15, weight: .semibold))
+            // Row 2: Full BOM + Request deposit
+            HStack(spacing: 10) {
+                Button {
+                    pdfURL = buildPDF(summarised: false)
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "list.bullet.rectangle")
+                            .font(.system(size: 13, weight: .semibold))
+                        Text("Full BOM")
+                            .font(.system(size: 14, weight: .semibold))
+                    }
+                    .foregroundColor(AQ.secondary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 13)
+                    .background(AQ.fill)
+                    .cornerRadius(14)
+                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(AQ.rule, lineWidth: 1))
                 }
-                .foregroundColor(AQ.green)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 13)
-                .background(AQ.green.opacity(0.09))
-                .cornerRadius(14)
-                .overlay(RoundedRectangle(cornerRadius: 14).stroke(AQ.green.opacity(0.25), lineWidth: 1))
+
+                Button {
+                    showDepositSheet = true
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "creditcard")
+                            .font(.system(size: 14, weight: .semibold))
+                        Text("Request deposit via Stripe")
+                            .font(.system(size: 15, weight: .semibold))
+                    }
+                    .foregroundColor(AQ.green)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 13)
+                    .background(AQ.green.opacity(0.09))
+                    .cornerRadius(14)
+                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(AQ.green.opacity(0.25), lineWidth: 1))
+                }
             }
             .padding(.horizontal, 24)
             .padding(.top, 8)
@@ -3907,7 +3925,7 @@ struct QuoteResultView: View {
 
     // MARK: - PDF Generation
 
-    private func buildPDF(depositURL: String? = nil) -> URL {
+    private func buildPDF(summarised: Bool = true, depositURL: String? = nil) -> URL {
         let profile = questionEngine.profile
         let businessName    = profile.answers.first(where: { $0.id == "business_name" })?.answer ?? "AccuQuote"
         let businessContact = profile.answers.first(where: { $0.id == "business_contact" })?.answer ?? ""
@@ -4059,26 +4077,32 @@ struct QuoteResultView: View {
             // ── Materials ────────────────────────────────────────────────────
             if !quote.items.isEmpty {
                 y += 6
-                sectionHeader("Materials & Items")
-                for item in quote.items {
-                    var meta = "\(formatQty(item.qty)) \(item.unit) × £\(String(format: "%.2f", item.unitPrice))"
-                    if !item.sku.isEmpty {
-                        let sup = item.supplier.isEmpty ? "" : "\(item.supplier) "
-                        meta += "   \(sup)SKU \(item.sku)"
-                    }
-                    // Wrap long descriptions
-                    let maxDescWidth = pageW - margin * 2 - 80
-                    let descAttrs: [NSAttributedString.Key: Any] = [.font: UIFont.systemFont(ofSize: 13)]
-                    let descWidth = item.description.size(withAttributes: descAttrs).width
-                    if descWidth > maxDescWidth {
-                        // truncate with ellipsis
-                        row(left: String(item.description.prefix(55)) + "…",
-                            right: "£\(String(format: "%.2f", item.total))",
-                            secondary: meta)
-                    } else {
-                        row(left: item.description,
-                            right: "£\(String(format: "%.2f", item.total))",
-                            secondary: meta)
+                if summarised {
+                    // Customer quote: single materials total, no SKUs or supplier names
+                    sectionHeader("Materials")
+                    let matTotal = quote.items.reduce(0) { $0 + $1.total }
+                    row(left: "Materials & supplies", right: "£\(Int(matTotal).formatted())")
+                } else {
+                    // Full BOM: every line item with SKU and supplier
+                    sectionHeader("Materials & Items")
+                    for item in quote.items {
+                        var meta = "\(formatQty(item.qty)) \(item.unit) × £\(String(format: "%.2f", item.unitPrice))"
+                        if !item.sku.isEmpty {
+                            let sup = item.supplier.isEmpty ? "" : "\(item.supplier) "
+                            meta += "   \(sup)SKU \(item.sku)"
+                        }
+                        let maxDescWidth = pageW - margin * 2 - 80
+                        let descAttrs: [NSAttributedString.Key: Any] = [.font: UIFont.systemFont(ofSize: 13)]
+                        let descWidth = item.description.size(withAttributes: descAttrs).width
+                        if descWidth > maxDescWidth {
+                            row(left: String(item.description.prefix(55)) + "…",
+                                right: "£\(String(format: "%.2f", item.total))",
+                                secondary: meta)
+                        } else {
+                            row(left: item.description,
+                                right: "£\(String(format: "%.2f", item.total))",
+                                secondary: meta)
+                        }
                     }
                 }
             }
