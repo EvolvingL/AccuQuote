@@ -170,26 +170,32 @@ app.post('/api/stripe/payment-link', async (req, res) => {
       body: new URLSearchParams({
         'line_items[0][price]': price.id,
         'line_items[0][quantity]': '1',
-        'payment_method_types[0]': 'card',
         'metadata[source]': 'accuquote',
         'metadata[customer]': customerName || '',
-        'metadata[job]': jobDescription || '',
+        'metadata[job]': (jobDescription || '').substring(0, 500),
         'metadata[accuquote_fee_pence]': String(servicePence),
       }),
     });
 
+    const linkBody = await linkRes.json();
+
     if (!linkRes.ok) {
-      const err = await linkRes.json();
-      return res.status(500).json({ error: err.error?.message || 'Stripe link error' });
+      console.error('Stripe payment link error:', JSON.stringify(linkBody));
+      return res.status(500).json({ error: linkBody.error?.message || 'Stripe link error' });
     }
-    const link = await linkRes.json();
+
+    if (!linkBody.url) {
+      console.error('Stripe response missing url:', JSON.stringify(linkBody));
+      return res.status(500).json({ error: 'Stripe did not return a payment URL' });
+    }
 
     res.json({
-      url: link.url,
+      url: linkBody.url,
       depositAmount: depositAmount,
       serviceFee: servicePence / 100,
     });
   } catch (err) {
+    console.error('Stripe endpoint error:', err);
     res.status(500).json({ error: err.message });
   }
 });

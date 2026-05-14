@@ -58,8 +58,9 @@ struct StripeService {
             throw StripeServiceError.serverError("No HTTP response")
         }
 
-        // Always try to parse JSON — we need it for both success and error paths
-        let json = (try? JSONSerialization.jsonObject(with: data) as? [String: Any]) ?? [:]
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw StripeServiceError.decodingError
+        }
 
         if http.statusCode != 200 {
             let msg = json["error"] as? String ?? "Server error (\(http.statusCode))"
@@ -68,15 +69,12 @@ struct StripeService {
 
         guard
             let urlString = json["url"] as? String,
-            let linkURL   = URL(string: urlString)
+            let linkURL   = URL(string: urlString),
+            let deposit   = json["depositAmount"] as? Double,
+            let fee       = json["serviceFee"] as? Double
         else {
-            // Log the raw response for debugging
-            let raw = String(data: data, encoding: .utf8) ?? "unreadable"
-            throw StripeServiceError.serverError("Missing payment URL in response: \(raw)")
+            throw StripeServiceError.decodingError
         }
-
-        let deposit = json["depositAmount"] as? Double ?? 0
-        let fee     = json["serviceFee"]    as? Double ?? 0
 
         return DepositPaymentLink(url: linkURL, depositAmount: deposit, serviceFee: fee)
     }
