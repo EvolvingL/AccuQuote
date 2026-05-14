@@ -150,7 +150,8 @@ app.post('/api/stripe/payment-link', async (req, res) => {
         'currency': 'gbp',
         'unit_amount': String(depositPence),
         'product_data[name]': customerName ? `Deposit — ${customerName}` : 'Deposit',
-        'product_data[description]': description,
+        'product_data[metadata][job]': (jobDescription || '').substring(0, 500),
+        'product_data[metadata][trader]': traderName || '',
       }),
     });
 
