@@ -164,13 +164,33 @@ app.post('/api/subscribe', async (req, res) => {
 // ── Serve static files (js, css, images, other .html pages) ──────────────────
 app.use(express.static(ROOT, {
   maxAge: '1y',
-  index: false, // prevent express.static from serving index.html for /
+  index: false,
   setHeaders: (res, filePath) => {
     if (filePath.endsWith('.html') || filePath.endsWith('sw.js')) {
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.setHeader('Surrogate-Control', 'no-store');
     }
   },
 }));
+
+// ── Explicit routes for all HTML pages (ensures no-cache headers always fire) ─
+const pages = ['demo', 'blog', 'how-it-works', 'referral', 'quote-cost-calculator', 'privacy-policy'];
+pages.forEach(page => {
+  app.get(`/${page}`, (req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.sendFile(join(ROOT, `${page}.html`));
+  });
+  app.get(`/${page}.html`, (req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.sendFile(join(ROOT, `${page}.html`));
+  });
+});
 
 // ── Fallback — unmatched routes serve website.html ───────────────────────────
 app.get('*', (req, res) => {
