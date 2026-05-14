@@ -3636,6 +3636,7 @@ struct QuoteResultView: View {
     @State private var labourTotalOverride: Double? = nil
     @State private var showProfileNudge = true
     @State private var showOnboarding = false
+    @State private var showDepositSheet = false
 
     var effectiveLabourTotal: Double { labourTotalOverride ?? quote.labourTotal }
     var effectiveSubtotal: Double { effectiveLabourTotal + quote.items.reduce(0) { $0 + $1.total } }
@@ -3812,6 +3813,8 @@ struct QuoteResultView: View {
         // Sticky footer
         VStack(spacing: 0) {
             Divider().background(AQ.rule)
+
+            // Row 1: New Quote + Send to customer
             HStack(spacing: 10) {
                 Button(action: onStartOver) {
                     Text("New Quote")
@@ -3844,6 +3847,26 @@ struct QuoteResultView: View {
             }
             .padding(.horizontal, 24)
             .padding(.top, 12)
+
+            // Row 2: Request deposit
+            Button {
+                showDepositSheet = true
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "creditcard")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text("Request deposit via Stripe")
+                        .font(.system(size: 15, weight: .semibold))
+                }
+                .foregroundColor(AQ.green)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 13)
+                .background(AQ.green.opacity(0.09))
+                .cornerRadius(14)
+                .overlay(RoundedRectangle(cornerRadius: 14).stroke(AQ.green.opacity(0.25), lineWidth: 1))
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 8)
             .padding(.bottom, 28)
         }
         .background(Color.white)
@@ -3866,6 +3889,16 @@ struct QuoteResultView: View {
         .sheet(isPresented: $showOnboarding) {
             OnboardingSheet().environmentObject(questionEngine)
         }
+        .sheet(isPresented: $showDepositSheet) {
+            let traderName = questionEngine.profile.answers
+                .first(where: { $0.id == "business_name" })?.answer ?? "AccuQuote"
+            DepositRequestView(
+                quote: quote,
+                effectiveGrandTotal: effectiveGrandTotal,
+                traderName: traderName,
+                onDismiss: { showDepositSheet = false }
+            )
+        }
     }
 
     private func formatQty(_ qty: Double) -> String {
@@ -3874,7 +3907,7 @@ struct QuoteResultView: View {
 
     // MARK: - PDF Generation
 
-    private func buildPDF() -> URL {
+    private func buildPDF(depositURL: String? = nil) -> URL {
         let profile = questionEngine.profile
         let businessName    = profile.answers.first(where: { $0.id == "business_name" })?.answer ?? "AccuQuote"
         let businessContact = profile.answers.first(where: { $0.id == "business_contact" })?.answer ?? ""
@@ -4099,6 +4132,339 @@ struct QuoteResultView: View {
     }
 }
 
+
+// MARK: - Deposit Request View
+
+struct DepositRequestView: View {
+    let quote: GeneratedQuote
+    let effectiveGrandTotal: Double
+    let traderName: String
+    let onDismiss: () -> Void
+
+    @State private var selectedPreset: Int? = 25       // % preset button selected
+    @State private var customInput: String = ""
+    @State private var useCustom = false
+    @State private var isLoading = false
+    @State private var paymentLink: DepositPaymentLink? = nil
+    @State private var errorMessage: String? = nil
+    @State private var showShareSheet = false
+    @State private var shareURL: URL? = nil
+
+    private let presets = [10, 25, 50]
+
+    private var depositAmount: Double {
+        if useCustom {
+            return Double(customInput.filter { $0.isNumber || $0 == "." }) ?? 0
+        }
+        let pct = Double(selectedPreset ?? 25) / 100.0
+        return (effectiveGrandTotal * pct * 100).rounded() / 100
+    }
+
+    private var serviceFeeAmount: Double {
+        (depositAmount * 0.01 * 100).rounded() / 100
+    }
+
+    private var isValidAmount: Bool {
+        depositAmount > 0.50 && depositAmount <= effectiveGrandTotal
+    }
+
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(spacing: 0) {
+
+                    // ── Header ────────────────────────────────────────────
+                    VStack(spacing: 4) {
+                        Text("Request a Deposit")
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundColor(AQ.ink)
+                        Text("Send a Stripe payment link with your quote")
+                            .font(AQ.body(14))
+                            .foregroundColor(AQ.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding(.top, 28)
+                    .padding(.bottom, 24)
+                    .padding(.horizontal, 24)
+
+                    Divider().background(AQ.rule)
+
+                    // ── Quote total context ───────────────────────────────
+                    HStack {
+                        Text("Quote total")
+                            .font(AQ.body(15))
+                            .foregroundColor(AQ.secondary)
+                        Spacer()
+                        Text("£\(Int(effectiveGrandTotal).formatted())")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(AQ.ink)
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 16)
+
+                    Divider().background(AQ.rule)
+
+                    // ── Preset buttons ────────────────────────────────────
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Deposit amount")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(AQ.secondary)
+                            .textCase(.uppercase)
+                            .kerning(0.6)
+                            .padding(.horizontal, 24)
+
+                        HStack(spacing: 10) {
+                            ForEach(presets, id: \.self) { pct in
+                                Button {
+                                    withAnimation(.easeInOut(duration: 0.15)) {
+                                        selectedPreset = pct
+                                        useCustom = false
+                                        customInput = ""
+                                    }
+                                } label: {
+                                    VStack(spacing: 3) {
+                                        Text("\(pct)%")
+                                            .font(.system(size: 16, weight: .semibold))
+                                        Text("£\(Int((effectiveGrandTotal * Double(pct) / 100).rounded()).formatted())")
+                                            .font(.system(size: 12))
+                                    }
+                                    .foregroundColor((!useCustom && selectedPreset == pct) ? .white : AQ.ink)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 14)
+                                    .background((!useCustom && selectedPreset == pct) ? AQ.blue : AQ.fill)
+                                    .cornerRadius(12)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke((!useCustom && selectedPreset == pct) ? AQ.blue : AQ.rule, lineWidth: 1)
+                                    )
+                                }
+                            }
+
+                            // Custom button
+                            Button {
+                                withAnimation(.easeInOut(duration: 0.15)) {
+                                    useCustom = true
+                                    selectedPreset = nil
+                                }
+                            } label: {
+                                Text(useCustom ? "Custom ✎" : "Custom")
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundColor(useCustom ? .white : AQ.ink)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 14)
+                                    .background(useCustom ? AQ.blue : AQ.fill)
+                                    .cornerRadius(12)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(useCustom ? AQ.blue : AQ.rule, lineWidth: 1)
+                                    )
+                            }
+                        }
+                        .padding(.horizontal, 24)
+
+                        if useCustom {
+                            HStack {
+                                Text("£")
+                                    .font(.system(size: 17, weight: .medium))
+                                    .foregroundColor(AQ.secondary)
+                                TextField("e.g. 500", text: $customInput)
+                                    .keyboardType(.decimalPad)
+                                    .font(.system(size: 17))
+                                    .foregroundColor(AQ.ink)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 14)
+                            .background(AQ.fill)
+                            .cornerRadius(12)
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(AQ.blue, lineWidth: 1.5))
+                            .padding(.horizontal, 24)
+                        }
+                    }
+                    .padding(.vertical, 20)
+
+                    Divider().background(AQ.rule)
+
+                    // ── Fee breakdown ─────────────────────────────────────
+                    VStack(spacing: 0) {
+                        HStack {
+                            Text("Customer pays")
+                                .font(AQ.body(15))
+                                .foregroundColor(AQ.secondary)
+                            Spacer()
+                            Text(isValidAmount ? "£\(String(format: "%.2f", depositAmount))" : "—")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(AQ.ink)
+                        }
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 14)
+
+                        Divider().background(AQ.rule).padding(.leading, 24)
+
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("AccuQuote service fee")
+                                    .font(AQ.body(15))
+                                    .foregroundColor(AQ.secondary)
+                                Text("1% of deposit — deducted from payout")
+                                    .font(AQ.body(12))
+                                    .foregroundColor(AQ.secondary.opacity(0.7))
+                            }
+                            Spacer()
+                            Text(isValidAmount ? "£\(String(format: "%.2f", serviceFeeAmount))" : "—")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(AQ.secondary)
+                        }
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 14)
+
+                        Divider().background(AQ.rule).padding(.leading, 24)
+
+                        HStack {
+                            Text("You receive")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(AQ.ink)
+                            Spacer()
+                            Text(isValidAmount ? "£\(String(format: "%.2f", depositAmount - serviceFeeAmount))" : "—")
+                                .font(.system(size: 17, weight: .bold))
+                                .foregroundColor(AQ.green)
+                        }
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 16)
+                    }
+
+                    Divider().background(AQ.rule)
+
+                    // ── Error message ─────────────────────────────────────
+                    if let error = errorMessage {
+                        HStack(spacing: 8) {
+                            Image(systemName: "exclamationmark.circle.fill")
+                                .foregroundColor(.red)
+                            Text(error)
+                                .font(AQ.body(14))
+                                .foregroundColor(.red)
+                        }
+                        .padding(16)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.red.opacity(0.06))
+                        .cornerRadius(10)
+                        .padding(.horizontal, 24)
+                        .padding(.top, 16)
+                    }
+
+                    // ── Success — show link ───────────────────────────────
+                    if let link = paymentLink {
+                        VStack(spacing: 12) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(AQ.green)
+                                    .font(.system(size: 18))
+                                Text("Payment link created")
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundColor(AQ.green)
+                            }
+
+                            Text(link.url.absoluteString)
+                                .font(.system(size: 12, design: .monospaced))
+                                .foregroundColor(AQ.secondary)
+                                .lineLimit(2)
+                                .multilineTextAlignment(.center)
+
+                            Button {
+                                shareURL = link.url
+                                showShareSheet = true
+                            } label: {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "square.and.arrow.up")
+                                        .font(.system(size: 15, weight: .semibold))
+                                    Text("Share payment link")
+                                        .font(.system(size: 17, weight: .semibold))
+                                }
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 16)
+                                .background(AQ.green)
+                                .cornerRadius(14)
+                            }
+                        }
+                        .padding(.horizontal, 24)
+                        .padding(.top, 20)
+                    }
+
+                    Color.clear.frame(height: 100)
+                }
+            }
+            .background(Color.white)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") { onDismiss() }
+                        .foregroundColor(AQ.secondary)
+                }
+            }
+            .safeAreaInset(edge: .bottom) {
+                if paymentLink == nil {
+                    VStack(spacing: 0) {
+                        Divider().background(AQ.rule)
+                        Button {
+                            Task { await generateLink() }
+                        } label: {
+                            Group {
+                                if isLoading {
+                                    ProgressView()
+                                        .tint(.white)
+                                } else {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "link")
+                                            .font(.system(size: 15, weight: .semibold))
+                                        Text("Create payment link")
+                                            .font(.system(size: 17, weight: .semibold))
+                                    }
+                                }
+                            }
+                            .foregroundColor(isValidAmount ? .white : AQ.secondary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(isValidAmount ? AQ.blue : AQ.fill)
+                            .cornerRadius(14)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .stroke(isValidAmount ? Color.clear : AQ.rule, lineWidth: 1)
+                            )
+                        }
+                        .disabled(!isValidAmount || isLoading)
+                        .padding(.horizontal, 24)
+                        .padding(.top, 12)
+                        .padding(.bottom, 28)
+                    }
+                    .background(Color.white)
+                }
+            }
+        }
+        .sheet(isPresented: $showShareSheet) {
+            if let url = shareURL {
+                ShareSheet(url: url)
+            }
+        }
+    }
+
+    @MainActor
+    private func generateLink() async {
+        errorMessage = nil
+        isLoading = true
+        do {
+            let link = try await StripeService.createPaymentLink(
+                depositAmount:  depositAmount,
+                customerName:   quote.customerName,
+                jobDescription: quote.jobDescription,
+                traderName:     traderName
+            )
+            paymentLink = link
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        isLoading = false
+    }
+}
 
 // MARK: - PDF Share Sheet
 

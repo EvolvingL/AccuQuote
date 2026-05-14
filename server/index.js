@@ -113,6 +113,87 @@ app.get('/prelaunch', (req, res) => {
   res.sendFile(join(ROOT, 'prelaunch.html'));
 });
 
+// ── Stripe payment link ───────────────────────────────────────────────────────
+app.post('/api/stripe/payment-link', async (req, res) => {
+  const stripeKey = process.env.STRIPE_SECRET_KEY;
+  if (!stripeKey) {
+    return res.status(500).json({ error: 'STRIPE_SECRET_KEY not set on server' });
+  }
+
+  const { depositAmount, customerName, jobDescription, traderName } = req.body || {};
+  if (!depositAmount || isNaN(depositAmount) || depositAmount <= 0) {
+    return res.status(400).json({ error: 'Invalid depositAmount' });
+  }
+
+  // AccuQuote takes 1% — Stripe receives the full amount and we use
+  // application_fee_amount (requires Connect). For now we add 1% to the
+  // charge and note it in the product description. When Connect is set up,
+  // swap to application_fee_amount.
+  const depositPence    = Math.round(depositAmount * 100);  // customer pays this
+  const servicePence    = Math.round(depositAmount * 0.01 * 100);  // 1% fee in pence
+
+  const description = [
+    jobDescription ? `Job: ${jobDescription}` : null,
+    `Deposit request via AccuQuote`,
+    traderName ? `Trader: ${traderName}` : null,
+  ].filter(Boolean).join(' · ');
+
+  try {
+    // 1. Create a Price (one-off)
+    const priceRes = await fetch('https://api.stripe.com/v1/prices', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${stripeKey}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        'currency': 'gbp',
+        'unit_amount': String(depositPence),
+        'product_data[name]': customerName ? `Deposit — ${customerName}` : 'Deposit',
+        'product_data[description]': description,
+      }),
+    });
+
+    if (!priceRes.ok) {
+      const err = await priceRes.json();
+      return res.status(500).json({ error: err.error?.message || 'Stripe price error' });
+    }
+    const price = await priceRes.json();
+
+    // 2. Create a Payment Link
+    const linkRes = await fetch('https://api.stripe.com/v1/payment_links', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${stripeKey}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        'line_items[0][price]': price.id,
+        'line_items[0][quantity]': '1',
+        'payment_method_types[0]': 'card',
+        'metadata[source]': 'accuquote',
+        'metadata[customer]': customerName || '',
+        'metadata[job]': jobDescription || '',
+        'metadata[accuquote_fee_pence]': String(servicePence),
+      }),
+    });
+
+    if (!linkRes.ok) {
+      const err = await linkRes.json();
+      return res.status(500).json({ error: err.error?.message || 'Stripe link error' });
+    }
+    const link = await linkRes.json();
+
+    res.json({
+      url: link.url,
+      depositAmount: depositAmount,
+      serviceFee: servicePence / 100,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── Beehiiv subscribe proxy ───────────────────────────────────────────────────
 app.post('/api/subscribe', async (req, res) => {
   const apiKey = process.env.BEEHIIV_API_KEY;
