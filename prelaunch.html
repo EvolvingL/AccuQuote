@@ -3,20 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AccuQuote — AI-powered quoting for UK tradesmen | Founding 200</title>
-  <meta name="description" content="Materials eating your margin? AccuQuote scans live UK supplier prices, scopes the job with AI, and sends a pro PDF quote in 5 minutes. Join the founding 200 — lifetime 50% off." />
+  <title>AccuQuote — AI-powered quoting for UK tradesmen | Beta Testers Wanted</title>
+  <meta name="description" content="Materials eating your margin? AccuQuote scans live UK supplier prices, scopes the job with AI, and sends a pro PDF quote in 5 minutes. Beta testers get £10/month for life — public price will be £49." />
 
   <!-- Open Graph -->
-  <meta property="og:title" content="AccuQuote — Join the Founding 200" />
-  <meta property="og:description" content="Materials eating your margin? AccuQuote scans live UK supplier prices, scopes the job with AI, and sends a pro PDF quote in 5 minutes. Lifetime 50% off for the first 200." />
+  <meta property="og:title" content="AccuQuote — Beta Testers Wanted" />
+  <meta property="og:description" content="Materials eating your margin? AccuQuote scans live UK supplier prices, scopes the job with AI, and sends a pro PDF quote in 5 minutes. Beta testers get £10/month for life — public price will be £49." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://accuquote.app/prelaunch" />
   <meta property="og:image" content="https://accuquote.app/og-image.png" />
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="AccuQuote — Join the Founding 200" />
-  <meta name="twitter:description" content="Materials eating your margin? AI-powered quoting for UK tradesmen. Lifetime 50% off for founding members." />
+  <meta name="twitter:title" content="AccuQuote — Beta Testers Wanted" />
+  <meta name="twitter:description" content="Materials eating your margin? AI-powered quoting for UK tradesmen. We want 200 UK tradies to help us test and shape the product — £10/month for life." />
 
   <!-- JSON-LD -->
   <script type="application/ld+json">
@@ -503,6 +503,56 @@
     .promise-list li .icon.no  { color: var(--red); }
     .promise-list li strong { color: var(--white); }
 
+    /* ── Price pledge ────────────────────────────────────────────────────── */
+    .pledge-section {
+      padding: 80px 0;
+      background: var(--bg-dark);
+    }
+    .pledge-card {
+      max-width: 680px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, rgba(244,184,42,0.08) 0%, rgba(244,184,42,0.03) 100%);
+      border: 1.5px solid rgba(244,184,42,0.4);
+      border-radius: var(--radius);
+      padding: 48px 48px 40px;
+      text-align: center;
+      position: relative;
+    }
+    .pledge-card::before {
+      content: '🤝';
+      font-size: 36px;
+      display: block;
+      margin-bottom: 20px;
+    }
+    .pledge-card h2 {
+      font-size: clamp(22px, 3vw, 28px);
+      font-weight: 800;
+      color: var(--gold);
+      margin-bottom: 16px;
+      letter-spacing: -0.3px;
+    }
+    .pledge-card p {
+      font-size: 16px;
+      color: var(--muted);
+      line-height: 1.7;
+      margin-bottom: 28px;
+    }
+    .pledge-card p strong { color: var(--white); }
+    .pledge-signature {
+      font-size: 14px;
+      color: rgba(255,255,255,0.4);
+      font-style: italic;
+      border-top: 1px solid rgba(244,184,42,0.15);
+      padding-top: 20px;
+    }
+    .pledge-signature strong {
+      color: rgba(255,255,255,0.7);
+      font-style: normal;
+    }
+    @media (max-width: 600px) {
+      .pledge-card { padding: 36px 24px 32px; }
+    }
+
     /* ── Community wall ──────────────────────────────────────────────────── */
     .community-section {
       padding: 96px 0;
@@ -749,15 +799,16 @@
       <p class="hero-subhead">
         AccuQuote scans live UK supplier prices, scopes the job with AI,
         and sends a pro PDF quote — in 5 minutes, from your van.<br><br>
-        <strong>Built WITH 200 UK tradies. Not pitched at them.</strong>
+        <strong>Built for UK tradies — and we want 200 of them to help us get it right.</strong>
       </p>
 
       <div class="founding-offer fade-up">
-        <div class="founding-offer__title">⚡ Founding 200 — Lifetime 50% off + Name in credits</div>
+        <div class="founding-offer__title">⚡ Beta Testers Wanted — 200 spots, £10/month for life</div>
         <div class="founding-offer__body">
-          We're recruiting 200 UK tradies to shape AccuQuote before launch.
-          You get <strong>lifetime pricing locked at £19/month</strong> (half the public price),
-          <strong>your name in the in-app credits</strong>, and a direct line to me while we build.
+          We're in build right now and looking for 200 UK tradies to test AccuQuote on real jobs,
+          tell us what's working and what isn't, and help us shape the product before public launch.
+          In return you get <strong>lifetime pricing locked at £10/month</strong> (the public price will be £49),
+          <strong>your name in the in-app credits</strong>, and a direct line to me throughout.
         </div>
       </div>
 
@@ -793,7 +844,7 @@
             </div>
           </div>
           <button type="submit" class="btn-claim" id="hero-submit">
-            Claim my founding spot →
+            Claim my beta spot →
           </button>
           <p class="form-reassurance">No card. No call. No spam. One update a month max.</p>
         </form>
@@ -806,7 +857,7 @@
         </div>
         <div class="counter-bar">
           <span class="bolt">⚡</span>
-          <span id="hero-counter-text">47 / 200 founding spots claimed</span>
+          <span id="hero-counter-text">47 / 200 beta spots claimed</span>
           <div class="counter-track">
             <div class="counter-fill" id="counter-fill" style="width: 23.5%"></div>
           </div>
@@ -854,9 +905,9 @@
 
           <p>AccuQuote condenses Gary's whole hack into one tool. Measure the room with your phone camera. AI scopes the job. Live UK supplier prices populate the materials list. A pro PDF proposal lands in your customer's WhatsApp before you've left the driveway. Deposits, reminders, follow-ups — handled.</p>
 
-          <p>I'm building it with 200 founding tradies who've signed up to help shape it before launch. Lifetime pricing locked at half the public rate. Names in the in-app credits. Direct line to me while we build.</p>
+          <p>I'm looking for 200 UK tradies to test AccuQuote on real jobs, tell me what's working and what isn't, and help shape the product before public launch. Lifetime pricing locked at £10/month (public price will be £49). Names in the in-app credits. Direct line to me while we build.</p>
 
-          <p>If you're a UK tradesman losing weekends to <em>quoting</em> — like Gary used to, like every one of my clients used to — I'd love you to be one of them.</p>
+          <p>If you're a UK tradesman losing weekends to <em>quoting</em> — like Gary used to, like every one of my clients used to — I'd love you to be one of the first 200.</p>
 
           <div class="founder-signoff">
             — Luke
@@ -909,7 +960,7 @@
           <ul class="promise-list">
             <li><span class="icon yes">✓</span> One monthly update on the build (skippable)</li>
             <li><span class="icon yes">✓</span> An early-access invite when we open beta</li>
-            <li><span class="icon yes">✓</span> <strong>Lifetime founding-member pricing</strong></li>
+            <li><span class="icon yes">✓</span> <strong>£10/month for life</strong> (public price: £49)</li>
             <li><span class="icon yes">✓</span> A real human (me) replying to any question</li>
           </ul>
         </div>
@@ -926,11 +977,32 @@
     </div>
   </section>
 
+  <!-- ── Price pledge ──────────────────────────────────────────────────── -->
+  <section class="pledge-section">
+    <div class="container">
+      <div class="pledge-card fade-up">
+        <h2>The Founding Member Price Pledge</h2>
+        <p>
+          Whatever price you lock in today is <strong>yours for life</strong>.<br>
+          Not for a year. Not until we feel like changing it. <strong>Forever.</strong>
+        </p>
+        <p>
+          When AccuQuote goes public, the price will go up. When we add features, the price will go up.
+          But your rate will never move — not by a penny — for as long as you're a member.
+          You helped us build this. That deserves more than a thank-you email.
+        </p>
+        <div class="pledge-signature">
+          This is a personal commitment, not a marketing line. — <strong>Luke, Founder</strong>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ── Community wall ─────────────────────────────────────────────────── -->
   <section class="community-section">
     <div class="container">
-      <div class="section-label">Founding tradies so far</div>
-      <h2 class="section-title">The people shaping AccuQuote</h2>
+      <div class="section-label">Beta testers so far</div>
+      <h2 class="section-title">The people helping us build AccuQuote</h2>
 
       <!--
         COMMUNITY WALL: Update this JSON array as signups come in.
@@ -997,7 +1069,7 @@
             </div>
           </div>
           <button type="submit" class="btn-claim" id="bottom-submit">
-            Claim my founding spot →
+            Claim my beta spot →
           </button>
           <p class="form-reassurance">No card. No call. No spam. One update a month max.</p>
         </form>
@@ -1097,7 +1169,7 @@
       var heroText = document.getElementById('hero-counter-text');
       var bottomText = document.getElementById('bottom-counter-text');
       if (fill)       fill.style.width = pct + '%';
-      if (heroText)   heroText.textContent = TOTAL_SIGNUPS + ' / ' + TOTAL_SPOTS + ' founding spots claimed';
+      if (heroText)   heroText.textContent = TOTAL_SIGNUPS + ' / ' + TOTAL_SPOTS + ' beta spots claimed';
       if (bottomText) bottomText.textContent = TOTAL_SIGNUPS + ' / ' + TOTAL_SPOTS + ' claimed \u2022 ' + spotsLeft + ' spots left';
     })();
 
@@ -1109,11 +1181,11 @@
       },
       {
         q: "What's it going to cost?",
-        a: "Public price will be £39/month. Founding members pay £19/month for life. Annual plans available with further discount."
+        a: "Public price will be £49/month. Beta testers pay £10/month for life — that's nearly 80% off, locked in forever. Annual plans available with further discount."
       },
       {
         q: "Why should I sign up now instead of waiting?",
-        a: "Three reasons: (1) lifetime 50% pricing locked, (2) you get to shape the product — I do user research calls with every founding member, (3) your name goes in the in-app credits permanently."
+        a: "Three reasons: (1) £10/month locked for life — when the app goes public that price goes to £49, (2) you get to test it on real jobs and directly shape the product — I do feedback calls with every beta tester, (3) your name goes in the in-app credits permanently."
       },
       {
         q: "Will my email be sold or shared?",
@@ -1121,7 +1193,7 @@
       },
       {
         q: "Can I refer mates and get bumped up the queue?",
-        a: "Yes. Once you claim a founding spot, you get a personal link. Refer 3 mates who sign up, you get bumped to 'founding 50' (extra perks coming)."
+        a: "Yes. Once you claim a beta spot, you get a personal link. Refer 3 mates who sign up, you get bumped to our first-access list and extra perks (coming soon)."
       },
       {
         q: "What if I sign up and decide it's not for me?",
@@ -1227,7 +1299,7 @@
         })
         .catch(function () {
           submitBtn.disabled = false;
-          submitBtn.textContent = 'Claim my founding spot →';
+          submitBtn.textContent = 'Claim my beta spot →';
           submitBtn.insertAdjacentHTML('afterend',
             '<p style="color:var(--red);font-size:13px;margin-top:8px">Something went wrong — please try again.</p>'
           );
@@ -1244,7 +1316,7 @@
           var heroText = document.getElementById('hero-counter-text');
           var bottomText = document.getElementById('bottom-counter-text');
           if (fill)       fill.style.width = pct + '%';
-          if (heroText)   heroText.textContent = TOTAL_SIGNUPS + ' / ' + TOTAL_SPOTS + ' founding spots claimed';
+          if (heroText)   heroText.textContent = TOTAL_SIGNUPS + ' / ' + TOTAL_SPOTS + ' beta spots claimed';
           if (bottomText) bottomText.textContent = TOTAL_SIGNUPS + ' / ' + TOTAL_SPOTS + ' claimed \u2022 ' + spotsLeft + ' spots left';
         }
       });
