@@ -307,6 +307,146 @@
       transition: width 0.8s ease;
     }
 
+    /* ── App showcase ────────────────────────────────────────────────────── */
+    .app-showcase {
+      padding: 72px 0 80px;
+      background: var(--bg-mid);
+      overflow: hidden;
+    }
+    .app-showcase .section-label { text-align: center; }
+    .app-showcase .section-title { text-align: center; margin-bottom: 48px; }
+    .screens-track {
+      display: flex;
+      gap: 20px;
+      overflow-x: auto;
+      padding: 8px 24px 20px;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .screens-track::-webkit-scrollbar { display: none; }
+    .screen-slide {
+      flex: 0 0 auto;
+      scroll-snap-align: start;
+      width: 240px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+    .screen-slide img {
+      width: 240px;
+      border-radius: 20px;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .screen-caption {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.4;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .screen-caption strong {
+      display: block;
+      font-size: 15px;
+      color: var(--white);
+      text-transform: none;
+      letter-spacing: 0;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+    .screens-dots {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 24px;
+    }
+    .screens-dots span {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--bg-light);
+      transition: background 0.2s, width 0.2s;
+    }
+    .screens-dots span.active {
+      background: var(--accent);
+      width: 20px;
+      border-radius: 3px;
+    }
+
+    /* ── Build timeline (change 6) ───────────────────────────────────────── */
+    .timeline-strip {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      margin: 40px auto 0;
+      max-width: 560px;
+    }
+    .tl-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      text-align: center;
+    }
+    .tl-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--bg-light);
+      border: 2px solid var(--border);
+      position: relative;
+      z-index: 1;
+    }
+    .tl-dot.done { background: var(--green); border-color: var(--green); }
+    .tl-dot.current {
+      background: var(--accent);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(244,184,42,0.25);
+    }
+    .tl-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+    .tl-label.active { color: var(--accent); }
+    .tl-date {
+      font-size: 11px;
+      color: var(--muted);
+      opacity: 0.6;
+    }
+    .tl-line {
+      flex: 1;
+      height: 2px;
+      background: var(--border);
+      margin-top: -22px;
+    }
+    .tl-line.done { background: var(--green); }
+
+    /* ── Reassurance strip under form (change 7) ─────────────────────────── */
+    .reassurance-strip {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+    .reassurance-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .reassurance-item .ri-icon { font-size: 14px; }
+
     /* ── Form success state ──────────────────────────────────────────────── */
     .form-success {
       display: none;
@@ -794,19 +934,19 @@
         LAUNCHING Q3 2026
       </div>
 
-      <h1>Materials eating<br><em>your margin?</em></h1>
+      <h1>Quote any job<br><em>in 5 minutes.</em></h1>
 
       <p class="hero-subhead">
-        AccuQuote scans live UK supplier prices, scopes the job with AI,
-        and sends a pro PDF quote — in 5 minutes, from your van.<br><br>
-        <strong>Built for UK tradies — and we want 200 of them to help us get it right.</strong>
+        Scan the room. Describe the job. AccuQuote pulls live UK supplier prices,
+        builds the full quote, and sends a pro PDF to your customer — before you leave the driveway.<br><br>
+        <strong>We want 200 UK tradies to test it on real jobs and help us get it right.</strong>
       </p>
 
       <div class="founding-offer fade-up">
-        <div class="founding-offer__title">⚡ Beta Testers Wanted — 200 spots</div>
+        <div class="founding-offer__title">⚡ 3 months free. No card needed.</div>
         <div class="founding-offer__body">
-          We're in build right now and looking for 200 UK tradies to test AccuQuote on real jobs,
-          tell us what's working and what isn't, and help us shape the product before public launch.
+          We're looking for 200 UK tradies to test AccuQuote on real jobs before public launch.
+          Tell us what works, what doesn't, help us shape the product.
           In return: <strong>3 months completely free</strong>, then <strong>£29/month for 12 months</strong>,
           then standard pricing. <strong>Your name in the in-app credits</strong> and a direct line to me throughout.
         </div>
@@ -844,9 +984,15 @@
             </div>
           </div>
           <button type="submit" class="btn-claim" id="hero-submit">
-            Claim my beta spot →
+            Get 3 months free →
           </button>
           <p class="form-reassurance">No card. No call. No spam. One update a month max.</p>
+          <div class="reassurance-strip">
+            <span class="reassurance-item"><span class="ri-icon">✓</span> No sales call. Ever.</span>
+            <span class="reassurance-item"><span class="ri-icon">✓</span> 3 months free</span>
+            <span class="reassurance-item"><span class="ri-icon">✓</span> Cancel any time</span>
+            <span class="reassurance-item"><span class="ri-icon">✓</span> Name in the credits</span>
+          </div>
         </form>
         <div class="form-success" id="hero-success">
           <div class="form-success__title">You're in. ⚡</div>
@@ -857,13 +1003,101 @@
         </div>
         <div class="counter-bar">
           <span class="bolt">⚡</span>
-          <span id="hero-counter-text">47 / 200 beta spots claimed</span>
+          <span id="hero-counter-text">47 tradies already in</span>
           <div class="counter-track">
             <div class="counter-fill" id="counter-fill" style="width: 23.5%"></div>
           </div>
         </div>
       </div>
 
+    </div>
+  </section>
+
+  <!-- ── App screenshot showcase ──────────────────────────────────────── -->
+  <section class="app-showcase">
+    <div class="container">
+      <div class="section-label">See it in action</div>
+      <h2 class="section-title">From scan to sent — in minutes</h2>
+    </div>
+    <div class="screens-track" id="screens-track">
+      <div class="screen-slide">
+        <img src="/images/app-screen-2322.jpg" alt="AccuQuote room scanner screen" loading="lazy" />
+        <div class="screen-caption"><strong>Step 1 — Scan</strong>Point your camera at the room</div>
+      </div>
+      <div class="screen-slide">
+        <img src="/images/app-screen-2323.jpg" alt="Room dimensions measured" loading="lazy" />
+        <div class="screen-caption"><strong>Room measured</strong>Dimensions logged automatically</div>
+      </div>
+      <div class="screen-slide">
+        <img src="/images/app-screen-2324.jpg" alt="Describe the job by voice" loading="lazy" />
+        <div class="screen-caption"><strong>Step 2 — Describe</strong>Say the job out loud or type it</div>
+      </div>
+      <div class="screen-slide">
+        <img src="/images/app-screen-2325.jpg" alt="AI building the quote" loading="lazy" />
+        <div class="screen-caption"><strong>AI working</strong>Matching products &amp; live prices</div>
+      </div>
+      <div class="screen-slide">
+        <img src="/images/app-screen-2326.jpg" alt="Quote almost ready" loading="lazy" />
+        <div class="screen-caption"><strong>Pricing live</strong>Screwfix, Toolstation, CEF</div>
+      </div>
+      <div class="screen-slide">
+        <img src="/images/app-screen-2327.jpg" alt="Final quote with total" loading="lazy" />
+        <div class="screen-caption"><strong>Step 3 — Send</strong>PDF to customer before you leave</div>
+      </div>
+    </div>
+    <div class="screens-dots" id="screens-dots">
+      <span class="active"></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
+  </section>
+
+  <!-- ── How it works ────────────────────────────────────────────────────── -->
+  <section class="how-section">
+    <div class="container">
+      <div class="section-label">How it works</div>
+      <h2 class="section-title">Quote sent before you leave the driveway</h2>
+
+      <div class="steps-grid">
+        <div class="step-card fade-up">
+          <div class="step-number">Step 01</div>
+          <div class="step-icon">📐</div>
+          <h3>SCAN</h3>
+          <p>Open AccuQuote on site. Point your camera at the room. The AI scopes the job.</p>
+        </div>
+        <div class="step-card fade-up">
+          <div class="step-number">Step 02</div>
+          <div class="step-icon">💷</div>
+          <h3>PRICE</h3>
+          <p>Live UK supplier prices populate the materials list. Your margin is locked in.</p>
+        </div>
+        <div class="step-card fade-up">
+          <div class="step-number">Step 03</div>
+          <div class="step-icon">📤</div>
+          <h3>SEND</h3>
+          <p>Pro PDF quote generated. WhatsApp it to the customer before you leave the driveway.</p>
+        </div>
+      </div>
+
+      <!-- Build timeline -->
+      <div class="timeline-strip fade-up" style="margin-top:72px">
+        <div class="tl-step">
+          <div class="tl-dot done"></div>
+          <div class="tl-label">Build</div>
+          <div class="tl-date">Now</div>
+        </div>
+        <div class="tl-line done"></div>
+        <div class="tl-step">
+          <div class="tl-dot current"></div>
+          <div class="tl-label active">Beta</div>
+          <div class="tl-date">Q2 2026</div>
+        </div>
+        <div class="tl-line"></div>
+        <div class="tl-step">
+          <div class="tl-dot"></div>
+          <div class="tl-label">Launch</div>
+          <div class="tl-date">Q3 2026</div>
+        </div>
+      </div>
+      <p style="text-align:center;font-size:14px;color:var(--muted);margin-top:16px">You're joining during <strong style="color:var(--accent)">Beta</strong> — the app is real, being tested on live jobs right now.</p>
     </div>
   </section>
 
@@ -915,35 +1149,6 @@
           </div>
         </div>
 
-      </div>
-    </div>
-  </section>
-
-  <!-- ── How it works ────────────────────────────────────────────────────── -->
-  <section class="how-section">
-    <div class="container">
-      <div class="section-label">How it works</div>
-      <h2 class="section-title">Quote sent before you leave the driveway</h2>
-
-      <div class="steps-grid">
-        <div class="step-card fade-up">
-          <div class="step-number">Step 01</div>
-          <div class="step-icon">📐</div>
-          <h3>SCAN</h3>
-          <p>Open AccuQuote on site. Point your camera at the room. The AI scopes the job.</p>
-        </div>
-        <div class="step-card fade-up">
-          <div class="step-number">Step 02</div>
-          <div class="step-icon">💷</div>
-          <h3>PRICE</h3>
-          <p>Live UK supplier prices populate the materials list. Your margin is locked in.</p>
-        </div>
-        <div class="step-card fade-up">
-          <div class="step-number">Step 03</div>
-          <div class="step-icon">📤</div>
-          <h3>SEND</h3>
-          <p>Pro PDF quote generated. WhatsApp it to the customer before you leave the driveway.</p>
-        </div>
       </div>
     </div>
   </section>
@@ -1070,7 +1275,7 @@
             </div>
           </div>
           <button type="submit" class="btn-claim" id="bottom-submit">
-            Claim my beta spot →
+            Get 3 months free →
           </button>
           <p class="form-reassurance">No card. No call. No spam. One update a month max.</p>
         </form>
@@ -1083,7 +1288,7 @@
         </div>
         <div class="counter-bar">
           <span class="bolt">⚡</span>
-          <span id="bottom-counter-text">47 / 200 claimed • 153 spots left</span>
+          <span id="bottom-counter-text">47 tradies already in · 153 spots left</span>
         </div>
       </div>
     </div>
@@ -1170,8 +1375,8 @@
       var heroText = document.getElementById('hero-counter-text');
       var bottomText = document.getElementById('bottom-counter-text');
       if (fill)       fill.style.width = pct + '%';
-      if (heroText)   heroText.textContent = TOTAL_SIGNUPS + ' / ' + TOTAL_SPOTS + ' beta spots claimed';
-      if (bottomText) bottomText.textContent = TOTAL_SIGNUPS + ' / ' + TOTAL_SPOTS + ' claimed \u2022 ' + spotsLeft + ' spots left';
+      if (heroText)   heroText.textContent = TOTAL_SIGNUPS + ' tradies already in';
+      if (bottomText) bottomText.textContent = TOTAL_SIGNUPS + ' tradies already in \u00b7 ' + spotsLeft + ' spots left';
     })();
 
     // ── FAQ ────────────────────────────────────────────────────────────────
@@ -1300,7 +1505,7 @@
         })
         .catch(function () {
           submitBtn.disabled = false;
-          submitBtn.textContent = 'Claim my beta spot →';
+          submitBtn.textContent = 'Get 3 months free →';
           submitBtn.insertAdjacentHTML('afterend',
             '<p style="color:var(--red);font-size:13px;margin-top:8px">Something went wrong — please try again.</p>'
           );
@@ -1317,8 +1522,8 @@
           var heroText = document.getElementById('hero-counter-text');
           var bottomText = document.getElementById('bottom-counter-text');
           if (fill)       fill.style.width = pct + '%';
-          if (heroText)   heroText.textContent = TOTAL_SIGNUPS + ' / ' + TOTAL_SPOTS + ' beta spots claimed';
-          if (bottomText) bottomText.textContent = TOTAL_SIGNUPS + ' / ' + TOTAL_SPOTS + ' claimed \u2022 ' + spotsLeft + ' spots left';
+          if (heroText)   heroText.textContent = TOTAL_SIGNUPS + ' tradies already in';
+          if (bottomText) bottomText.textContent = TOTAL_SIGNUPS + ' tradies already in \u00b7 ' + spotsLeft + ' spots left';
         }
       });
 
@@ -1332,6 +1537,18 @@
 
     handleFormSubmit('hero-form',   'hero-email',   'hero-trade',   'hero-email-error',   'hero-trade-error',   'hero-submit',   'hero-success');
     handleFormSubmit('bottom-form', 'bottom-email', 'bottom-trade', 'bottom-email-error', 'bottom-trade-error', 'bottom-submit', 'bottom-success');
+
+    // ── Screenshot carousel dots ──────────────────────────────────────────
+    (function () {
+      var track = document.getElementById('screens-track');
+      var dots  = document.querySelectorAll('#screens-dots span');
+      if (!track || !dots.length) return;
+      track.addEventListener('scroll', function () {
+        var slideW = track.querySelector('.screen-slide').offsetWidth + 20;
+        var idx = Math.round(track.scrollLeft / slideW);
+        dots.forEach(function (d, i) { d.classList.toggle('active', i === idx); });
+      }, { passive: true });
+    })();
 
     // ── Fade-up on scroll ──────────────────────────────────────────────────
     (function () {
