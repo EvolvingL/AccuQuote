@@ -314,14 +314,18 @@ final class ScanCoordinator: ObservableObject {
 
     // MARK: - Pose fusion path
 
-    private func startPoseFusion() {
-        let session = ARSession()
-        let config  = ARWorldTrackingConfiguration()
-        // Enable scene depth on supported devices for denser point cloud
+    func arConfiguration() -> ARWorldTrackingConfiguration {
+        let config = ARWorldTrackingConfiguration()
         if ARWorldTrackingConfiguration.supportsFrameSemantics(.sceneDepth) {
             config.frameSemantics = [.sceneDepth]
         }
-        session.run(config)
+        return config
+    }
+
+    private func startPoseFusion() {
+        let session = ARSession()
+        // Do NOT call session.run() here — ARViewRepresentable runs the session
+        // once the ARSCNView is in the view hierarchy, so Metal has a valid drawable.
         arSession        = session
         worldPoints      = []
         lastCameraPos    = nil

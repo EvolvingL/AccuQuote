@@ -2205,8 +2205,8 @@ struct PoseFusionScanningView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            if let session = coordinator.arSession {
-                ARViewRepresentable(session: session).ignoresSafeArea()
+            if coordinator.arSession != nil {
+                ARHostRepresentable(coordinator: coordinator).ignoresSafeArea()
             } else {
                 Color.black.ignoresSafeArea()
             }
@@ -4736,14 +4736,68 @@ final class LiDARHostVC: UIViewController {
 }
 
 struct ARViewRepresentable: UIViewRepresentable {
-    let session: ARSession
+    let coordinator: ScanCoordinator
+
     func makeUIView(context: Context) -> ARSCNView {
         let v = ARSCNView()
-        v.session = session
+        // Prevent ARSCNView from creating its own session and overriding ours
+        v.automaticallyConfiguresSession = false
+        // Explicitly tell the view to render the camera feed
+        v.rendersCameraFeed = true
         v.automaticallyUpdatesLighting = true
+        v.session = coordinator.arSession!
         return v
     }
+
     func updateUIView(_ uiView: ARSCNView, context: Context) {}
+
+    // Called when the UIView is added to the window — safe to start the session here
+    static func dismantleUIView(_ uiView: ARSCNView, coordinator: ()) {
+        uiView.session.pause()
+    }
+}
+
+// Wraps ARSCNView in a UIViewController so we can start the session in viewDidAppear,
+// guaranteeing the Metal layer has a valid drawable before session.run() is called.
+final class ARHostVC: UIViewController {
+    private let scanCoordinator: ScanCoordinator
+    private var sceneView: ARSCNView?
+
+    init(scanCoordinator: ScanCoordinator) {
+        self.scanCoordinator = scanCoordinator
+        super.init(nibName: nil, bundle: nil)
+    }
+    required init?(coder: NSCoder) { fatalError() }
+
+    override func loadView() {
+        let v = ARSCNView(frame: UIScreen.main.bounds)
+        v.automaticallyConfiguresSession = false
+        v.rendersCameraFeed = true
+        v.automaticallyUpdatesLighting = true
+        v.session = scanCoordinator.arSession!
+        sceneView = v
+        view = v
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        guard let session = scanCoordinator.arSession else { return }
+        let config = scanCoordinator.arConfiguration()
+        session.run(config)
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        sceneView?.session.pause()
+    }
+}
+
+struct ARHostRepresentable: UIViewControllerRepresentable {
+    let coordinator: ScanCoordinator
+    func makeUIViewController(context: Context) -> ARHostVC {
+        ARHostVC(scanCoordinator: coordinator)
+    }
+    func updateUIViewController(_ vc: ARHostVC, context: Context) {}
 }
 
 // MARK: - Color extension
