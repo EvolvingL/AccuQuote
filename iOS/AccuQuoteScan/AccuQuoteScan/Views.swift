@@ -2990,7 +2990,7 @@ final class VoiceRecorder: ObservableObject {
 
     private func start() {
         SFSpeechRecognizer.requestAuthorization { [weak self] status in
-            DispatchQueue.main.async {
+            Task { @MainActor [weak self] in
                 guard let self else { return }
                 guard status == .authorized else {
                     self.permissionDenied = true
@@ -4714,7 +4714,16 @@ final class LiDARHostVC: UIViewController {
         btn.setTitleColor(.white, for: .normal)
         btn.backgroundColor = UIColor.black.withAlphaComponent(0.35)
         btn.layer.cornerRadius = 18
-        btn.contentEdgeInsets = UIEdgeInsets(top: 8, left: 18, bottom: 8, right: 18)
+        if #available(iOS 15, *) {
+            var config = UIButton.Configuration.plain()
+            config.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 18, bottom: 8, trailing: 18)
+            btn.configuration = config
+            btn.configuration?.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { attr in
+                var a = attr; a.font = UIFont.systemFont(ofSize: 15, weight: .semibold); return a
+            }
+        } else {
+            btn.contentEdgeInsets = UIEdgeInsets(top: 8, left: 18, bottom: 8, right: 18)
+        }
         btn.translatesAutoresizingMaskIntoConstraints = false
         btn.addTarget(self, action: #selector(doneTapped), for: .touchUpInside)
         view.addSubview(btn)
@@ -4735,28 +4744,6 @@ final class LiDARHostVC: UIViewController {
     }
 }
 
-struct ARViewRepresentable: UIViewRepresentable {
-    let coordinator: ScanCoordinator
-
-    func makeUIView(context: Context) -> ARSCNView {
-        let v = ARSCNView()
-        // Prevent ARSCNView from creating its own session and overriding ours
-        v.automaticallyConfiguresSession = false
-        // Explicitly tell the view to render the camera feed
-        v.rendersCameraFeed = true
-        v.automaticallyUpdatesLighting = true
-        v.session = coordinator.arSession!
-        return v
-    }
-
-    func updateUIView(_ uiView: ARSCNView, context: Context) {}
-
-    // Called when the UIView is added to the window — safe to start the session here
-    static func dismantleUIView(_ uiView: ARSCNView, coordinator: ()) {
-        uiView.session.pause()
-    }
-}
-
 // Wraps ARSCNView in a UIViewController so we can start the session in viewDidAppear,
 // guaranteeing the Metal layer has a valid drawable before session.run() is called.
 final class ARHostVC: UIViewController {
@@ -4771,8 +4758,11 @@ final class ARHostVC: UIViewController {
 
     override func loadView() {
         let v = ARSCNView(frame: UIScreen.main.bounds)
-        v.automaticallyConfiguresSession = false
-        v.rendersCameraFeed = true
+        // Tell ARSCNView we manage the session ourselves (suppresses deprecation on iOS 26)
+        if #unavailable(iOS 26) {
+            v.automaticallyConfiguresSession = false
+            v.rendersCameraFeed = true
+        }
         v.automaticallyUpdatesLighting = true
         v.session = scanCoordinator.arSession!
         sceneView = v
@@ -4782,8 +4772,7 @@ final class ARHostVC: UIViewController {
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         guard let session = scanCoordinator.arSession else { return }
-        let config = scanCoordinator.arConfiguration()
-        session.run(config)
+        session.run(scanCoordinator.arConfiguration())
     }
 
     override func viewWillDisappear(_ animated: Bool) {

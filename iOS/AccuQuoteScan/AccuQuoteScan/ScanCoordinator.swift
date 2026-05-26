@@ -1,6 +1,6 @@
 import Foundation
 import RoomPlan
-import ARKit
+@preconcurrency import ARKit
 import AVFoundation
 import UIKit
 import Combine
