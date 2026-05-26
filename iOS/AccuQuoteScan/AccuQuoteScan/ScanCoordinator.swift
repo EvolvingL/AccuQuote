@@ -1,6 +1,8 @@
 import Foundation
 import RoomPlan
 import ARKit
+import AVFoundation
+import UIKit
 import Combine
 import simd
 
@@ -84,6 +86,8 @@ private final class SessionBridge: NSObject, RoomCaptureSessionDelegate, RoomCap
                         didEndWith data: CapturedRoomData, error: Error?) {
         onEnd?(data, error)
     }
+    func captureSession(_ session: RoomCaptureSession, didStartWith configuration: RoomCaptureSession.Configuration) {}
+    func captureSession(_ session: RoomCaptureSession, didProvide instruction: RoomCaptureSession.Instruction) {}
     func captureView(shouldPresent roomDataForProcessing: CapturedRoomData,
                      error: Error?) -> Bool { true }
     func captureView(didPresent processedResult: CapturedRoom, error: Error?) {}
@@ -99,8 +103,17 @@ final class ScanCoordinator: ObservableObject {
     @Published var scanProgress: Float = 0.0
     @Published var frameCount: Int = 0
 
-    // Determined once at init — LiDAR if available, otherwise poseFusion
-    let scanMethod: ScanMethod = RoomCaptureSession.isSupported ? .lidar : .poseFusion
+    // Determined once at init — LiDAR if available and iOS < 26 (iOS 26 beta has broken RoomPlan),
+    // otherwise poseFusion.
+    let scanMethod: ScanMethod = {
+        guard RoomCaptureSession.isSupported else { return .poseFusion }
+        if #available(iOS 26, *) {
+            // RoomPlan is broken on iOS 26 beta (black screen, "Frame has no valid depth").
+            // Fall back to ARKit poseFusion path until Apple fixes it.
+            return .poseFusion
+        }
+        return .lidar
+    }()
 
     // LiDAR
     private var lidarSession: RoomCaptureSession?
@@ -183,6 +196,7 @@ final class ScanCoordinator: ObservableObject {
     }
 
     func reset() {
+        NotificationCenter.default.removeObserver(self)
         lidarSession?.stop(); lidarSession = nil; bridge = nil; captureView = nil
         sweepTimer?.invalidate(); sweepTimer = nil
         arSession?.pause(); arSession = nil
@@ -236,11 +250,66 @@ final class ScanCoordinator: ObservableObject {
         }
 
         session.delegate = bridge
-        let view = RoomCaptureView(frame: .zero)
+        // captureView is created in prepareLiDARView() once the VC is on screen
+        state = .scanning
+    }
+
+    /// Called by LiDARHostVC.loadView — wires the already-created RoomCaptureView
+    /// (which IS the root view) to the session delegate.
+    func setCaptureView(_ view: RoomCaptureView) {
+        guard let bridge = bridge else { return }
         view.delegate = bridge
         captureView = view
+    }
+
+    /// Called by LiDARScanningView.onAppear — view is on screen, Metal is ready.
+    func beginLiDARSession() {
+        // Check permission synchronously — by this point the user has already
+        // granted access (we request it on first app launch via Info.plist).
+        // Running session.run() must happen on the main thread.
+        let status = AVCaptureDevice.authorizationStatus(for: .video)
+        if status == .authorized {
+            runLiDARSession()
+        } else if status == .notDetermined {
+            AVCaptureDevice.requestAccess(for: .video) { [weak self] granted in
+                guard granted else { return }
+                DispatchQueue.main.async { self?.runLiDARSession() }
+            }
+        } else {
+            state = .error("Camera access denied. Go to Settings → Privacy & Security → Camera and enable AccuQuote.")
+            return
+        }
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleSessionInterruptionEnded),
+            name: NSNotification.Name(rawValue: "ARSessionInterruptionEnded"),
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleForeground),
+            name: UIApplication.didBecomeActiveNotification,
+            object: nil
+        )
+    }
+
+    private func runLiDARSession() {
+        guard let session = lidarSession else { return }
         session.run(configuration: RoomCaptureSession.Configuration())
-        state = .scanning
+    }
+
+    @objc private func handleSessionInterruptionEnded() {
+        guard case .scanning = state else { return }
+        runLiDARSession()
+    }
+
+    @objc private func handleForeground() {
+        guard case .scanning = state else { return }
+        // Delay slightly to let iOS fully hand back the camera
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+            self?.runLiDARSession()
+        }
     }
 
     // MARK: - Pose fusion path

@@ -2191,32 +2191,8 @@ struct ScanningView: View {
 struct LiDARScanningView: View {
     @ObservedObject var coordinator: ScanCoordinator
     var body: some View {
-        ZStack(alignment: .bottom) {
-            if let captureView = coordinator.captureView {
-                RoomCaptureViewRepresentable(captureView: captureView).ignoresSafeArea()
-            }
-            VStack(spacing: 0) {
-                HStack {
-                    Spacer()
-                    Button { coordinator.stopScan() } label: {
-                        Text("Done")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 10)
-                            .background(.ultraThinMaterial)
-                            .cornerRadius(22)
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 60)
-                Spacer()
-                ScanHUD(coordinator: coordinator)
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 44)
-            }
-        }
-        .ignoresSafeArea()
+        LiDARHostRepresentable(coordinator: coordinator)
+            .ignoresSafeArea()
     }
 }
 
@@ -4690,10 +4666,73 @@ struct StatCell: View {
 
 // MARK: - UIViewRepresentable wrappers
 
-struct RoomCaptureViewRepresentable: UIViewRepresentable {
-    let captureView: RoomCaptureView
-    func makeUIView(context: Context) -> RoomCaptureView { captureView }
-    func updateUIView(_ uiView: RoomCaptureView, context: Context) {}
+/// Bridges the RoomPlan LiDAR scan into SwiftUI via a UIViewController.
+/// RoomPlan's RoomCaptureView must live inside a UIViewController — it won't
+/// render correctly as a bare UIViewRepresentable in a SwiftUI hierarchy.
+struct LiDARHostRepresentable: UIViewControllerRepresentable {
+    let coordinator: ScanCoordinator
+
+    func makeUIViewController(context: Context) -> LiDARHostVC {
+        LiDARHostVC(scanCoordinator: coordinator)
+    }
+
+    func updateUIViewController(_ vc: LiDARHostVC, context: Context) {}
+}
+
+final class LiDARHostVC: UIViewController {
+    private let scanCoordinator: ScanCoordinator
+    private var captureView: RoomCaptureView?
+
+    init(scanCoordinator: ScanCoordinator) {
+        self.scanCoordinator = scanCoordinator
+        super.init(nibName: nil, bundle: nil)
+    }
+    required init?(coder: NSCoder) { fatalError() }
+
+    override func loadView() {
+        // RoomCaptureView MUST be the root view — Metal won't render as a subview.
+        let captureView = RoomCaptureView(frame: UIScreen.main.bounds)
+        self.captureView = captureView
+        scanCoordinator.setCaptureView(captureView)
+        view = captureView
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        addDoneButton()
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        scanCoordinator.beginLiDARSession()
+    }
+
+    private func addDoneButton() {
+        let btn = UIButton(type: .system)
+        btn.setTitle("Done", for: .normal)
+        btn.titleLabel?.font = UIFont.systemFont(ofSize: 15, weight: .semibold)
+        btn.setTitleColor(.white, for: .normal)
+        btn.backgroundColor = UIColor.black.withAlphaComponent(0.35)
+        btn.layer.cornerRadius = 18
+        btn.contentEdgeInsets = UIEdgeInsets(top: 8, left: 18, bottom: 8, right: 18)
+        btn.translatesAutoresizingMaskIntoConstraints = false
+        btn.addTarget(self, action: #selector(doneTapped), for: .touchUpInside)
+        view.addSubview(btn)
+        NSLayoutConstraint.activate([
+            btn.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
+            btn.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+        ])
+    }
+
+    @objc private func doneTapped() {
+        scanCoordinator.stopScan()
+    }
+
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        captureView?.removeFromSuperview()
+        captureView = nil
+    }
 }
 
 struct ARViewRepresentable: UIViewRepresentable {
