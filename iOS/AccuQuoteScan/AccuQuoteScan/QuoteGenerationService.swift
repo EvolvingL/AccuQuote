@@ -210,15 +210,9 @@ final class QuoteGenerationService: ObservableObject {
                           userInfo: [NSLocalizedDescriptionKey: "Unexpected Haiku response format"])
         }
 
-        // Find JSON array in response
-        guard let arrStart = text.firstIndex(of: "["),
-              let arrEnd = text.lastIndex(of: "]") else {
-            throw NSError(domain: "QuoteGen", code: 0,
-                          userInfo: [NSLocalizedDescriptionKey: "No section list in response"])
-        }
-        let arrSlice = String(text[arrStart...arrEnd])
-        guard let arrData = arrSlice.data(using: .utf8),
-              let arr = try? JSONSerialization.jsonObject(with: arrData) as? [[String: Any]] else {
+        // Extract the outermost JSON array — try each candidate `[` in order
+        // until one produces a valid parse. Handles prose before/after the array.
+        guard let arr = extractJSONArray(from: text) else {
             throw NSError(domain: "QuoteGen", code: 0,
                           userInfo: [NSLocalizedDescriptionKey: "Could not parse section list"])
         }
@@ -239,7 +233,8 @@ final class QuoteGenerationService: ObservableObject {
         roomDimensions: RoomDimensions,
         claudeContext: String,
         preferredSupplier: String,
-        usualItems: String
+        usualItems: String,
+        isRetry: Bool = false
     ) async -> QuoteSection {
 
         let prompt = """
@@ -309,16 +304,52 @@ final class QuoteGenerationService: ObservableObject {
                 }
             }
 
-            return parseSection(descriptor: descriptor, text: fullText)
-
+            if let section = parseSection(descriptor: descriptor, text: fullText) {
+                return section
+            }
+            // Parse failed — retry once silently before ever showing an error
+            if !isRetry {
+                return await retrySection(descriptor: descriptor, jobDescription: jobDescription,
+                                          roomDimensions: roomDimensions, claudeContext: claudeContext,
+                                          preferredSupplier: preferredSupplier, usualItems: usualItems)
+            }
+            return failedSection(descriptor: descriptor, reason: "Could not parse section response")
         } catch {
+            if !isRetry {
+                return await retrySection(descriptor: descriptor, jobDescription: jobDescription,
+                                          roomDimensions: roomDimensions, claudeContext: claudeContext,
+                                          preferredSupplier: preferredSupplier, usualItems: usualItems)
+            }
             return failedSection(descriptor: descriptor, reason: error.localizedDescription)
         }
     }
 
+    /// Silent single retry — only marks failed if this also fails.
+    private func retrySection(
+        descriptor: QuoteSectionDescriptor,
+        jobDescription: String,
+        roomDimensions: RoomDimensions,
+        claudeContext: String,
+        preferredSupplier: String,
+        usualItems: String
+    ) async -> QuoteSection {
+        // Brief back-off before retry
+        try? await Task.sleep(nanoseconds: 1_000_000_000)
+        let retried = await generateSection(
+            descriptor: descriptor,
+            jobDescription: jobDescription,
+            roomDimensions: roomDimensions,
+            claudeContext: claudeContext,
+            preferredSupplier: preferredSupplier,
+            usualItems: usualItems,
+            isRetry: true
+        )
+        return retried
+    }
+
     // MARK: - Parse section JSON
 
-    private func parseSection(descriptor: QuoteSectionDescriptor, text: String) -> QuoteSection {
+    private func parseSection(descriptor: QuoteSectionDescriptor, text: String) -> QuoteSection? {
         var cleaned = text
         // Strip markdown fences
         if let fs = cleaned.range(of: "```"),
@@ -329,12 +360,7 @@ final class QuoteGenerationService: ObservableObject {
             if cleaned.isEmpty { cleaned = String(inner) }
         }
 
-        guard let jsonStart = cleaned.firstIndex(of: "{"),
-              let jsonEnd = cleaned.lastIndex(of: "}"),
-              let sliceData = String(cleaned[jsonStart...jsonEnd]).data(using: .utf8),
-              let json = try? JSONSerialization.jsonObject(with: sliceData) as? [String: Any] else {
-            return failedSection(descriptor: descriptor, reason: "Could not parse section JSON")
-        }
+        guard let json = extractJSONObject(from: cleaned) else { return nil }
 
         let labourDays = (json["labourDays"] as? Double) ?? 0.0
         let labourRate = (json["labourRate"] as? Double) ?? 280.0
@@ -369,6 +395,38 @@ final class QuoteGenerationService: ObservableObject {
             notes: notes,
             status: .complete
         )
+    }
+
+    // MARK: - JSON extraction helpers
+
+    /// Tries each candidate `{` in order until one yields a valid top-level object.
+    private func extractJSONObject(from text: String) -> [String: Any]? {
+        var searchFrom = text.startIndex
+        while searchFrom < text.endIndex {
+            guard let start = text[searchFrom...].firstIndex(of: "{") else { break }
+            if let end = text.lastIndex(of: "}"), end >= start,
+               let data = String(text[start...end]).data(using: .utf8),
+               let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                return obj
+            }
+            searchFrom = text.index(after: start)
+        }
+        return nil
+    }
+
+    /// Tries each candidate `[` in order until one yields a valid array.
+    private func extractJSONArray(from text: String) -> [[String: Any]]? {
+        var searchFrom = text.startIndex
+        while searchFrom < text.endIndex {
+            guard let start = text[searchFrom...].firstIndex(of: "[") else { break }
+            if let end = text.lastIndex(of: "]"), end >= start,
+               let data = String(text[start...end]).data(using: .utf8),
+               let arr = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
+                return arr
+            }
+            searchFrom = text.index(after: start)
+        }
+        return nil
     }
 
     private func failedSection(descriptor: QuoteSectionDescriptor, reason: String) -> QuoteSection {
