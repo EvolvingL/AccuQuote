@@ -116,7 +116,7 @@ final class QuoteHistoryStore: ObservableObject {
     @Published private(set) var quotes: [SavedQuote] = []
 
     private static let legacyDefaultsKey = "aq_quote_history"
-    private static var fileURL: URL {
+    private nonisolated static var fileURL: URL {
         FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("aq_quote_history.json")
     }
