@@ -3262,7 +3262,10 @@ struct QuoteView: View {
                 }
             }
         }
-        .task { await generateQuote() }
+        .onAppear {
+            // Use a detached task so SwiftUI view re-renders don't cancel the network request
+            Task.detached(priority: .userInitiated) { await generateQuote() }
+        }
     }
 
     private func generateQuote() async {
