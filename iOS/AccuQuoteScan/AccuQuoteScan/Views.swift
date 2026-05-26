@@ -4758,11 +4758,6 @@ final class ARHostVC: UIViewController {
 
     override func loadView() {
         let v = ARSCNView(frame: UIScreen.main.bounds)
-        // Tell ARSCNView we manage the session ourselves (suppresses deprecation on iOS 26)
-        if #unavailable(iOS 26) {
-            v.automaticallyConfiguresSession = false
-            v.rendersCameraFeed = true
-        }
         v.automaticallyUpdatesLighting = true
         v.session = scanCoordinator.arSession!
         sceneView = v
