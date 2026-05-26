@@ -3177,30 +3177,46 @@ struct VoiceInputCard: View {
 
 // MARK: - Quote Line Item model
 
-struct QuoteLineItem: Identifiable {
-    let id = UUID()
+struct QuoteLineItem: Identifiable, Codable {
+    let id: UUID
     let description: String
     let qty: Double
     let unit: String
     let unitPrice: Double
-    let sku: String        // supplier SKU / product code — empty if unknown
-    let supplier: String   // e.g. "Screwfix", "Toolstation"
+    let sku: String
+    let supplier: String
+    let sectionKey: String   // which section this item belongs to
     var total: Double { qty * unitPrice }
+
+    init(description: String, qty: Double, unit: String, unitPrice: Double,
+         sku: String, supplier: String, sectionKey: String = "") {
+        self.id = UUID()
+        self.description = description
+        self.qty = qty
+        self.unit = unit
+        self.unitPrice = unitPrice
+        self.sku = sku
+        self.supplier = supplier
+        self.sectionKey = sectionKey
+    }
 }
 
 struct GeneratedQuote {
-    let labourDays: Double
-    let labourRate: Double
-    let labourTotal: Double
-    let items: [QuoteLineItem]
-    let materialsTotal: Double
-    let subtotal: Double
+    let sections: [QuoteSection]
     let vatRate: Double
-    let vatAmount: Double
-    let grandTotal: Double
-    let notes: String
     let customerName: String
     let jobDescription: String
+
+    // Flat computed props — existing call sites continue to work unchanged
+    var items: [QuoteLineItem] { sections.flatMap { $0.items } }
+    var labourDays: Double { sections.reduce(0) { $0 + $1.labourDays } }
+    var labourRate: Double { sections.first(where: { $0.labourDays > 0 })?.labourRate ?? 280 }
+    var labourTotal: Double { sections.reduce(0) { $0 + $1.labourTotal } }
+    var materialsTotal: Double { sections.reduce(0) { $0 + $1.materialsTotal } }
+    var subtotal: Double { labourTotal + materialsTotal }
+    var vatAmount: Double { subtotal * (vatRate / 100) }
+    var grandTotal: Double { subtotal + vatAmount }
+    var notes: String { sections.compactMap { $0.notes.isEmpty ? nil : $0.notes }.joined(separator: "\n") }
 }
 
 // MARK: - Quote View
@@ -3213,41 +3229,37 @@ struct QuoteView: View {
     @EnvironmentObject var questionEngine: QuestionEngine
     @Environment(\.dismiss) var dismiss
 
-    @State private var quote: GeneratedQuote?
-    @State private var isLoading = true
-    @State private var errorMessage: String?
-    @State private var loadingStep = 0
+    @StateObject private var service = QuoteGenerationService()
 
-    private var supplierName: String {
-        questionEngine.profile.answers.first(where: { $0.id == "supplier" })?.answer
-            .components(separatedBy: ",").first?.trimmingCharacters(in: .whitespaces) ?? "your supplier"
+    private var preferredSupplier: String {
+        let ans = questionEngine.profile.answers.first(where: { $0.id == "supplier" })?.answer ?? ""
+        return ans.isEmpty ? "Screwfix or Toolstation" : ans
     }
-
-    private var loadingSteps: [String] { [
-        "Reading room — \(result.floorAreaStr)m² floor, \(String(format: "%.1f", result.wallArea))m² walls",
-        "Scoping the job…",
-        "Matching products on \(supplierName)…",
-        "Pulling live prices…",
-        "Applying your rates & markup…",
-        "Writing your quote…",
-    ] }
 
     var body: some View {
         NavigationView {
             Group {
-                if isLoading {
-                    QuoteLoadingView(step: loadingStep, steps: loadingSteps)
-                } else if let error = errorMessage {
-                    QuoteErrorView(message: error) {
-                        errorMessage = nil
-                        isLoading = true
-                        Task { await generateQuote() }
-                    }
-                } else if let quote = quote {
+                switch service.state {
+                case .idle, .discoveringSections:
+                    QuoteLoadingView(
+                        step: 0,
+                        steps: ["Planning your quote…", "Identifying trade sections…"]
+                    )
+                case .generatingSections(let total, let completed):
+                    SectionedQuoteLoadingView(service: service, total: total, completed: completed)
+                case .complete:
+                    let quote = GeneratedQuote(
+                        sections: service.sections,
+                        vatRate: service.vatRate,
+                        customerName: customerName,
+                        jobDescription: jobDescription
+                    )
                     QuoteResultView(quote: quote, result: result) {
-                        // Start over
-                        dismiss()
-                        coordinator.reset()
+                        dismiss(); coordinator.reset()
+                    }
+                case .failed(let message):
+                    QuoteErrorView(message: message) {
+                        startGeneration()
                     }
                 }
             }
@@ -3255,237 +3267,35 @@ struct QuoteView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    if !isLoading {
-                        Button("Back") { dismiss() }
-                            .foregroundColor(AQ.secondary)
+                    if case .complete = service.state {
+                        Button("Back") { dismiss() }.foregroundColor(AQ.secondary)
                     }
                 }
             }
         }
-        .onAppear {
-            // Use a detached task so SwiftUI view re-renders don't cancel the network request
-            Task.detached(priority: .userInitiated) { await generateQuote() }
-        }
+        .onAppear { startGeneration() }
     }
 
-    private func generateQuote() async {
-        isLoading = true
-        errorMessage = nil
-
-        // Animate through loading steps
-        let stepTask = Task {
-            for i in 0..<loadingSteps.count {
-                try? await Task.sleep(nanoseconds: 900_000_000)
-                await MainActor.run { loadingStep = i }
-            }
-        }
-
-        let context = questionEngine.claudeContext()
-        let floorArea = result.floorArea
-        let wallArea  = result.wallArea
-
-        let supplierAnswer = questionEngine.profile.answers
-            .first(where: { $0.id == "supplier" })?.answer ?? ""
-        let preferredSupplier = supplierAnswer.isEmpty ? "Screwfix or Toolstation" : supplierAnswer
-        let usualItemsAnswer = questionEngine.profile.answers
+    private func startGeneration() {
+        let ctx = questionEngine.claudeContext()
+        let supplier = preferredSupplier
+        let usualItems = questionEngine.profile.answers
             .first(where: { $0.id == "usual_items" })?.answer ?? ""
-
-        let prompt = """
-        You are an expert quoting assistant for a UK tradesperson.
-
-        \(context.isEmpty ? "" : context + "\n\n")
-        ROOM: \(result.roomType)
-        DIMENSIONS: \(result.lengthStr)m × \(result.widthStr)m × \(result.heightStr)m
-        FLOOR AREA: \(String(format: "%.1f", floorArea))m²
-        WALL AREA: \(String(format: "%.1f", wallArea))m²
-        DOORS: \(result.doorCount)   WINDOWS: \(result.windowCount)
-
-        JOB DESCRIPTION: \(jobDescription)
-
-        PREFERRED SUPPLIER: \(preferredSupplier)
-        \(usualItemsAnswer.isEmpty ? "" : "PRODUCTS THEY REGULARLY ORDER: \(usualItemsAnswer)")
-
-        Produce a detailed, accurate quote. Use the tradesperson's actual rates from \
-        their profile above if available, otherwise use realistic UK market rates.
-
-        For every material or product line item:
-        - Prioritise the products listed under PRODUCTS THEY REGULARLY ORDER above — \
-          use those exact product names and find their SKU at \(preferredSupplier)
-        - Match all items to REAL products sold by \(preferredSupplier)
-        - Include the supplier's exact product name as the description
-        - Include the supplier's SKU / product code in the "sku" field
-        - Use a realistic current price for that specific product
-        - If you are not confident of the exact SKU, use the closest real product \
-          and note it with a "~" prefix on the SKU
-
-        OUTPUT: Return ONLY a single raw JSON object — no markdown, no prose before or after. \
-        Max 12 line items. Keep descriptions concise (under 60 chars).
-        Schema:
-        {"labourDays":2.0,"labourRate":280.0,"items":[{"description":"...","qty":1.0,"unit":"each","unitPrice":12.50,"sku":"123456","supplier":"..."}],"vatRate":20,"notes":"..."}
-        """
-
-        guard let url = URL(string: ANTHROPIC_API_URL) else {
-            stepTask.cancel()
-            await MainActor.run { errorMessage = "Invalid API URL."; isLoading = false }
-            return
-        }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(ANTHROPIC_API_KEY, forHTTPHeaderField: "x-api-key")
-        request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
-        request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
-        request.timeoutInterval = 120   // streaming — per-chunk timeout handled by bytes iterator
-
-        let body: [String: Any] = [
-            "model": "claude-sonnet-4-6",
-            "max_tokens": 8192,
-            "stream": true,
-            "messages": [["role": "user", "content": prompt]]
-        ]
-
-        do {
-            request.httpBody = try JSONSerialization.data(withJSONObject: body)
-
-            // ── Streaming via URLSession.bytes ───────────────────────────────
-            let (byteStream, response) = try await URLSession.shared.bytes(for: request)
-            let httpStatus = (response as? HTTPURLResponse)?.statusCode ?? 0
-
-            guard httpStatus == 200 else {
-                // Collect error body
-                var errData = Data()
-                for try await byte in byteStream { errData.append(byte) }
-                let errText = String(data: errData, encoding: .utf8) ?? ""
-                if let j = try? JSONSerialization.jsonObject(with: errData) as? [String: Any],
-                   let e = j["error"] as? [String: Any], let msg = e["message"] as? String {
-                    throw NSError(domain: "Anthropic", code: httpStatus,
-                                  userInfo: [NSLocalizedDescriptionKey: "API error (\(httpStatus)): \(msg)"])
-                }
-                throw NSError(domain: "Anthropic", code: httpStatus,
-                              userInfo: [NSLocalizedDescriptionKey: "HTTP \(httpStatus): \(errText.prefix(200))"])
-            }
-
-            // Accumulate SSE text_delta events into fullText
-            var fullText = ""
-            for try await line in byteStream.lines {
-                guard line.hasPrefix("data: ") else { continue }
-                let payload = String(line.dropFirst(6))
-                guard payload != "[DONE]" else { break }
-                if let d = payload.data(using: .utf8),
-                   let j = try? JSONSerialization.jsonObject(with: d) as? [String: Any],
-                   let delta = j["delta"] as? [String: Any],
-                   let t = delta["text"] as? String {
-                    fullText += t
-                }
-            }
-
-            print("[QuoteView] streamed \(fullText.count) chars")
-
-            // Strip markdown fences if present
-            var text = fullText
-            if let fs = text.range(of: "```"), let fe = text.range(of: "```", options: .backwards),
-               fs.lowerBound != fe.lowerBound {
-                let inner = text[fs.upperBound..<fe.lowerBound]
-                text = String(inner.drop(while: { $0 != "\n" }).dropFirst())
-                if text.isEmpty { text = String(inner) }
-            }
-
-            guard let jsonStart = text.firstIndex(of: "{"),
-                  let jsonEnd = text.lastIndex(of: "}") else {
-                throw NSError(domain: "QuoteView", code: 0,
-                              userInfo: [NSLocalizedDescriptionKey: "No JSON found in response. Raw: \(fullText.prefix(200))"])
-            }
-
-            let slice = String(text[jsonStart...jsonEnd])
-            guard let sliceData = slice.data(using: .utf8) else {
-                throw NSError(domain: "QuoteView", code: 0,
-                              userInfo: [NSLocalizedDescriptionKey: "Could not encode response. Raw: \(text.prefix(300))"])
-            }
-            guard let parsed = try? JSONSerialization.jsonObject(with: sliceData) as? [String: Any] else {
-                print("[QuoteView] JSON parse failed. slice=\(slice.prefix(500))")
-                throw NSError(domain: "QuoteView", code: 0,
-                              userInfo: [NSLocalizedDescriptionKey: "Response was truncated — quote too large. Try a simpler job description."])
-            }
-
-            let q = buildQuote(from: parsed)
-            stepTask.cancel()
-            await MainActor.run {
-                quote = q
-                isLoading = false
-                // Persist to history
-                let saved = SavedQuote(
-                    id: UUID().uuidString,
-                    savedAt: Date(),
-                    customerName: q.customerName,
-                    jobDescription: q.jobDescription,
-                    roomType: result.roomType,
-                    floorArea: result.floorArea,
-                    labourDays: q.labourDays,
-                    labourRate: q.labourRate,
-                    labourTotal: q.labourTotal,
-                    items: q.items.map {
-                        SavedQuoteItem(
-                            id: $0.id.uuidString,
-                            description: $0.description,
-                            qty: $0.qty,
-                            unit: $0.unit,
-                            unitPrice: $0.unitPrice,
-                            sku: $0.sku,
-                            supplier: $0.supplier
-                        )
-                    },
-                    subtotal: q.subtotal,
-                    vatRate: q.vatRate,
-                    vatAmount: q.vatAmount,
-                    grandTotal: q.grandTotal,
-                    notes: q.notes
-                )
-                QuoteHistoryStore.shared.save(saved)
-            }
-            return
-        } catch {
-            stepTask.cancel()
-            await MainActor.run {
-                errorMessage = error.localizedDescription
-                isLoading = false
-            }
+        let dims = result
+        let job  = jobDescription
+        let cust = customerName
+        Task.detached(priority: .userInitiated) {
+            await service.generate(
+                jobDescription: job,
+                customerName: cust,
+                roomDimensions: dims,
+                claudeContext: ctx,
+                preferredSupplier: supplier,
+                usualItems: usualItems
+            )
         }
     }
 
-    private func buildQuote(from json: [String: Any]) -> GeneratedQuote {
-        let labourDays = (json["labourDays"] as? Double) ?? 1.0
-        let labourRate = (json["labourRate"] as? Double) ?? 280.0
-        let labourTotal = labourDays * labourRate
-        let vatRate = (json["vatRate"] as? Double) ?? 20.0
-        let notes = (json["notes"] as? String) ?? ""
-
-        var items: [QuoteLineItem] = []
-        if let rawItems = json["items"] as? [[String: Any]] {
-            for raw in rawItems {
-                let desc     = (raw["description"] as? String) ?? "Item"
-                let qty      = (raw["qty"] as? Double) ?? 1.0
-                let unit     = (raw["unit"] as? String) ?? "each"
-                let price    = (raw["unitPrice"] as? Double) ?? 0.0
-                let sku      = (raw["sku"] as? String) ?? ""
-                let supplier = (raw["supplier"] as? String) ?? ""
-                items.append(QuoteLineItem(description: desc, qty: qty, unit: unit,
-                                           unitPrice: price, sku: sku, supplier: supplier))
-            }
-        }
-
-        let materialsTotal = items.reduce(0) { $0 + $1.total }
-        let subtotal = labourTotal + materialsTotal
-        let vatAmount = subtotal * (vatRate / 100)
-        let grandTotal = subtotal + vatAmount
-
-        return GeneratedQuote(
-            labourDays: labourDays, labourRate: labourRate, labourTotal: labourTotal,
-            items: items, materialsTotal: materialsTotal,
-            subtotal: subtotal, vatRate: vatRate, vatAmount: vatAmount, grandTotal: grandTotal,
-            notes: notes, customerName: customerName, jobDescription: jobDescription
-        )
-    }
 }
 
 // MARK: - Quote Loading View
@@ -3566,6 +3376,136 @@ struct QuoteLoadingView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.white)
+    }
+}
+
+// MARK: - Sectioned Quote Loading View
+
+struct SectionedQuoteLoadingView: View {
+    @ObservedObject var service: QuoteGenerationService
+    let total: Int
+    let completed: Int
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                // Header
+                VStack(spacing: 8) {
+                    HStack(spacing: 10) {
+                        ProgressView()
+                            .scaleEffect(0.85)
+                        Text("\(completed) of \(total) sections")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(AQ.secondary)
+                        Spacer()
+                        if service.grandTotal > 0 {
+                            Text("£\(Int(service.grandTotal).formatted())")
+                                .font(.system(size: 17, weight: .bold, design: .rounded))
+                                .foregroundColor(AQ.ink)
+                                .contentTransition(.numericText())
+                                .animation(.easeInOut(duration: 0.3), value: service.grandTotal)
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.top, 20)
+
+                    // Progress bar
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            Rectangle().fill(AQ.rule).frame(height: 3)
+                            Rectangle()
+                                .fill(AQ.blue)
+                                .frame(width: geo.size.width * CGFloat(completed) / CGFloat(max(total, 1)), height: 3)
+                                .animation(.easeInOut(duration: 0.4), value: completed)
+                        }
+                    }
+                    .frame(height: 3)
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 16)
+                }
+
+                // Section cards
+                LazyVStack(spacing: 0) {
+                    ForEach(service.sections) { section in
+                        SectionStatusCard(section: section)
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
+                }
+                .animation(.easeInOut(duration: 0.3), value: service.sections.count)
+            }
+        }
+        .background(Color.white)
+    }
+}
+
+private struct SectionStatusCard: View {
+    let section: QuoteSection
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 12) {
+                // Status icon
+                ZStack {
+                    Circle()
+                        .fill(statusColor.opacity(0.1))
+                        .frame(width: 32, height: 32)
+                    statusIcon
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(statusColor)
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(section.label)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(AQ.ink)
+                    if case .complete = section.status {
+                        Text("\(section.items.count) items · £\(Int(section.sectionSubtotal).formatted())")
+                            .font(.system(size: 12))
+                            .foregroundColor(AQ.secondary)
+                    } else if case .loading = section.status {
+                        Text("Pricing items…")
+                            .font(.system(size: 12))
+                            .foregroundColor(AQ.secondary)
+                    } else if case .failed(let reason) = section.status {
+                        Text(reason)
+                            .font(.system(size: 12))
+                            .foregroundColor(.red.opacity(0.7))
+                            .lineLimit(1)
+                    } else {
+                        Text("Waiting…")
+                            .font(.system(size: 12))
+                            .foregroundColor(AQ.secondary)
+                    }
+                }
+                Spacer()
+                if case .complete = section.status {
+                    Text("£\(Int(section.sectionSubtotal).formatted())")
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .foregroundColor(AQ.ink)
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 14)
+            Divider().background(AQ.rule).padding(.leading, 24)
+        }
+    }
+
+    private var statusColor: Color {
+        switch section.status {
+        case .complete:      return AQ.green
+        case .loading:       return AQ.blue
+        case .failed:        return .red
+        case .pending:       return AQ.secondary
+        }
+    }
+
+    private var statusIcon: Image {
+        switch section.status {
+        case .complete:      return Image(systemName: "checkmark")
+        case .loading:       return Image(systemName: "arrow.triangle.2.circlepath")
+        case .failed:        return Image(systemName: "exclamationmark")
+        case .pending:       return Image(systemName: "clock")
+        }
     }
 }
 
@@ -3721,65 +3661,59 @@ struct QuoteResultView: View {
                 if showBreakdown {
                     Divider().background(AQ.rule)
 
-                    // Labour detail
-                    QuoteSectionHeader(title: "Labour")
-                    QuoteRow(
-                        label: "\(String(format: "%.1f", quote.labourDays)) day\(quote.labourDays == 1 ? "" : "s") @ £\(Int(quote.labourRate))/day",
-                        value: "£\(Int(effectiveLabourTotal).formatted())",
-                        bold: false
-                    )
-                    Divider().background(AQ.rule).padding(.leading, 24)
-
-                    // Materials detail
-                    if !quote.items.isEmpty {
-                        QuoteSectionHeader(title: "Materials & Items")
-                        ForEach(quote.items) { item in
-                            VStack(alignment: .leading, spacing: 0) {
+                    if quote.sections.count > 1 {
+                        // ── Multi-section breakdown ──────────────────────────
+                        ForEach(quote.sections) { section in
+                            QuoteSectionHeader(title: section.label)
+                            // Labour row for this section
+                            if section.labourDays > 0 {
                                 QuoteRow(
-                                    label: item.description,
-                                    value: "£\(String(format: "%.2f", item.total))",
-                                    bold: false,
-                                    multiline: false
+                                    label: "\(String(format: "%.1f", section.labourDays))d labour @ £\(Int(section.labourRate))/day",
+                                    value: "£\(Int(section.labourTotal).formatted())",
+                                    bold: false
                                 )
-                                HStack(spacing: 8) {
-                                    Text("\(formatQty(item.qty)) \(item.unit) × £\(String(format: "%.2f", item.unitPrice))")
-                                        .font(.system(size: 12))
-                                        .foregroundColor(AQ.secondary)
-                                    if !item.sku.isEmpty {
-                                        Text("·")
-                                            .foregroundColor(AQ.rule)
-                                        HStack(spacing: 3) {
-                                            if !item.supplier.isEmpty {
-                                                Text(item.supplier)
-                                                    .font(.system(size: 11, weight: .medium))
-                                                    .foregroundColor(AQ.blue)
-                                            }
-                                            Text("SKU \(item.sku)")
-                                                .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                                                .foregroundColor(AQ.blue)
-                                        }
-                                        .padding(.horizontal, 7).padding(.vertical, 3)
-                                        .background(AQ.blue.opacity(0.07))
-                                        .cornerRadius(5)
-                                    }
-                                }
-                                .padding(.horizontal, 24)
-                                .padding(.bottom, 12)
+                                Divider().background(AQ.rule).padding(.leading, 24)
                             }
-                            Divider().background(AQ.rule).padding(.leading, 24)
+                            ForEach(section.items) { item in
+                                QuoteLineItemRow(item: item, formatQty: formatQty)
+                            }
+                            if !section.notes.isEmpty {
+                                Text(section.notes)
+                                    .font(AQ.body(13)).foregroundColor(AQ.secondary)
+                                    .lineSpacing(4)
+                                    .padding(.horizontal, 24).padding(.vertical, 10)
+                                Divider().background(AQ.rule).padding(.leading, 24)
+                            }
+                            QuoteRow(
+                                label: "Section subtotal",
+                                value: "£\(Int(section.sectionSubtotal).formatted())",
+                                bold: true
+                            )
+                            Divider().background(AQ.rule)
                         }
-                    }
-
-                    // Notes
-                    if !quote.notes.isEmpty {
-                        QuoteSectionHeader(title: "Notes & Inclusions")
-                        Text(quote.notes)
-                            .font(AQ.body(14))
-                            .foregroundColor(AQ.secondary)
-                            .lineSpacing(5)
-                            .padding(.horizontal, 24)
-                            .padding(.vertical, 16)
-                        Divider().background(AQ.rule)
+                    } else {
+                        // ── Single-section (legacy) breakdown ────────────────
+                        QuoteSectionHeader(title: "Labour")
+                        QuoteRow(
+                            label: "\(String(format: "%.1f", quote.labourDays)) day\(quote.labourDays == 1 ? "" : "s") @ £\(Int(quote.labourRate))/day",
+                            value: "£\(Int(effectiveLabourTotal).formatted())",
+                            bold: false
+                        )
+                        Divider().background(AQ.rule).padding(.leading, 24)
+                        if !quote.items.isEmpty {
+                            QuoteSectionHeader(title: "Materials & Items")
+                            ForEach(quote.items) { item in
+                                QuoteLineItemRow(item: item, formatQty: formatQty)
+                            }
+                        }
+                        if !quote.notes.isEmpty {
+                            QuoteSectionHeader(title: "Notes & Inclusions")
+                            Text(quote.notes)
+                                .font(AQ.body(14)).foregroundColor(AQ.secondary)
+                                .lineSpacing(5)
+                                .padding(.horizontal, 24).padding(.vertical, 16)
+                            Divider().background(AQ.rule)
+                        }
                     }
                 }
 
@@ -4483,6 +4417,40 @@ struct ShareSheet: UIViewControllerRepresentable {
 }
 
 // MARK: - Quote row components
+
+struct QuoteLineItemRow: View {
+    let item: QuoteLineItem
+    let formatQty: (Double) -> String
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            QuoteRow(
+                label: item.description,
+                value: "£\(String(format: "%.2f", item.total))",
+                bold: false, multiline: false
+            )
+            HStack(spacing: 8) {
+                Text("\(formatQty(item.qty)) \(item.unit) × £\(String(format: "%.2f", item.unitPrice))")
+                    .font(.system(size: 12)).foregroundColor(AQ.secondary)
+                if !item.sku.isEmpty {
+                    Text("·").foregroundColor(AQ.rule)
+                    HStack(spacing: 3) {
+                        if !item.supplier.isEmpty {
+                            Text(item.supplier)
+                                .font(.system(size: 11, weight: .medium)).foregroundColor(AQ.blue)
+                        }
+                        Text("SKU \(item.sku)")
+                            .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                            .foregroundColor(AQ.blue)
+                    }
+                    .padding(.horizontal, 7).padding(.vertical, 3)
+                    .background(AQ.blue.opacity(0.07)).cornerRadius(5)
+                }
+            }
+            .padding(.horizontal, 24).padding(.bottom, 12)
+        }
+        Divider().background(AQ.rule).padding(.leading, 24)
+    }
+}
 
 struct QuoteSectionHeader: View {
     let title: String

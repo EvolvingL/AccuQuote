@@ -1,7 +1,7 @@
 import SwiftUI
 import Foundation
 
-// MARK: - Saved Quote model
+// MARK: - Saved Quote models
 
 struct SavedQuoteItem: Identifiable, Codable {
     let id: String
@@ -11,7 +11,42 @@ struct SavedQuoteItem: Identifiable, Codable {
     let unitPrice: Double
     let sku: String
     let supplier: String
+    var sectionKey: String   // "" for old records — default handled by CodingKeys
     var total: Double { qty * unitPrice }
+
+    // Backwards-compatible decode: sectionKey defaults to ""
+    enum CodingKeys: String, CodingKey {
+        case id, description, qty, unit, unitPrice, sku, supplier, sectionKey
+    }
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id          = try c.decode(String.self,   forKey: .id)
+        description = try c.decode(String.self,   forKey: .description)
+        qty         = try c.decode(Double.self,   forKey: .qty)
+        unit        = try c.decode(String.self,   forKey: .unit)
+        unitPrice   = try c.decode(Double.self,   forKey: .unitPrice)
+        sku         = try c.decode(String.self,   forKey: .sku)
+        supplier    = try c.decode(String.self,   forKey: .supplier)
+        sectionKey  = (try? c.decode(String.self, forKey: .sectionKey)) ?? ""
+    }
+    init(id: String, description: String, qty: Double, unit: String,
+         unitPrice: Double, sku: String, supplier: String, sectionKey: String = "") {
+        self.id = id; self.description = description; self.qty = qty
+        self.unit = unit; self.unitPrice = unitPrice; self.sku = sku
+        self.supplier = supplier; self.sectionKey = sectionKey
+    }
+}
+
+struct SavedQuoteSection: Identifiable, Codable {
+    let id: String          // sectionKey
+    let label: String
+    let labourDays: Double
+    let labourRate: Double
+    let notes: String
+    let items: [SavedQuoteItem]
+    var labourTotal: Double { labourDays * labourRate }
+    var materialsTotal: Double { items.reduce(0) { $0 + $1.total } }
+    var sectionSubtotal: Double { labourTotal + materialsTotal }
 }
 
 struct SavedQuote: Identifiable, Codable {
@@ -21,6 +56,7 @@ struct SavedQuote: Identifiable, Codable {
     let jobDescription: String
     let roomType: String
     let floorArea: Double
+    // Flat totals kept for backwards compat + quick display in history list
     let labourDays: Double
     let labourRate: Double
     let labourTotal: Double
@@ -30,9 +66,48 @@ struct SavedQuote: Identifiable, Codable {
     let vatAmount: Double
     let grandTotal: Double
     let notes: String
+    // Sectioned breakdown — empty for old records
+    var sections: [SavedQuoteSection]
+
+    enum CodingKeys: String, CodingKey {
+        case id, savedAt, customerName, jobDescription, roomType, floorArea
+        case labourDays, labourRate, labourTotal, items
+        case subtotal, vatRate, vatAmount, grandTotal, notes, sections
+    }
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id             = try c.decode(String.self,         forKey: .id)
+        savedAt        = try c.decode(Date.self,           forKey: .savedAt)
+        customerName   = try c.decode(String.self,         forKey: .customerName)
+        jobDescription = try c.decode(String.self,         forKey: .jobDescription)
+        roomType       = try c.decode(String.self,         forKey: .roomType)
+        floorArea      = try c.decode(Double.self,         forKey: .floorArea)
+        labourDays     = try c.decode(Double.self,         forKey: .labourDays)
+        labourRate     = try c.decode(Double.self,         forKey: .labourRate)
+        labourTotal    = try c.decode(Double.self,         forKey: .labourTotal)
+        items          = try c.decode([SavedQuoteItem].self, forKey: .items)
+        subtotal       = try c.decode(Double.self,         forKey: .subtotal)
+        vatRate        = try c.decode(Double.self,         forKey: .vatRate)
+        vatAmount      = try c.decode(Double.self,         forKey: .vatAmount)
+        grandTotal     = try c.decode(Double.self,         forKey: .grandTotal)
+        notes          = try c.decode(String.self,         forKey: .notes)
+        sections       = (try? c.decode([SavedQuoteSection].self, forKey: .sections)) ?? []
+    }
+    init(id: String, savedAt: Date, customerName: String, jobDescription: String,
+         roomType: String, floorArea: Double, labourDays: Double, labourRate: Double,
+         labourTotal: Double, items: [SavedQuoteItem], subtotal: Double, vatRate: Double,
+         vatAmount: Double, grandTotal: Double, notes: String, sections: [SavedQuoteSection] = []) {
+        self.id = id; self.savedAt = savedAt; self.customerName = customerName
+        self.jobDescription = jobDescription; self.roomType = roomType
+        self.floorArea = floorArea; self.labourDays = labourDays
+        self.labourRate = labourRate; self.labourTotal = labourTotal
+        self.items = items; self.subtotal = subtotal; self.vatRate = vatRate
+        self.vatAmount = vatAmount; self.grandTotal = grandTotal
+        self.notes = notes; self.sections = sections
+    }
 }
 
-// MARK: - Quote History Store
+// MARK: - Quote History Store (file-backed)
 
 @MainActor
 final class QuoteHistoryStore: ObservableObject {
@@ -40,30 +115,51 @@ final class QuoteHistoryStore: ObservableObject {
 
     @Published private(set) var quotes: [SavedQuote] = []
 
-    private static let storeKey = "aq_quote_history"
+    private static let legacyDefaultsKey = "aq_quote_history"
+    private static var fileURL: URL {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("aq_quote_history.json")
+    }
 
     private init() { load() }
 
     func save(_ quote: SavedQuote) {
         quotes.insert(quote, at: 0)
-        persist()
+        persistAsync()
     }
 
     func delete(id: String) {
         quotes.removeAll { $0.id == id }
-        persist()
+        persistAsync()
     }
 
-    private func persist() {
-        guard let data = try? JSONEncoder().encode(quotes) else { return }
-        UserDefaults.standard.set(data, forKey: Self.storeKey)
-    }
+    // MARK: - I/O
 
     private func load() {
-        guard let data = UserDefaults.standard.data(forKey: Self.storeKey),
-              let decoded = try? JSONDecoder().decode([SavedQuote].self, from: data)
-        else { return }
-        quotes = decoded
+        let url = Self.fileURL
+        if FileManager.default.fileExists(atPath: url.path) {
+            // Primary: read from file
+            if let data = try? Data(contentsOf: url),
+               let decoded = try? JSONDecoder().decode([SavedQuote].self, from: data) {
+                quotes = decoded
+                return
+            }
+        }
+        // Fallback: migrate from UserDefaults
+        if let data = UserDefaults.standard.data(forKey: Self.legacyDefaultsKey),
+           let decoded = try? JSONDecoder().decode([SavedQuote].self, from: data) {
+            quotes = decoded
+            persistAsync()   // write to file immediately
+            UserDefaults.standard.removeObject(forKey: Self.legacyDefaultsKey)
+        }
+    }
+
+    private func persistAsync() {
+        let snapshot = quotes
+        Task.detached(priority: .utility) {
+            guard let data = try? JSONEncoder().encode(snapshot) else { return }
+            try? data.write(to: Self.fileURL, options: .atomic)
+        }
     }
 }
 
@@ -161,6 +257,12 @@ private struct QuoteHistoryRow: View {
                 Text(String(format: "%.1fm²", quote.floorArea))
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(AQ.secondary)
+                if !quote.sections.isEmpty {
+                    Text("·").foregroundColor(AQ.rule)
+                    Text("\(quote.sections.count) sections")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(AQ.secondary)
+                }
             }
         }
         .padding(.vertical, 6)

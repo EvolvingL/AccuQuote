@@ -24,6 +24,7 @@
 		A113 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A015 /* Assets.xcassets */; };
 		A116 /* GuestScanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A016 /* GuestScanView.swift */; };
 		A117 /* QuoteHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = A017 /* QuoteHistory.swift */; };
+		A119 /* QuoteGenerationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A019 /* QuoteGenerationService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -47,6 +48,7 @@
 		A016 /* GuestScanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuestScanView.swift; sourceTree = "<group>"; };
 		A017 /* QuoteHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuoteHistory.swift; sourceTree = "<group>"; };
 		A018 /* AccuQuoteScan.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AccuQuoteScan.entitlements; sourceTree = "<group>"; };
+		A019 /* QuoteGenerationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuoteGenerationService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -91,6 +93,7 @@
 				A015 /* Assets.xcassets */,
 				A006 /* Info.plist */,
 				A018 /* AccuQuoteScan.entitlements */,
+				A019 /* QuoteGenerationService.swift */,
 			);
 			path = AccuQuoteScan;
 			sourceTree = "<group>";
@@ -195,6 +198,7 @@
 				A111 /* APIKeys.swift in Sources */,
 				A116 /* GuestScanView.swift in Sources */,
 				A117 /* QuoteHistory.swift in Sources */,
+				A119 /* QuoteGenerationService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
