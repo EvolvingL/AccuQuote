@@ -29,6 +29,7 @@
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>processing</string>
+		<string>remote-notification</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>AccuQuote Scan uses the camera to measure room dimensions using LiDAR, AI depth, or AR plane detection.</string>

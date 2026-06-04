@@ -7,8 +7,10 @@
  *   STRIPE_SECRET_KEY          — Stripe secret key
  *   STRIPE_WEBHOOK_SECRET      — Stripe webhook signing secret
  *   FIREBASE_SERVICE_ACCOUNT   — JSON string of Firebase service account credentials
+ *                                 (also grants FCM access — no extra credential needed)
  *   BEEHIIV_API_KEY            — Beehiiv newsletter key
  *   BEEHIIV_PUBLICATION_ID     — Beehiiv publication ID
+ *   ADMIN_SECRET               — Long random string protecting /admin/* endpoints
  *
  * Endpoints:
  *   POST /api/claude                        — proxies Claude requests (auth required)
@@ -19,6 +21,10 @@
  *   POST /api/stripe/create-checkout        — subscription checkout session
  *   POST /api/stripe/webhook                — Stripe webhook (entitlement fulfilment)
  *   GET  /api/health                        — health check
+ *   POST /api/push/register                 — device registers APNs token (auth required)
+ *   POST /api/admin/broadcast               — push to segment + A/B test (admin)
+ *   POST /api/push/personal                 — personalised push to single user (admin)
+ *   GET  /api/admin/push/log                — last 50 push events (admin)
  *   GET  /*                                 — serves the web app static files
  */
 
@@ -710,70 +716,324 @@ app.get('/api/admin/users.csv', requireAdmin, async (req, res) => {
 });
 
 // POST /api/admin/broadcast — write a broadcast doc to Firestore
-// AccuScan devices read a `broadcasts/{id}` doc on launch and show a local notification.
-// Body: { title, body, targetTier? ('all'|'free'|'solo'|'team'|'crew'), targetTrade? }
-app.post('/api/admin/broadcast', requireAdmin, async (req, res) => {
-  if (!adminFirestore) {
-    return res.status(503).json({ error: 'Firestore not available' });
-  }
+// ══════════════════════════════════════════════════════════════════════════════
+// PUSH NOTIFICATION SYSTEM
+// ══════════════════════════════════════════════════════════════════════════════
+//
+// Architecture:
+//   • Devices register their APNs token at POST /api/push/register (auth required)
+//   • Tokens + user metadata stored in Firestore `devices/{uid}` collection
+//   • Server sends via Firebase Admin messaging() — no FCM SDK on iOS needed
+//   • Three delivery modes:
+//       1. Broadcast  — POST /api/admin/broadcast  (admin, segments + A/B variants)
+//       2. Personal   — POST /api/push/personal    (admin, single uid, server-data templated)
+//       3. Programmatic — sendPush() helper used internally (e.g. after Stripe webhook)
+//
+// Environment variable required:
+//   FIREBASE_SERVICE_ACCOUNT  — already set (used by Firebase Admin auth/firestore)
+//   The same service account credentials provide FCM access automatically.
+//
+// Firestore schema:
+//   devices/{uid}  {
+//     token:       string   — APNs device token (hex string)
+//     uid:         string
+//     trade:       string   — e.g. "electrician"
+//     tier:        string   — 'free'|'solo'|'team'|'crew'
+//     quoteCount:  number   — total quotes sent (for personalisation)
+//     platform:    string   — 'ios'
+//     appVersion:  string
+//     updatedAt:   number   — ms timestamp
+//   }
+//   push_log/{auto}  {
+//     type:        'broadcast'|'personal'
+//     broadcastId: string (broadcast only)
+//     uid:         string (personal only)
+//     title:       string
+//     body:        string
+//     variant:     'a'|'b'|null
+//     sentAt:      number
+//     successCount: number
+//     failureCount: number
+//   }
 
-  const { title, body: msgBody, targetTier = 'all', targetTrade = 'all' } = req.body || {};
-  if (!title || !msgBody) {
-    return res.status(400).json({ error: 'title and body are required' });
+// ── FCM send helper ───────────────────────────────────────────────────────────
+// Sends a push notification to a single APNs token via Firebase Admin messaging().
+// Returns { success: true } or { success: false, error: string }.
+
+async function sendPush(token, title, body, data = {}) {
+  if (!adminApp) return { success: false, error: 'Firebase not initialised' };
+  try {
+    const { createRequire } = await import('module');
+    const require = createRequire(import.meta.url);
+    const admin = require('firebase-admin');
+    const messaging = admin.messaging();
+    await messaging.send({
+      token,
+      notification: { title, body },
+      apns: {
+        payload: {
+          aps: {
+            alert: { title, body },
+            sound: 'default',
+            badge: 1,
+          },
+          ...data,
+        },
+        headers: { 'apns-priority': '10' },
+      },
+      data: Object.fromEntries(
+        Object.entries(data).map(([k, v]) => [k, String(v)])
+      ),
+    });
+    return { success: true };
+  } catch (err) {
+    // FCM error codes that mean the token is stale — remove it
+    const stale = ['messaging/registration-token-not-registered',
+                   'messaging/invalid-registration-token'];
+    return { success: false, error: err.code || err.message, stale: stale.includes(err.code) };
   }
+}
+
+// ── POST /api/push/register ───────────────────────────────────────────────────
+// iOS app calls this on every launch (if token has rotated) or after sign-in.
+// Stores the APNs token plus user metadata for targeting and personalisation.
+// Body: { token, uid, trade, quoteCount, platform, appVersion }
+
+app.post('/api/push/register', requireAuth, async (req, res) => {
+  if (!adminFirestore) return res.status(503).json({ error: 'Firestore not available' });
+
+  const { token, trade = 'general', quoteCount = 0, platform = 'ios', appVersion = '1.0' } = req.body || {};
+  if (!token) return res.status(400).json({ error: 'token is required' });
+
+  const uid  = req.user.uid;
+  const tier = await getUserTier(uid);
 
   try {
-    const doc = await adminFirestore.collection('broadcasts').add({
-      title,
-      body: msgBody,
-      targetTier,
-      targetTrade,
-      createdAt: Date.now(),
-      expiresAt: Date.now() + 7 * 24 * 3600 * 1000, // expires in 7 days
-    });
+    await adminFirestore.doc(`devices/${uid}`).set({
+      token,
+      uid,
+      trade,
+      tier,
+      quoteCount,
+      platform,
+      appVersion,
+      updatedAt: Date.now(),
+    }, { merge: true });
 
-    res.json({ ok: true, broadcastId: doc.id });
+    res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// ── Broadcast poll endpoint (AccuScan devices call on launch) ─────────────────
-// Returns any unexpired broadcasts matching the device's tier and trade.
-// AccuScan iOS uses this to schedule a local notification for each new broadcast.
-// Query params: tier, trade, lastSeenAt (ISO timestamp)
-app.get('/api/broadcasts', async (req, res) => {
-  if (!adminFirestore) return res.json({ broadcasts: [] });
+// ── POST /api/admin/broadcast ─────────────────────────────────────────────────
+// Sends a push notification to a segment of users.
+// Supports A/B testing: if variantA and variantB are provided, each device
+// is randomly assigned to one variant and the split is recorded.
+//
+// Body:
+//   title       string          — used for both variants unless variant overrides
+//   body        string          — message body (variant A default)
+//   targetTier  'all'|tier      — filter by subscription tier
+//   targetTrade 'all'|trade     — filter by trade
+//   variantA    { title, body } — optional A/B variant A override
+//   variantB    { title, body } — optional A/B variant B override
+//   deepLink    string          — optional deep link passed as notification data
 
-  const { tier = 'free', trade = 'general', lastSeenAt } = req.query;
-  const since = lastSeenAt ? new Date(lastSeenAt).getTime() : 0;
+app.post('/api/admin/broadcast', requireAdmin, async (req, res) => {
+  if (!adminFirestore) return res.status(503).json({ error: 'Firestore not available' });
 
+  const {
+    title, body: msgBody,
+    targetTier  = 'all',
+    targetTrade = 'all',
+    variantA, variantB,
+    deepLink,
+  } = req.body || {};
+
+  if (!title || !msgBody) return res.status(400).json({ error: 'title and body are required' });
+
+  const isAB = !!(variantA && variantB);
+
+  // Query matching device tokens from Firestore
+  let query = adminFirestore.collection('devices');
+  if (targetTier  !== 'all') query = query.where('tier',  '==', targetTier);
+  if (targetTrade !== 'all') query = query.where('trade', '==', targetTrade);
+
+  let snap;
   try {
-    const now = Date.now();
-    const snap = await adminFirestore
-      .collection('broadcasts')
-      .where('expiresAt', '>', now)
-      .orderBy('expiresAt', 'desc')
-      .limit(10)
-      .get();
-
-    const broadcasts = snap.docs
-      .map(d => ({ id: d.id, ...d.data() }))
-      .filter(b => {
-        // Filter by target tier
-        if (b.targetTier !== 'all' && b.targetTier !== tier) return false;
-        // Filter by target trade
-        if (b.targetTrade !== 'all' && b.targetTrade !== trade) return false;
-        // Only return new ones
-        return b.createdAt > since;
-      })
-      .map(b => ({ id: b.id, title: b.title, body: b.body, createdAt: b.createdAt }));
-
-    res.json({ broadcasts });
+    snap = await query.limit(5000).get();
   } catch (err) {
-    res.status(500).json({ error: err.message, broadcasts: [] });
+    return res.status(500).json({ error: `Firestore query failed: ${err.message}` });
+  }
+
+  const devices = snap.docs.map(d => d.data()).filter(d => d.token);
+  if (devices.length === 0) return res.json({ ok: true, sent: 0, message: 'No matching devices' });
+
+  // Send in batches of 100 (FCM multicast limit is 500 but we use individual sends for APNs)
+  let successCount = 0;
+  let failureCount = 0;
+  const countA = { success: 0, failure: 0 };
+  const countB = { success: 0, failure: 0 };
+  const staleTokenUids = [];
+
+  const data = deepLink ? { deep_link: deepLink } : {};
+
+  await Promise.all(devices.map(async (device) => {
+    let pushTitle = title;
+    let pushBody  = msgBody;
+    let variant   = null;
+
+    if (isAB) {
+      // Deterministic A/B split based on uid hash — same user always gets same variant
+      const hash = device.uid.charCodeAt(0) + (device.uid.charCodeAt(1) || 0);
+      variant    = hash % 2 === 0 ? 'a' : 'b';
+      if (variant === 'a' && variantA) {
+        pushTitle = variantA.title || title;
+        pushBody  = variantA.body  || msgBody;
+      } else if (variant === 'b' && variantB) {
+        pushTitle = variantB.title || title;
+        pushBody  = variantB.body  || msgBody;
+      }
+    }
+
+    const result = await sendPush(device.token, pushTitle, pushBody, data);
+    if (result.success) {
+      successCount++;
+      if (variant === 'a') countA.success++;
+      if (variant === 'b') countB.success++;
+    } else {
+      failureCount++;
+      if (variant === 'a') countA.failure++;
+      if (variant === 'b') countB.failure++;
+      if (result.stale) staleTokenUids.push(device.uid);
+    }
+  }));
+
+  // Remove stale tokens from the devices collection
+  if (staleTokenUids.length > 0) {
+    await Promise.all(staleTokenUids.map(uid =>
+      adminFirestore.doc(`devices/${uid}`).delete().catch(() => {})
+    ));
+  }
+
+  // Log the broadcast for analytics
+  const broadcastDoc = await adminFirestore.collection('push_log').add({
+    type:         'broadcast',
+    title,
+    body:         msgBody,
+    targetTier,
+    targetTrade,
+    isAB,
+    variantA:     variantA || null,
+    variantB:     variantB || null,
+    sentAt:       Date.now(),
+    successCount,
+    failureCount,
+    abResults:    isAB ? { a: countA, b: countB } : null,
+    staleRemoved: staleTokenUids.length,
+  });
+
+  res.json({
+    ok:           true,
+    broadcastId:  broadcastDoc.id,
+    sent:         successCount,
+    failed:       failureCount,
+    total:        devices.length,
+    ...(isAB ? { abResults: { a: countA, b: countB } } : {}),
+  });
+});
+
+// ── POST /api/push/personal ───────────────────────────────────────────────────
+// Sends a personalised push to a single user using server-side data.
+// Supports template variables interpolated from the user's Firestore device doc.
+//
+// Template variables in title/body:
+//   {{quoteCount}}  — total quotes sent
+//   {{trade}}       — trade (e.g. "Electrician")
+//   {{tier}}        — subscription tier
+//
+// Body: { uid, title, body, deepLink? }
+// Example body: "You've sent {{quoteCount}} quotes — your best month yet 🎉"
+
+app.post('/api/push/personal', requireAdmin, async (req, res) => {
+  if (!adminFirestore) return res.status(503).json({ error: 'Firestore not available' });
+
+  const { uid, title, body: msgBody, deepLink } = req.body || {};
+  if (!uid || !title || !msgBody) {
+    return res.status(400).json({ error: 'uid, title and body are required' });
+  }
+
+  // Load device data for this user
+  let deviceDoc;
+  try {
+    deviceDoc = await adminFirestore.doc(`devices/${uid}`).get();
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+
+  if (!deviceDoc.exists) return res.status(404).json({ error: 'Device not registered for this user' });
+
+  const device = deviceDoc.data();
+  if (!device.token) return res.status(404).json({ error: 'No push token for this user' });
+
+  // Interpolate template variables
+  const vars = {
+    '{{quoteCount}}': String(device.quoteCount || 0),
+    '{{trade}}':      capitalise(device.trade || 'tradesperson'),
+    '{{tier}}':       capitalise(device.tier  || 'free'),
+  };
+  let pushTitle = title;
+  let pushBody  = msgBody;
+  for (const [key, val] of Object.entries(vars)) {
+    pushTitle = pushTitle.replaceAll(key, val);
+    pushBody  = pushBody.replaceAll(key, val);
+  }
+
+  const data   = deepLink ? { deep_link: deepLink } : {};
+  const result = await sendPush(device.token, pushTitle, pushBody, data);
+
+  if (!result.success) {
+    if (result.stale) await adminFirestore.doc(`devices/${uid}`).delete().catch(() => {});
+    return res.status(500).json({ error: result.error });
+  }
+
+  // Log
+  await adminFirestore.collection('push_log').add({
+    type:    'personal',
+    uid,
+    title:   pushTitle,
+    body:    pushBody,
+    sentAt:  Date.now(),
+    successCount: 1,
+    failureCount: 0,
+  }).catch(() => {});
+
+  res.json({ ok: true, title: pushTitle, body: pushBody });
+});
+
+// ── GET /api/admin/push/log ───────────────────────────────────────────────────
+// Returns the last 50 push send events for the admin dashboard.
+
+app.get('/api/admin/push/log', requireAdmin, async (req, res) => {
+  if (!adminFirestore) return res.json({ log: [] });
+  try {
+    const snap = await adminFirestore
+      .collection('push_log')
+      .orderBy('sentAt', 'desc')
+      .limit(50)
+      .get();
+    const log = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    res.json({ log });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
+
+// ── Capitalise helper ─────────────────────────────────────────────────────────
+function capitalise(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
 
 // ── Service worker ────────────────────────────────────────────────────────────
 app.get('/sw.js', (req, res) => {
