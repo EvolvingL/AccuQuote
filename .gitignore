@@ -1,4 +1,7 @@
 node_modules/
+# Firebase service account key — never commit
+accuquote-246a3-firebase-adminsdk-*.json
+*-firebase-adminsdk-*.json
 # iOS secrets — never commit
 iOS/AccuQuoteScan/AccuQuoteScan/Secrets.xcconfig
 iOS/AccuQuoteScan/AccuQuoteScan/APIKeys.swift

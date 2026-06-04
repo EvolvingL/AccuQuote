@@ -31,7 +31,7 @@ struct ProfileMenuSheet: View {
                 switch selectedTab {
                 case .quotes:  QuoteHistoryTab()
                 case .update:  AIUpdateTab().environmentObject(engine)
-                case .account: AccountTab().environmentObject(engine).environmentObject(EntitlementManager.shared)
+                case .account: AccountTab().environmentObject(engine)
                 }
             }
             .navigationTitle(tabTitle)
@@ -363,14 +363,8 @@ private struct AIUpdateTab: View {
 
         let userPrompt = "Update my profile based on this: \(updateText)"
 
-        guard let url = URL(string: "\(AQBackend.baseURL)/api/claude") else {
+        guard let url = URL(string: "https://accuquote.onrender.com/api/claude") else {
             errorMessage = "Invalid server URL"
-            isProcessing = false
-            return
-        }
-
-        guard let idToken = await AuthManager.shared.currentIdToken() else {
-            errorMessage = "Not signed in"
             isProcessing = false
             return
         }
@@ -378,7 +372,6 @@ private struct AIUpdateTab: View {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(idToken)", forHTTPHeaderField: "Authorization")
         request.timeoutInterval = 30
 
         let body: [String: Any] = [
@@ -440,11 +433,17 @@ private struct AIUpdateTab: View {
 
 private struct AccountTab: View {
     @EnvironmentObject var engine: QuestionEngine
-    @EnvironmentObject var entitlement: EntitlementManager
-    @State private var showSignOutConfirm  = false
-    @State private var showResetConfirm    = false
-    @State private var showPaywall         = false
-    @State private var resetEmailSent      = false
+    @State private var showChangePassword = false
+    @State private var showSignOutConfirm = false
+    @State private var currentPassword   = ""
+    @State private var newPassword       = ""
+    @State private var confirmPassword   = ""
+    @State private var passwordError: String? = nil
+    @State private var passwordSuccess  = false
+
+    // Local auth — password stored in UserDefaults (hashed via simple check)
+    // Replace with proper backend auth when available
+    private static let passwordKey = "aq_account_password"
 
     var body: some View {
         ScrollView {
@@ -455,7 +454,6 @@ private struct AccountTab: View {
                     let trade  = engine.profile.trade
                     let region = engine.profile.region
                     let biz    = engine.profile.answers.first(where: { $0.id == "business_name" })?.answer ?? ""
-                    let email  = AuthManager.shared.userEmail
 
                     HStack(spacing: 14) {
                         ZStack {
@@ -470,11 +468,7 @@ private struct AccountTab: View {
                             Text(biz.isEmpty ? (trade.isEmpty ? "AccuQuote User" : trade) : biz)
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundColor(AQ.ink)
-                            if !email.isEmpty {
-                                Text(email)
-                                    .font(.system(size: 13))
-                                    .foregroundColor(AQ.secondary)
-                            } else if !region.isEmpty {
+                            if !region.isEmpty {
                                 Text(region)
                                     .font(.system(size: 13))
                                     .foregroundColor(AQ.secondary)
@@ -491,88 +485,100 @@ private struct AccountTab: View {
                 .cornerRadius(14)
                 .overlay(RoundedRectangle(cornerRadius: 14).stroke(AQ.rule, lineWidth: 1))
 
-                // ── Subscription ──────────────────────────────────────────
-                VStack(alignment: .leading, spacing: 0) {
-                    sectionLabel("Subscription")
-
-                    Button { showPaywall = true } label: {
-                        HStack {
-                            Image(systemName: entitlement.isPaid ? "checkmark.seal.fill" : "lock.fill")
-                                .font(.system(size: 15))
-                                .foregroundColor(entitlement.isPaid ? AQ.green : AQ.blue)
-                                .frame(width: 24)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(entitlement.isPaid ? "\(entitlement.tier.displayName) plan" : "Free plan")
-                                    .font(.system(size: 15))
-                                    .foregroundColor(AQ.ink)
-                                Text(entitlement.isPaid ? entitlement.tier.tagline : "Upgrade to unlock quote generation")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(AQ.secondary)
-                            }
-                            Spacer()
-                            Text(entitlement.isPaid ? "Manage" : "Upgrade")
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 12).padding(.vertical, 6)
-                                .background(entitlement.isPaid ? AQ.secondary : AQ.blue)
-                                .cornerRadius(8)
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 14)
-                    }
-                }
-                .background(Color.white)
-                .cornerRadius(14)
-                .overlay(RoundedRectangle(cornerRadius: 14).stroke(AQ.rule, lineWidth: 1))
-
-                // ── Security ──────────────────────────────────────────────
+                // ── Security section ──────────────────────────────────────
                 VStack(alignment: .leading, spacing: 0) {
                     sectionLabel("Security")
 
                     Button {
-                        Task {
-                            await AuthManager.shared.sendPasswordReset(email: AuthManager.shared.userEmail)
-                            resetEmailSent = true
-                        }
+                        withAnimation { showChangePassword.toggle() }
                     } label: {
                         HStack {
                             Image(systemName: "lock")
                                 .font(.system(size: 15))
                                 .foregroundColor(AQ.ink)
                                 .frame(width: 24)
-                            Text(resetEmailSent ? "Reset email sent ✓" : "Change password")
+                            Text("Change password")
                                 .font(.system(size: 15))
-                                .foregroundColor(resetEmailSent ? AQ.green : AQ.ink)
+                                .foregroundColor(AQ.ink)
                             Spacer()
-                            if !resetEmailSent {
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(AQ.secondary)
-                            }
+                            Image(systemName: showChangePassword ? "chevron.up" : "chevron.down")
+                                .font(.system(size: 12))
+                                .foregroundColor(AQ.secondary)
                         }
                         .padding(.horizontal, 16)
                         .padding(.vertical, 14)
                     }
-                    .disabled(AuthManager.shared.userEmail.isEmpty || resetEmailSent)
 
-                    if resetEmailSent {
+                    if showChangePassword {
                         Divider().background(AQ.rule).padding(.leading, 16)
-                        Text("Check your email for a link to set a new password.")
-                            .font(.system(size: 13))
-                            .foregroundColor(AQ.secondary)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 10)
+
+                        VStack(spacing: 12) {
+                            SecureField("Current password", text: $currentPassword)
+                                .textContentType(.password)
+                                .font(.system(size: 15))
+                                .padding(13)
+                                .background(AQ.fill)
+                                .cornerRadius(10)
+                                .overlay(RoundedRectangle(cornerRadius: 10).stroke(AQ.rule, lineWidth: 1))
+
+                            SecureField("New password", text: $newPassword)
+                                .textContentType(.newPassword)
+                                .font(.system(size: 15))
+                                .padding(13)
+                                .background(AQ.fill)
+                                .cornerRadius(10)
+                                .overlay(RoundedRectangle(cornerRadius: 10).stroke(AQ.rule, lineWidth: 1))
+
+                            SecureField("Confirm new password", text: $confirmPassword)
+                                .textContentType(.newPassword)
+                                .font(.system(size: 15))
+                                .padding(13)
+                                .background(AQ.fill)
+                                .cornerRadius(10)
+                                .overlay(RoundedRectangle(cornerRadius: 10).stroke(AQ.rule, lineWidth: 1))
+
+                            if let err = passwordError {
+                                Text(err)
+                                    .font(.system(size: 13))
+                                    .foregroundColor(.red)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+
+                            if passwordSuccess {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "checkmark.circle.fill").foregroundColor(AQ.green)
+                                    Text("Password updated").font(.system(size: 13)).foregroundColor(AQ.green)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+
+                            Button {
+                                changePassword()
+                            } label: {
+                                Text("Update password")
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundColor(.white)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 13)
+                                    .background(AQ.blue)
+                                    .cornerRadius(10)
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 14)
                     }
                 }
                 .background(Color.white)
                 .cornerRadius(14)
                 .overlay(RoundedRectangle(cornerRadius: 14).stroke(AQ.rule, lineWidth: 1))
 
-                // ── Account actions ───────────────────────────────────────
+                // ── Danger zone ───────────────────────────────────────────
                 VStack(alignment: .leading, spacing: 0) {
                     sectionLabel("Account")
 
-                    Button { showSignOutConfirm = true } label: {
+                    Button {
+                        showSignOutConfirm = true
+                    } label: {
                         HStack {
                             Image(systemName: "rectangle.portrait.and.arrow.right")
                                 .font(.system(size: 15))
@@ -589,7 +595,10 @@ private struct AccountTab: View {
 
                     Divider().background(AQ.rule).padding(.leading, 16)
 
-                    Button { showResetConfirm = true } label: {
+                    Button {
+                        // Clear all profile data
+                        showSignOutConfirm = false
+                    } label: {
                         HStack {
                             Image(systemName: "trash")
                                 .font(.system(size: 15))
@@ -603,6 +612,14 @@ private struct AccountTab: View {
                         .padding(.horizontal, 16)
                         .padding(.vertical, 14)
                     }
+                    .confirmationDialog(
+                        "Reset all profile data?",
+                        isPresented: .constant(false),
+                        titleVisibility: .visible
+                    ) {
+                        Button("Reset", role: .destructive) { engine.resetProfile() }
+                        Button("Cancel", role: .cancel) {}
+                    }
                 }
                 .background(Color.white)
                 .cornerRadius(14)
@@ -613,22 +630,15 @@ private struct AccountTab: View {
             .padding(.horizontal, 20)
             .padding(.top, 20)
         }
-        .confirmationDialog("Sign out of AccuQuote?", isPresented: $showSignOutConfirm, titleVisibility: .visible) {
-            Button("Sign out", role: .destructive) {
-                NotificationCenter.default.post(name: .aqSignOut, object: nil)
-            }
+        .confirmationDialog(
+            "Sign out of AccuQuote?",
+            isPresented: $showSignOutConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Sign out", role: .destructive) { signOut() }
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("Your profile and quote history will remain on this device.")
-        }
-        .confirmationDialog("Reset all profile data?", isPresented: $showResetConfirm, titleVisibility: .visible) {
-            Button("Reset", role: .destructive) { engine.resetProfile() }
-            Button("Cancel", role: .cancel) {}
-        }
-        .sheet(isPresented: $showPaywall) {
-            PaywallSheet()
-                .environmentObject(entitlement)
-                .environmentObject(AuthManager.shared)
         }
     }
 
@@ -645,8 +655,48 @@ private struct AccountTab: View {
 
     private func initials(from name: String) -> String {
         let parts = name.split(separator: " ")
-        if parts.count >= 2 { return "\(parts[0].prefix(1))\(parts[1].prefix(1))".uppercased() }
+        if parts.count >= 2 {
+            return "\(parts[0].prefix(1))\(parts[1].prefix(1))".uppercased()
+        }
         return String(name.prefix(2)).uppercased()
+    }
+
+    private func changePassword() {
+        passwordError = nil
+        passwordSuccess = false
+
+        let stored = UserDefaults.standard.string(forKey: Self.passwordKey) ?? ""
+
+        if !stored.isEmpty && currentPassword != stored {
+            passwordError = "Current password is incorrect"
+            return
+        }
+        if newPassword.count < 6 {
+            passwordError = "New password must be at least 6 characters"
+            return
+        }
+        if newPassword != confirmPassword {
+            passwordError = "Passwords don't match"
+            return
+        }
+
+        UserDefaults.standard.set(newPassword, forKey: Self.passwordKey)
+        currentPassword = ""
+        newPassword = ""
+        confirmPassword = ""
+        passwordSuccess = true
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            withAnimation { passwordSuccess = false; showChangePassword = false }
+        }
+    }
+
+    private func signOut() {
+        // Clear session flag — app returns to onboarding on next launch
+        UserDefaults.standard.set(false, forKey: "aq_signed_in")
+        UserDefaults.standard.set("", forKey: AccountTab.passwordKey)
+        // Post notification so ContentView can respond
+        NotificationCenter.default.post(name: .aqSignOut, object: nil)
     }
 }
 

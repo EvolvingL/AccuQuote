@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>AccuScan Admin</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f7;color:#1d1d1f;font-size:14px}
+header{background:#fff;border-bottom:1px solid #e5e5ea;padding:16px 24px;display:flex;align-items:center;gap:16px}
+header h1{font-size:18px;font-weight:700;color:#1d1d1f}
+header .badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:12px;background:#0078f0;color:#fff}
+.container{max-width:1200px;margin:0 auto;padding:24px}
+.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:24px}
+.stat{background:#fff;border-radius:12px;padding:16px;border:1px solid #e5e5ea}
+.stat-label{font-size:11px;color:#8e8e93;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.stat-value{font-size:28px;font-weight:700;margin-top:4px;color:#1d1d1f}
+.card{background:#fff;border-radius:12px;border:1px solid #e5e5ea;margin-bottom:24px;overflow:hidden}
+.card-header{padding:16px 20px;border-bottom:1px solid #e5e5ea;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.card-header h2{font-size:15px;font-weight:600;flex:1}
+.filters{display:flex;gap:8px;flex-wrap:wrap}
+select,input{border:1px solid #e5e5ea;border-radius:8px;padding:6px 10px;font-size:13px;background:#fff;color:#1d1d1f;outline:none}
+select:focus,input:focus{border-color:#0078f0}
+button{border:none;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s}
+.btn-primary{background:#0078f0;color:#fff}
+.btn-primary:hover{opacity:.85}
+.btn-secondary{background:#f5f5f7;color:#1d1d1f;border:1px solid #e5e5ea}
+.btn-secondary:hover{background:#ebebeb}
+.btn-danger{background:#ff3b30;color:#fff}
+.btn-danger:hover{opacity:.85}
+.btn-sm{padding:4px 10px;font-size:12px}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:10px 16px;font-size:11px;font-weight:700;color:#8e8e93;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #e5e5ea;background:#fafafa}
+td{padding:11px 16px;border-bottom:1px solid #f2f2f7;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#f9f9fb}
+.pill{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;text-transform:uppercase}
+.pill-free{background:#f5f5f7;color:#8e8e93}
+.pill-solo{background:#e8f4ff;color:#0078f0}
+.pill-team{background:#e8f9ef;color:#22c55e}
+.pill-crew{background:#fff5e8;color:#f59e0b}
+.pill-advocate{background:#fde8ff;color:#9333ea}
+.pill-promoter{background:#e8f4ff;color:#0078f0}
+.pill-user{background:#f5f5f7;color:#8e8e93}
+.broadcast-form{padding:20px;display:grid;gap:12px}
+.broadcast-form label{font-size:12px;font-weight:600;color:#8e8e93;display:block;margin-bottom:4px}
+.broadcast-form input,.broadcast-form textarea,.broadcast-form select{width:100%;border:1px solid #e5e5ea;border-radius:8px;padding:10px 12px;font-size:14px;font-family:inherit}
+.broadcast-form textarea{resize:vertical;min-height:80px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.empty{padding:40px;text-align:center;color:#8e8e93}
+.secret-bar{background:#fff;border-bottom:1px solid #e5e5ea;padding:10px 24px;display:flex;align-items:center;gap:10px}
+.secret-bar label{font-size:12px;font-weight:600;color:#8e8e93}
+.secret-bar input{flex:1;max-width:320px}
+.toast{position:fixed;bottom:24px;right:24px;background:#1d1d1f;color:#fff;padding:12px 20px;border-radius:12px;font-size:14px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:99}
+.toast.show{opacity:1}
+#loading{text-align:center;padding:40px;color:#8e8e93}
+</style>
+</head>
+<body>
+
+<div class="secret-bar">
+  <label>Admin secret:</label>
+  <input type="password" id="secretInput" placeholder="ADMIN_SECRET value" oninput="loadData()"/>
+</div>
+
+<header>
+  <h1>AccuScan Admin</h1>
+  <span class="badge" id="totalBadge">Loading…</span>
+</header>
+
+<div class="container">
+  <!-- Stats row -->
+  <div class="stats" id="stats"></div>
+
+  <!-- Users table -->
+  <div class="card">
+    <div class="card-header">
+      <h2>Users</h2>
+      <div class="filters">
+        <input type="text" id="searchInput" placeholder="Search email / UID…" oninput="renderTable()"/>
+        <select id="tierFilter" onchange="renderTable()">
+          <option value="">All tiers</option>
+          <option>free</option><option>solo</option><option>team</option><option>crew</option>
+        </select>
+        <select id="tradeFilter" onchange="renderTable()">
+          <option value="">All trades</option>
+          <option>plumber</option><option>plasterer</option><option>builder</option>
+          <option>carpenter</option><option>decorator</option><option>general</option>
+        </select>
+        <select id="engFilter" onchange="renderTable()">
+          <option value="">All engagement</option>
+          <option>advocate</option><option>promoter</option><option>user</option>
+        </select>
+        <button class="btn-secondary btn-sm" onclick="exportCSV()">⬇ CSV</button>
+      </div>
+    </div>
+    <div id="tableWrap">
+      <div id="loading">Enter your admin secret above to load data.</div>
+    </div>
+  </div>
+
+  <!-- Broadcast -->
+  <div class="card">
+    <div class="card-header">
+      <h2>Broadcast Notification</h2>
+    </div>
+    <form class="broadcast-form" onsubmit="sendBroadcast(event)">
+      <div>
+        <label>Title</label>
+        <input type="text" id="bTitle" placeholder="e.g. New feature in AccuScan" required/>
+      </div>
+      <div>
+        <label>Message</label>
+        <textarea id="bBody" placeholder="Message body shown in the notification…" required></textarea>
+      </div>
+      <div class="form-row">
+        <div>
+          <label>Target tier</label>
+          <select id="bTier">
+            <option value="all">All users</option>
+            <option value="free">Free only</option>
+            <option value="solo">Solo</option>
+            <option value="team">Team</option>
+            <option value="crew">Crew</option>
+          </select>
+        </div>
+        <div>
+          <label>Target trade</label>
+          <select id="bTrade">
+            <option value="all">All trades</option>
+            <option value="plumber">Plumber</option>
+            <option value="plasterer">Plasterer</option>
+            <option value="builder">Builder</option>
+            <option value="carpenter">Carpenter</option>
+            <option value="decorator">Decorator</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <button type="submit" class="btn-primary">Send Broadcast</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let allUsers = [];
+let lastSecret = '';
+
+function getSecret() {
+  return document.getElementById('secretInput').value.trim();
+}
+
+async function loadData() {
+  const secret = getSecret();
+  if (!secret || secret === lastSecret) return;
+  lastSecret = secret;
+
+  document.getElementById('loading').textContent = 'Loading…';
+  document.getElementById('tableWrap').innerHTML = '<div id="loading">Loading…</div>';
+
+  try {
+    const res = await fetch('/api/admin/users', {
+      headers: { 'Authorization': 'Bearer ' + secret }
+    });
+    if (!res.ok) {
+      document.getElementById('tableWrap').innerHTML = `<div class="empty">Error ${res.status}: ${(await res.json()).error}</div>`;
+      return;
+    }
+    const data = await res.json();
+    allUsers = data.users || [];
+    renderStats();
+    renderTable();
+    document.getElementById('totalBadge').textContent = allUsers.length + ' users';
+  } catch (e) {
+    document.getElementById('tableWrap').innerHTML = `<div class="empty">${e.message}</div>`;
+  }
+}
+
+function renderStats() {
+  const byTier = { free:0, solo:0, team:0, crew:0 };
+  const byEng  = { advocate:0, promoter:0, user:0 };
+  let totalScans = 0;
+
+  allUsers.forEach(u => {
+    byTier[u.tier] = (byTier[u.tier] || 0) + 1;
+    byEng[u.engagementTier] = (byEng[u.engagementTier] || 0) + 1;
+    totalScans += Number(u.totalScans || 0);
+  });
+
+  const stats = [
+    { label: 'Total users', value: allUsers.length },
+    { label: 'Paid', value: (byTier.solo||0)+(byTier.team||0)+(byTier.crew||0) },
+    { label: 'Free', value: byTier.free || 0 },
+    { label: 'Advocates', value: byEng.advocate || 0 },
+    { label: 'Promoters', value: byEng.promoter || 0 },
+    { label: 'Total scans', value: totalScans },
+  ];
+
+  document.getElementById('stats').innerHTML = stats.map(s => `
+    <div class="stat">
+      <div class="stat-label">${s.label}</div>
+      <div class="stat-value">${s.value.toLocaleString()}</div>
+    </div>
+  `).join('');
+}
+
+function renderTable() {
+  const search  = document.getElementById('searchInput').value.toLowerCase();
+  const tier    = document.getElementById('tierFilter').value;
+  const trade   = document.getElementById('tradeFilter').value;
+  const eng     = document.getElementById('engFilter').value;
+
+  let rows = allUsers.filter(u => {
+    if (search && !u.email.toLowerCase().includes(search) && !u.uid.toLowerCase().includes(search)) return false;
+    if (tier  && u.tier !== tier)  return false;
+    if (trade && u.trade !== trade) return false;
+    if (eng   && u.engagementTier !== eng) return false;
+    return true;
+  });
+
+  if (!rows.length) {
+    document.getElementById('tableWrap').innerHTML = '<div class="empty">No users match filters.</div>';
+    return;
+  }
+
+  const html = `
+    <table>
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Trade</th>
+          <th>Tier</th>
+          <th>Engagement</th>
+          <th>Scans</th>
+          <th>Last active</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map(u => `
+          <tr>
+            <td style="font-size:13px">${u.email || '<span style="color:#8e8e93">'+u.uid.slice(0,12)+'…</span>'}</td>
+            <td>${u.trade || '–'}</td>
+            <td><span class="pill pill-${u.tier}">${u.tier}</span></td>
+            <td><span class="pill pill-${u.engagementTier}">${u.engagementTier}</span></td>
+            <td style="font-variant-numeric:tabular-nums">${u.totalScans || 0}</td>
+            <td style="color:#8e8e93;font-size:12px">${formatDate(u.lastActive)}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+  document.getElementById('tableWrap').innerHTML = html;
+}
+
+function formatDate(iso) {
+  if (!iso) return '–';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+}
+
+async function exportCSV() {
+  const secret = getSecret();
+  if (!secret) { toast('Enter admin secret first'); return; }
+  window.open('/api/admin/users.csv', '_blank');
+}
+
+async function sendBroadcast(e) {
+  e.preventDefault();
+  const secret = getSecret();
+  if (!secret) { toast('Enter admin secret first'); return; }
+
+  const title      = document.getElementById('bTitle').value;
+  const body       = document.getElementById('bBody').value;
+  const targetTier  = document.getElementById('bTier').value;
+  const targetTrade = document.getElementById('bTrade').value;
+
+  try {
+    const res = await fetch('/api/admin/broadcast', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + secret,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ title, body, targetTier, targetTrade }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    toast('Broadcast sent — ID: ' + data.broadcastId);
+    document.getElementById('bTitle').value = '';
+    document.getElementById('bBody').value  = '';
+  } catch (err) {
+    toast('Error: ' + err.message);
+  }
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+// Auto-load if secret pre-filled (e.g. from URL param for dev convenience)
+const params = new URLSearchParams(location.search);
+if (params.get('secret')) {
+  document.getElementById('secretInput').value = params.get('secret');
+  loadData();
+}
+</script>
+</body>
+</html>

@@ -6,6 +6,8 @@ let profileQuickSetupThreshold = 50
 struct ContentView: View {
     @StateObject private var coordinator = ScanCoordinator()
     @EnvironmentObject var questionEngine: QuestionEngine
+    @EnvironmentObject var auth: AuthManager
+    @EnvironmentObject var entitlement: EntitlementManager
 
     // Guest mode: bypasses profile, goes straight to scan-only flow
     @State private var showGuest = false
@@ -18,7 +20,7 @@ struct ContentView: View {
                     .transition(.move(edge: .trailing).combined(with: .opacity))
 
             } else {
-                // ── Full app flow (no gate) ──────────────────────────────
+                // ── Main app flow ───────────────────────────────────────
                 switch coordinator.state {
                 case .ready:
                     ReadyView(coordinator: coordinator, onGuestTap: { showGuest = true })
@@ -27,7 +29,12 @@ struct ContentView: View {
                 case .processing:
                     ProcessingView()
                 case .complete(let result):
-                    ResultView(result: result, coordinator: coordinator)
+                    // Paywall gate: free users see dimensions only
+                    if entitlement.isPaid {
+                        ResultView(result: result, coordinator: coordinator)
+                    } else {
+                        LockedResultView(result: result, coordinator: coordinator)
+                    }
                 case .error(let message):
                     ErrorView(message: message, coordinator: coordinator)
                 }
@@ -35,5 +42,25 @@ struct ContentView: View {
         }
         .animation(.easeInOut(duration: 0.4), value: showGuest)
         .preferredColorScheme(.light)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if case .scanning = coordinator.state { EmptyView() } else { SlickFooter() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .aqSignOut)) { _ in
+            auth.signOut()
+            entitlement.clear()
+        }
+    }
+}
+
+struct SlickFooter: View {
+    var body: some View {
+        Link(destination: URL(string: "https://slickdigital.co.uk")!) {
+            Text("Built by Slick")
+                .font(.system(size: 11, weight: .regular))
+                .foregroundColor(Color(red: 0.52, green: 0.52, blue: 0.56))
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 6)
+        .background(Color.white)
     }
 }

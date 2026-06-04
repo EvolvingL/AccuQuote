@@ -417,18 +417,19 @@ final class QuestionEngine: ObservableObject {
         ]
         """
 
-        guard let url = URL(string: ANTHROPIC_API_URL) else { return [] }
+        // Route via backend proxy — no API key in the app
+        guard let url = URL(string: "\(AQBackend.baseURL)/api/claude") else { return [] }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(ANTHROPIC_API_KEY, forHTTPHeaderField: "x-api-key")
-        request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
         request.timeoutInterval = 30
+        if let token = await AuthManager.shared.currentIdToken() {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
 
         let body: [String: Any] = [
-            "model": "claude-haiku-4-5-20251001",
-            "max_tokens": 1500,
-            "messages": [["role": "user", "content": prompt]]
+            "userPrompt": prompt,
+            "maxTokens": 1500,
         ]
 
         guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else { return [] }
@@ -437,8 +438,7 @@ final class QuestionEngine: ObservableObject {
         do {
             let (data, _) = try await URLSession.shared.data(for: request)
             if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let content = json["content"] as? [[String: Any]],
-               let text = content.first?["text"] as? String,
+               let text = json["content"] as? String,
                let jsonStart = text.firstIndex(of: "["),
                let jsonEnd = text.lastIndex(of: "]") {
                 let slice = String(text[jsonStart...jsonEnd])
@@ -446,11 +446,11 @@ final class QuestionEngine: ObservableObject {
                    let raw = try? JSONDecoder().decode([[String: String]].self, from: sliceData) {
                     return raw.compactMap { dict in
                         guard let id     = dict["id"],
-                              let text   = dict["text"],
+                              let qtext  = dict["text"],
                               let hint   = dict["hint"],
                               let cat    = dict["category"],
                               let impact = dict["quoteImpact"] else { return nil }
-                        return OnboardingQuestion(id: id, text: text, hint: hint,
+                        return OnboardingQuestion(id: id, text: qtext, hint: hint,
                                                   category: cat, quoteImpact: impact)
                     }
                 }

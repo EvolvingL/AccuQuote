@@ -103,6 +103,8 @@ final class ScanCoordinator: ObservableObject {
     @Published var scanProgress: Float = 0.0
     @Published var frameCount: Int = 0
 
+    let coverageTracker = ScanCoverageTracker()
+
     // Determined once at init — LiDAR if available and iOS < 26 (iOS 26 beta has broken RoomPlan),
     // otherwise poseFusion.
     let scanMethod: ScanMethod = {
@@ -202,6 +204,7 @@ final class ScanCoordinator: ObservableObject {
         arSession?.pause(); arSession = nil
         worldPoints = []; lastCameraPos = nil; distanceTravelled = 0
         frameCount = 0; state = .ready; scanProgress = 0
+        coverageTracker.reset()
         instructionText = scanMethod == .lidar
             ? "Walk slowly around the room"
             : "Hold the button and sweep the camera around every wall"
@@ -223,11 +226,12 @@ final class ScanCoordinator: ObservableObject {
             guard let self else { return }
             let n = room.walls.count
             Task { @MainActor in
-                self.scanProgress    = min(Float(n) / 6.0, 0.95)
-                self.instructionText = n == 0 ? "Point at the walls to begin"
-                    : n < 3 ? "Keep moving — \(n) wall\(n == 1 ? "" : "s") detected"
-                    : n < 5 ? "Good — scan remaining walls"
-                    : "Excellent — tap Done when complete"
+                if let frame = self.lidarSession?.arSession.currentFrame {
+                    self.coverageTracker.ingest(frame)
+                }
+                let cov = self.coverageTracker.coverage
+                self.scanProgress    = max(min(Float(n) / 6.0, 0.95), cov * 0.95)
+                self.instructionText = self.coverageInstruction(coverage: cov, wallCount: n)
             }
         }
 
@@ -370,19 +374,21 @@ final class ScanCoordinator: ObservableObject {
         }
 
         frameCount   += 1
-        // Progress based on distance walked — encourage full room coverage
-        // ~4m of walking typically covers a room; cap display at 95%
-        let distProgress = min(distanceTravelled / 4.0, 0.95)
-        scanProgress = Float(distProgress)
+        coverageTracker.ingest(frame)
+        let cov = coverageTracker.coverage
+        scanProgress    = cov
+        instructionText = coverageInstruction(coverage: cov, wallCount: nil)
+    }
 
-        let meters = String(format: "%.1f", distanceTravelled)
-        instructionText = distanceTravelled < 1.0
-            ? "Keep walking — sweep every wall"
-            : distanceTravelled < 2.5
-            ? "Good — \(meters)m covered, keep going"
-            : distanceTravelled < 4.0
-            ? "Almost there — cover remaining walls"
-            : "Tap Done when you've swept the full room"
+    func coverageInstruction(coverage: Float, wallCount: Int?) -> String {
+        if coverage >= 1.0  { return "Scan complete — tap Done" }
+        if coverage >= 0.80 { return "Nearly there — check any corners" }
+        if coverage >= 0.60 { return "Look up at the ceiling too" }
+        if coverage >= 0.25 {
+            if let n = wallCount { return "Good — \(n) wall\(n == 1 ? "" : "s") found, keep sweeping" }
+            return "Keep turning — sweep ceiling to floor as you go"
+        }
+        return "Walk to the centre and turn slowly, sweeping ceiling to floor"
     }
 
     private func ingestDepthMap(_ depthData: ARDepthData, frame: ARFrame) {

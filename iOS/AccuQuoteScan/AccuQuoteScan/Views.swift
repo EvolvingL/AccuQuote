@@ -2200,8 +2200,17 @@ struct LiDARScanningView: View {
 
 struct PoseFusionScanningView: View {
     @ObservedObject var coordinator: ScanCoordinator
-    @State private var isHolding = false
+    @ObservedObject private var tracker: ScanCoverageTracker
+    @State private var pulsing = false
     @State private var showTutorial = !UserDefaults.standard.bool(forKey: "aq_posefusion_tutorial_seen")
+
+    init(coordinator: ScanCoordinator) {
+        self.coordinator = coordinator
+        self.tracker = coordinator.coverageTracker
+    }
+
+    // Bright vivid blue for the scanning indicator
+    private let scanBlue = Color(red: 0.20, green: 0.60, blue: 1.00)
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -2214,70 +2223,71 @@ struct PoseFusionScanningView: View {
             VStack(spacing: 0) {
                 // Top bar
                 HStack {
-                    HStack(spacing: 6) {
+                    // Pulsing "Scanning" status pill
+                    HStack(spacing: 7) {
                         Circle()
-                            .fill(isHolding ? Color.red : Color.white.opacity(0.5))
-                            .frame(width: 6, height: 6)
-                            .animation(.easeInOut(duration: 0.3), value: isHolding)
-                        Text(isHolding
-                             ? String(format: "%.1fm", coordinator.scanProgress * 4.0)
-                             : "Ready")
-                            .font(.system(size: 13, weight: .medium))
+                            .fill(scanBlue)
+                            .frame(width: 9, height: 9)
+                            .shadow(color: scanBlue.opacity(pulsing ? 0.9 : 0.2), radius: pulsing ? 8 : 2)
+                            .scaleEffect(pulsing ? 1.35 : 0.85)
+                            .animation(
+                                .easeInOut(duration: 0.7).repeatForever(autoreverses: true),
+                                value: pulsing
+                            )
+                        Text("Scanning")
+                            .font(.system(size: 13, weight: .bold))
                             .foregroundColor(.white)
+                            .opacity(pulsing ? 1.0 : 0.55)
+                            .animation(
+                                .easeInOut(duration: 0.7).repeatForever(autoreverses: true),
+                                value: pulsing
+                            )
                     }
                     .padding(.horizontal, 14)
                     .padding(.vertical, 8)
-                    .background(.ultraThinMaterial)
+                    .background(scanBlue.opacity(pulsing ? 0.28 : 0.12))
+                    .animation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true), value: pulsing)
                     .cornerRadius(22)
+                    .overlay(RoundedRectangle(cornerRadius: 22).stroke(scanBlue.opacity(0.5), lineWidth: 1))
                     Spacer()
+                    Button { coordinator.stopScan() } label: {
+                        Text("Done")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16).padding(.vertical, 8)
+                            .background(.ultraThinMaterial).cornerRadius(18)
+                    }
+                    .opacity(tracker.coverage >= 0.80 ? 1.0 : 0.55)
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 60)
 
                 Spacer()
 
-                // Coverage ring — appears while holding
-                if isHolding {
-                    ZStack {
-                        Circle()
-                            .stroke(Color.white.opacity(0.12), lineWidth: 2)
-                            .frame(width: 120, height: 120)
-                        Circle()
-                            .trim(from: 0, to: CGFloat(coordinator.scanProgress))
-                            .stroke(Color.white,
-                                    style: StrokeStyle(lineWidth: 2, lineCap: .round))
-                            .frame(width: 120, height: 120)
-                            .rotationEffect(.degrees(-90))
-                            .animation(.easeInOut(duration: 0.3), value: coordinator.scanProgress)
-                        VStack(spacing: 2) {
-                            Text("\(Int(coordinator.scanProgress * 100))%")
-                                .font(.system(size: 22, weight: .semibold, design: .rounded))
-                                .foregroundColor(.white)
-                            Text("coverage")
-                                .font(.system(size: 10))
-                                .foregroundColor(.white.opacity(0.6))
-                        }
-                    }
-                    .padding(.bottom, 20)
-                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
-                }
+                // Instruction text above the ring
+                Text(coordinator.instructionText)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.white.opacity(0.85))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.bottom, 16)
+
+                // Coverage ring — always visible during scan
+                CoverageRingView(
+                    sectors:    tracker.sectors,
+                    coverage:   tracker.coverage,
+                    isComplete: tracker.isComplete
+                )
+                .padding(.bottom, 20)
 
                 ScanHUD(coordinator: coordinator)
                     .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
-
-                // Hold-to-scan button
-                HoldToScanButton(isHolding: $isHolding) {
-                    withAnimation(.easeInOut(duration: 0.15)) { isHolding = true }
-                } onRelease: {
-                    withAnimation(.easeInOut(duration: 0.15)) { isHolding = false }
-                    coordinator.stopScan()
-                }
-                .padding(.bottom, 48)
+                    .padding(.bottom, 48)
             }
         }
         .ignoresSafeArea()
-        .animation(.easeInOut(duration: 0.2), value: isHolding)
+        .onAppear { pulsing = true }
         .overlay {
             if showTutorial {
                 ZStack {
@@ -2335,14 +2345,14 @@ private struct ScanTutorialAnimation: View {
             .opacity(sweepOpacity)
 
             VStack(spacing: 8) {
-                Text("Hold & sweep slowly")
+                Text("Move around the room")
                     .font(.system(size: 22, weight: .bold))
                     .foregroundColor(.white)
                 HStack(spacing: 6) {
-                    Image(systemName: "hand.point.down.fill")
+                    Image(systemName: "arrow.triangle.2.circlepath")
                         .font(.system(size: 13))
                         .foregroundColor(.white.opacity(0.7))
-                    Text("Hold the button below")
+                    Text("Cover every wall, ceiling and floor")
                         .font(.system(size: 14))
                         .foregroundColor(.white.opacity(0.7))
                 }
@@ -2352,43 +2362,6 @@ private struct ScanTutorialAnimation: View {
             withAnimation(.easeIn(duration: 0.4)) { sweepOpacity = 1 }
             sweepOffset = 40
         }
-    }
-}
-
-// MARK: - Hold-to-scan button
-
-struct HoldToScanButton: View {
-    @Binding var isHolding: Bool
-    let onPress: () -> Void
-    let onRelease: () -> Void
-
-    var body: some View {
-        ZStack {
-            Circle()
-                .stroke(Color.white.opacity(isHolding ? 0.25 : 0.0), lineWidth: 2)
-                .frame(width: 88, height: 88)
-                .scaleEffect(isHolding ? 1.18 : 1.0)
-                .animation(
-                    isHolding
-                        ? .easeInOut(duration: 0.9).repeatForever(autoreverses: true)
-                        : .easeInOut(duration: 0.2),
-                    value: isHolding
-                )
-            Circle()
-                .fill(isHolding ? Color.white : Color.white.opacity(0.85))
-                .frame(width: 68, height: 68)
-                .scaleEffect(isHolding ? 0.88 : 1.0)
-                .animation(.spring(response: 0.25, dampingFraction: 0.6), value: isHolding)
-            Image(systemName: isHolding ? "stop.fill" : "record.circle")
-                .font(.system(size: isHolding ? 18 : 22, weight: .medium))
-                .foregroundColor(isHolding ? Color.red : AQ.ink)
-                .animation(.easeInOut(duration: 0.15), value: isHolding)
-        }
-        .gesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in if !isHolding { onPress() } }
-                .onEnded   { _ in if isHolding  { onRelease() } }
-        )
     }
 }
 

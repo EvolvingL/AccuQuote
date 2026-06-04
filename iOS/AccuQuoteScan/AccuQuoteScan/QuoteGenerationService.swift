@@ -72,7 +72,7 @@ final class QuoteGenerationService: ObservableObject {
         state = .discoveringSections
         vatRate = 20.0
 
-        // ── Phase 1: Discover sections via Haiku (fast, ~3s) ────────────────
+        // ── Phase 1: Discover sections via proxy → Haiku ─────────────────────
         let descriptors: [QuoteSectionDescriptor]
         do {
             descriptors = try await discoverSections(
@@ -89,7 +89,6 @@ final class QuoteGenerationService: ObservableObject {
             return
         }
 
-        // Seed pending sections immediately so UI shows the plan
         sections = descriptors.map {
             QuoteSection(id: $0.sectionKey, label: $0.sectionLabel,
                          labourDays: 0, labourRate: 280, items: [], notes: "",
@@ -97,12 +96,10 @@ final class QuoteGenerationService: ObservableObject {
         }
         state = .generatingSections(total: descriptors.count, completed: 0)
 
-        // ── Phase 2: Fan out one Sonnet call per section in parallel ─────────
+        // ── Phase 2: Fan out one Sonnet call per section in parallel ──────────
         await withTaskGroup(of: (Int, QuoteSection).self) { group in
             for (idx, descriptor) in descriptors.enumerated() {
-                // Mark loading
                 sections[idx].status = .loading
-
                 group.addTask {
                     let section = await self.generateSection(
                         descriptor: descriptor,
@@ -167,51 +164,41 @@ final class QuoteGenerationService: ObservableObject {
         vatRate = 20.0
     }
 
-    // MARK: - Phase 1: Section discovery
+    // MARK: - Phase 1: Section discovery via /api/quote/discover
 
     private func discoverSections(
         jobDescription: String,
         claudeContext: String
     ) async throws -> [QuoteSectionDescriptor] {
 
-        let prompt = """
-        \(claudeContext.isEmpty ? "" : claudeContext + "\n\n")
-        JOB: \(jobDescription)
-
-        List the distinct trade sections that need quoting for this job.
-        Include only sections within this tradesperson's scope and trade.
-        Return ONLY a JSON array, no markdown, no prose.
-        Each element: {"sectionKey":"snake_case_id","sectionLabel":"Human Label","tradeScope":"brief scope of what this section covers"}
-        Maximum 10 sections. Do not include project management or preliminaries.
-        """
-
-        guard let url = URL(string: ANTHROPIC_API_URL) else {
+        guard let url = URL(string: "\(AQBackend.baseURL)/api/quote/discover") else {
             throw URLError(.badURL)
         }
+
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(ANTHROPIC_API_KEY, forHTTPHeaderField: "x-api-key")
-        request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+        try await request.attachAuthToken()
         request.timeoutInterval = 30
 
         let body: [String: Any] = [
-            "model": "claude-haiku-4-5-20251001",
-            "max_tokens": 800,
-            "messages": [["role": "user", "content": prompt]]
+            "jobDescription": jobDescription,
+            "claudeContext": claudeContext,
         ]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-        let (data, _) = try await URLSession.shared.data(for: request)
-        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let content = json["content"] as? [[String: Any]],
-              let text = content.first?["text"] as? String else {
-            throw NSError(domain: "QuoteGen", code: 0,
-                          userInfo: [NSLocalizedDescriptionKey: "Unexpected Haiku response format"])
+        let (data, response) = try await URLSession.shared.data(for: request)
+        if let http = response as? HTTPURLResponse, http.statusCode == 403 {
+            throw NSError(domain: "QuoteGen", code: 403,
+                          userInfo: [NSLocalizedDescriptionKey: "subscription_required"])
         }
 
-        // Extract the outermost JSON array — try each candidate `[` in order
-        // until one produces a valid parse. Handles prose before/after the array.
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let text = json["text"] as? String else {
+            throw NSError(domain: "QuoteGen", code: 0,
+                          userInfo: [NSLocalizedDescriptionKey: "Unexpected server response"])
+        }
+
         guard let arr = extractJSONArray(from: text) else {
             throw NSError(domain: "QuoteGen", code: 0,
                           userInfo: [NSLocalizedDescriptionKey: "Could not parse section list"])
@@ -225,7 +212,7 @@ final class QuoteGenerationService: ObservableObject {
         }
     }
 
-    // MARK: - Phase 2: Per-section Sonnet call (streaming)
+    // MARK: - Phase 2: Per-section Sonnet call via /api/quote/section (streaming)
 
     private func generateSection(
         descriptor: QuoteSectionDescriptor,
@@ -237,46 +224,40 @@ final class QuoteGenerationService: ObservableObject {
         isRetry: Bool = false
     ) async -> QuoteSection {
 
-        let prompt = """
-        \(claudeContext.isEmpty ? "" : claudeContext + "\n\n")
-        OVERALL JOB: \(jobDescription)
-        SECTION TO PRICE: \(descriptor.sectionLabel)
-        SCOPE: \(descriptor.tradeScope)
-
-        ROOM: \(roomDimensions.roomType)
-        DIMENSIONS: \(roomDimensions.lengthStr)m × \(roomDimensions.widthStr)m × \(roomDimensions.heightStr)m
-        FLOOR AREA: \(String(format: "%.1f", roomDimensions.floorArea))m²
-        WALL AREA: \(String(format: "%.1f", roomDimensions.wallArea))m²
-        DOORS: \(roomDimensions.doorCount)  WINDOWS: \(roomDimensions.windowCount)
-
-        PREFERRED SUPPLIER: \(preferredSupplier)
-        \(usualItems.isEmpty ? "" : "PRODUCTS THEY REGULARLY ORDER: \(usualItems)")
-
-        Price ONLY the '\(descriptor.sectionLabel)' scope. Be exhaustive — include every line item.
-        Match all materials to REAL products at \(preferredSupplier). Include exact SKU codes.
-
-        OUTPUT: Return ONLY a single raw JSON object — no markdown, no prose.
-        Schema: {"labourDays":2.0,"labourRate":280.0,"items":[{"description":"...","qty":1.0,"unit":"each","unitPrice":12.50,"sku":"123456","supplier":"..."}],"vatRate":20,"notes":"..."}
-        No item cap — include everything needed. Keep descriptions concise (under 70 chars).
-        """
-
-        guard let url = URL(string: ANTHROPIC_API_URL) else {
-            return failedSection(descriptor: descriptor, reason: "Invalid API URL")
+        guard let url = URL(string: "\(AQBackend.baseURL)/api/quote/section") else {
+            return failedSection(descriptor: descriptor, reason: "Invalid server URL")
         }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(ANTHROPIC_API_KEY, forHTTPHeaderField: "x-api-key")
-        request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
         request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
         request.timeoutInterval = 120
 
+        guard let token = await AuthManager.shared.currentIdToken() else {
+            return failedSection(descriptor: descriptor, reason: "Not authenticated")
+        }
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        let rdMap: [String: Any] = [
+            "roomType":   roomDimensions.roomType,
+            "lengthStr":  roomDimensions.lengthStr,
+            "widthStr":   roomDimensions.widthStr,
+            "heightStr":  roomDimensions.heightStr,
+            "floorArea":  roomDimensions.floorArea,
+            "wallArea":   roomDimensions.wallArea,
+            "doorCount":  roomDimensions.doorCount,
+            "windowCount": roomDimensions.windowCount,
+        ]
+
         let body: [String: Any] = [
-            "model": "claude-sonnet-4-6",
-            "max_tokens": 4096,
-            "stream": true,
-            "messages": [["role": "user", "content": prompt]]
+            "sectionLabel":      descriptor.sectionLabel,
+            "tradeScope":        descriptor.tradeScope,
+            "jobDescription":    jobDescription,
+            "claudeContext":     claudeContext,
+            "roomDimensions":    rdMap,
+            "preferredSupplier": preferredSupplier,
+            "usualItems":        usualItems,
         ]
 
         guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
@@ -307,7 +288,6 @@ final class QuoteGenerationService: ObservableObject {
             if let section = parseSection(descriptor: descriptor, text: fullText) {
                 return section
             }
-            // Parse failed — retry once silently before ever showing an error
             if !isRetry {
                 return await retrySection(descriptor: descriptor, jobDescription: jobDescription,
                                           roomDimensions: roomDimensions, claudeContext: claudeContext,
@@ -324,7 +304,6 @@ final class QuoteGenerationService: ObservableObject {
         }
     }
 
-    /// Silent single retry — only marks failed if this also fails.
     private func retrySection(
         descriptor: QuoteSectionDescriptor,
         jobDescription: String,
@@ -333,25 +312,18 @@ final class QuoteGenerationService: ObservableObject {
         preferredSupplier: String,
         usualItems: String
     ) async -> QuoteSection {
-        // Brief back-off before retry
         try? await Task.sleep(nanoseconds: 1_000_000_000)
-        let retried = await generateSection(
-            descriptor: descriptor,
-            jobDescription: jobDescription,
-            roomDimensions: roomDimensions,
-            claudeContext: claudeContext,
-            preferredSupplier: preferredSupplier,
-            usualItems: usualItems,
-            isRetry: true
+        return await generateSection(
+            descriptor: descriptor, jobDescription: jobDescription,
+            roomDimensions: roomDimensions, claudeContext: claudeContext,
+            preferredSupplier: preferredSupplier, usualItems: usualItems, isRetry: true
         )
-        return retried
     }
 
     // MARK: - Parse section JSON
 
     private func parseSection(descriptor: QuoteSectionDescriptor, text: String) -> QuoteSection? {
         var cleaned = text
-        // Strip markdown fences
         if let fs = cleaned.range(of: "```"),
            let fe = cleaned.range(of: "```", options: .backwards),
            fs.lowerBound != fe.lowerBound {
@@ -387,19 +359,14 @@ final class QuoteGenerationService: ObservableObject {
         }
 
         return QuoteSection(
-            id: descriptor.sectionKey,
-            label: descriptor.sectionLabel,
-            labourDays: labourDays,
-            labourRate: labourRate,
-            items: items,
-            notes: notes,
-            status: .complete
+            id: descriptor.sectionKey, label: descriptor.sectionLabel,
+            labourDays: labourDays, labourRate: labourRate,
+            items: items, notes: notes, status: .complete
         )
     }
 
     // MARK: - JSON extraction helpers
 
-    /// Tries each candidate `{` in order until one yields a valid top-level object.
     private func extractJSONObject(from text: String) -> [String: Any]? {
         var searchFrom = text.startIndex
         while searchFrom < text.endIndex {
@@ -414,7 +381,6 @@ final class QuoteGenerationService: ObservableObject {
         return nil
     }
 
-    /// Tries each candidate `[` in order until one yields a valid array.
     private func extractJSONArray(from text: String) -> [[String: Any]]? {
         var searchFrom = text.startIndex
         while searchFrom < text.endIndex {
@@ -431,10 +397,21 @@ final class QuoteGenerationService: ObservableObject {
 
     private func failedSection(descriptor: QuoteSectionDescriptor, reason: String) -> QuoteSection {
         QuoteSection(
-            id: descriptor.sectionKey,
-            label: descriptor.sectionLabel,
+            id: descriptor.sectionKey, label: descriptor.sectionLabel,
             labourDays: 0, labourRate: 280, items: [], notes: "",
             status: .failed(reason)
         )
+    }
+}
+
+// MARK: - URLRequest auth helper
+
+private extension URLRequest {
+    mutating func attachAuthToken() async throws {
+        guard let token = await AuthManager.shared.currentIdToken() else {
+            throw NSError(domain: "Auth", code: 401,
+                          userInfo: [NSLocalizedDescriptionKey: "Not authenticated"])
+        }
+        setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
     }
 }
