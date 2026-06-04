@@ -126,12 +126,13 @@ struct ScanCardView: View {
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 16) {
-                // Fix #12 — show real floor plan thumbnail when available
+                // Thumbnail loaded lazily from disk via ScanStore
                 ZStack {
                     RoundedRectangle(cornerRadius: 10)
                         .fill(AS.surface2)
                         .frame(width: 56, height: 56)
-                    if let data = meta.thumbnailData, let img = UIImage(data: data) {
+                    if let data = ScanStore.shared.thumbnail(for: meta.id),
+                       let img  = UIImage(data: data) {
                         Image(uiImage: img)
                             .resizable()
                             .scaledToFill()
