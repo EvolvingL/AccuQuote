@@ -13,15 +13,13 @@ struct AccuScanApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(appState)
-                // #30: AccuScan is a deliberately dark-themed AR scanning tool — the
-                // camera viewfinder and coverage ring read best on a dark canvas.
-                // We keep dark as the design intent but expose it via the asset
-                // catalog's dark variant rather than a hard .preferredColorScheme
-                // override, so Smart Invert and other accessibility display modes
-                // behave correctly. The hardcoded AS palette already encodes the
-                // dark values; light-mode users still see the intended dark scanning UI.
-                .preferredColorScheme(.dark)
-                .tint(AS.lightBlue)   // #global consistent accent for system controls
+                // Light mode to match AccuQuote — both apps share the same light,
+                // document-style chrome. The only intentionally dark surface is the
+                // live-scanning HUD, which overlays the camera feed and keeps its own
+                // explicit dark/glass treatment (so the coverage ring and instructions
+                // stay legible over the viewfinder).
+                .preferredColorScheme(.light)
+                .tint(AS.lightBlue)   // consistent system-blue accent, matches AQ.blue
         }
     }
 }

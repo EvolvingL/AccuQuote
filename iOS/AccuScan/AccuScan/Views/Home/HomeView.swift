@@ -2,18 +2,30 @@ import SwiftUI
 
 // MARK: - Design Tokens
 
+// Light palette — matched to AccuQuote's AQ tokens so the two apps share an
+// identical look:
+//   bg        = white page background
+//   surface*  = AQ.fill / AQ.rule light greys
+//   text      = AQ.ink near-black
+//   muted     = AQ.secondary
+//   lightBlue = the accent, now AQ.blue (iOS system blue), paired with white text
+//   onAccent  = white text drawn on the accent fill (was AS.bg before the split)
+//
+// The live-scanning HUD overlays the camera feed with its own explicit
+// dark/glass treatment, so it is unaffected by this light chrome.
 enum AS {
-    static let bg         = Color(hex: "#07080A")
-    static let surface1   = Color(hex: "#0C0E13")
-    static let surface2   = Color(hex: "#111720")
-    static let surface3   = Color(hex: "#1A2232")
-    static let text       = Color(hex: "#EEE9DF")
-    static let muted      = Color(hex: "#5A6A7E")
-    static let lightBlue  = Color(hex: "#7DD3FC")
-    static let green      = Color(hex: "#22C55E")
-    static let blue       = Color(hex: "#3B82F6")
+    static let bg         = Color.white                               // page background
+    static let surface1   = Color(red: 0.96, green: 0.96, blue: 0.97) // = AQ.fill
+    static let surface2   = Color(red: 0.93, green: 0.93, blue: 0.95)
+    static let surface3   = Color(red: 0.88, green: 0.88, blue: 0.91) // = AQ.rule
+    static let text       = Color(red: 0.07, green: 0.07, blue: 0.09) // = AQ.ink
+    static let muted      = Color(red: 0.52, green: 0.52, blue: 0.56) // = AQ.secondary
+    static let lightBlue  = Color(red: 0.00, green: 0.48, blue: 1.00) // accent = AQ.blue
+    static let onAccent   = Color.white                               // text on accent fill
+    static let green      = Color(red: 0.13, green: 0.72, blue: 0.43) // = AQ.green
+    static let blue       = Color(red: 0.00, green: 0.48, blue: 1.00)
     static let teal       = Color(hex: "#14B8A6")
-    static let amber      = Color(hex: "#FFD600")
+    static let amber      = Color(red: 1.00, green: 0.80, blue: 0.00) // = AQ.amber
     static let orange     = Color(hex: "#FF6B00")
 }
 
@@ -60,7 +72,7 @@ struct HomeView: View {
                         Text("Scan a Room")
                             .font(.headline)                     // #1
                     }
-                    .foregroundColor(AS.bg)
+                    .foregroundColor(AS.onAccent)
                     .frame(maxWidth: .infinity)
                     .frame(height: 56)
                     .background(AS.lightBlue)

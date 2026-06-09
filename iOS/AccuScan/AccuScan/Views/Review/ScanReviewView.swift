@@ -156,7 +156,7 @@ struct AccuQuoteUpsellSheet: View {
                         .font(.system(size: 14, weight: .semibold))
                         .accessibilityHidden(true)
                 }
-                .foregroundColor(AS.bg)
+                .foregroundColor(AS.onAccent)
                 .frame(maxWidth: .infinity)
                 .frame(height: 52)
                 .background(AS.amber)

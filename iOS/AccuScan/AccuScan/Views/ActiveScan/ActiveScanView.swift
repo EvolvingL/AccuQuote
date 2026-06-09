@@ -254,7 +254,7 @@ private struct ScanGlassHUD: View {
                 } label: {
                     Text("Done")
                         .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(AS.bg)
+                        .foregroundColor(AS.onAccent)
                         .frame(maxWidth: .infinity)
                         .frame(height: 50)
                         .background(AS.lightBlue)
@@ -445,7 +445,7 @@ struct ScanErrorOverlay: View {
                     Button(action: onReset) {
                         Text("Try again")
                             .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(AS.bg)
+                            .foregroundColor(AS.onAccent)
                             .frame(width: 140, height: 48)
                             .background(AS.lightBlue)
                             .clipShape(RoundedRectangle(cornerRadius: 14))
@@ -474,7 +474,7 @@ struct InterruptionBanner: View {
                 Button(action: onReset) {
                     Text("Restart")
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(AS.bg)
+                        .foregroundColor(AS.onAccent)
                         .padding(.horizontal, 14).padding(.vertical, 7)
                         .background(AS.lightBlue)
                         .clipShape(Capsule())
@@ -590,7 +590,7 @@ struct ScanCompleteOverlay: View {
                 Button(action: onContinue) {
                     Text("View 3D Model")
                         .font(.headline)   // #1
-                        .foregroundColor(AS.bg)
+                        .foregroundColor(AS.onAccent)
                         .frame(width: 200, height: 52)
                         .background(AS.lightBlue)
                         .clipShape(RoundedRectangle(cornerRadius: Radius.xl))   // #17

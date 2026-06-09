@@ -102,7 +102,7 @@ struct ScanSetupView: View {
                             Text("Scan this Room")
                                 .font(.headline)   // #1
                         }
-                        .foregroundColor(AS.bg)
+                        .foregroundColor(AS.onAccent)
                         .frame(maxWidth: .infinity)
                         .frame(height: 56)
                         .background(AS.lightBlue)
@@ -184,11 +184,11 @@ struct RoomTypePill: View {
             VStack(spacing: 6) {
                 Image(systemName: type.systemIcon)
                     .font(.system(size: 18))
-                    .foregroundColor(selected ? AS.bg : AS.muted)
+                    .foregroundColor(selected ? AS.onAccent : AS.muted)
                     .accessibilityHidden(true)
                 Text(type.rawValue)
                     .font(.caption2.weight(.medium))   // #1
-                    .foregroundColor(selected ? AS.bg : AS.muted)
+                    .foregroundColor(selected ? AS.onAccent : AS.muted)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
             }
