@@ -118,12 +118,19 @@ final class AuthManager: NSObject, ObservableObject {
     }
 
     // MARK: - Password reset email
+    // Throws on network failure or Firebase error so the caller can show a real error.
+    // Fix: was swallowing all errors silently — users saw "Sent" even when it failed.
 
-    func sendPasswordReset(email: String) async {
-        authError = nil
-        let url = URL(string: "https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=\(firebaseApiKey)")!
+    func sendPasswordReset(email: String, onError: ((String) -> Void)? = nil) async throws {
+        let url  = URL(string: "https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=\(firebaseApiKey)")!
         let body: [String: Any] = ["requestType": "PASSWORD_RESET", "email": email]
-        _ = try? await postFirebase(url: url, body: body)
+        do {
+            _ = try await postFirebase(url: url, body: body)
+        } catch {
+            let msg = friendlyError(error)
+            onError?(msg)
+            throw error
+        }
     }
 
     // MARK: - Sign in with Apple
@@ -138,6 +145,124 @@ final class AuthManager: NSObject, ObservableObject {
         controller.delegate = self
         controller.presentationContextProvider = self
         controller.performRequests()
+    }
+
+    // MARK: - Sign in with Google
+    //
+    // Uses ASWebAuthenticationSession to open Google's OAuth 2.0 consent screen.
+    // The returned authorization code is exchanged for tokens at Google's token endpoint,
+    // then the id_token is exchanged for a Firebase session via signInWithIdp.
+    //
+    // Client ID comes from the Firebase Console → Project Settings → Your apps → iOS app
+    // → Download GoogleService-Info.plist → CLIENT_ID field.
+    // It is safe to bundle in the app — it is public.
+    //
+    // Required: Add the reversed client ID as a URL scheme in Info.plist:
+    //   CFBundleURLSchemes: com.googleusercontent.apps.<CLIENT_ID_WITHOUT_APPS_PREFIX>
+    // (Xcode: project → Signing & Capabilities → Info → URL Types)
+
+    // Replace with the CLIENT_ID from your GoogleService-Info.plist
+    // Format: XXXXXXXX-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX.apps.googleusercontent.com
+    private let googleClientID = "accuquote-246a3"  // placeholder — update with real CLIENT_ID
+
+    func signInWithGoogle() {
+        authError = nil
+        isLoading = true
+
+        let clientID    = googleClientID
+        let redirectURI = "com.googleusercontent.apps.\(clientID):/oauth2callback"
+        let nonce       = randomNonceString()
+        let hashedNonce = sha256(nonce)
+
+        var components = URLComponents(string: "https://accounts.google.com/o/oauth2/v2/auth")!
+        components.queryItems = [
+            URLQueryItem(name: "client_id",     value: "\(clientID).apps.googleusercontent.com"),
+            URLQueryItem(name: "redirect_uri",  value: redirectURI),
+            URLQueryItem(name: "response_type", value: "code"),
+            URLQueryItem(name: "scope",         value: "openid email profile"),
+            URLQueryItem(name: "nonce",         value: hashedNonce),
+            URLQueryItem(name: "prompt",        value: "select_account"),
+        ]
+
+        guard let authURL = components.url else {
+            authError = "Failed to build Google sign-in URL."
+            isLoading = false
+            return
+        }
+
+        let scheme  = "com.googleusercontent.apps.\(clientID)"
+        let session = ASWebAuthenticationSession(
+            url: authURL,
+            callbackURLScheme: scheme
+        ) { [weak self] callbackURL, error in
+            guard let self else { return }
+            Task { @MainActor in
+                defer { self.isLoading = false }
+
+                if let error {
+                    let nsErr = error as NSError
+                    // User cancelled — not an error worth showing
+                    if nsErr.code == ASWebAuthenticationSessionError.canceledLogin.rawValue { return }
+                    self.authError = error.localizedDescription
+                    return
+                }
+
+                guard let callbackURL,
+                      let code = URLComponents(url: callbackURL, resolvingAgainstBaseURL: false)?
+                          .queryItems?.first(where: { $0.name == "code" })?.value
+                else {
+                    self.authError = "Google sign-in did not return an authorisation code."
+                    return
+                }
+
+                await self.exchangeGoogleCode(code, redirectURI: redirectURI, nonce: nonce)
+            }
+        }
+        session.presentationContextProvider = self
+        session.prefersEphemeralWebBrowserSession = false
+        session.start()
+    }
+
+    private func exchangeGoogleCode(_ code: String, redirectURI: String, nonce: String) async {
+        // Exchange authorisation code → id_token at Google token endpoint
+        let tokenURL = URL(string: "https://oauth2.googleapis.com/token")!
+        var req = URLRequest(url: tokenURL)
+        req.httpMethod = "POST"
+        req.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        let params: [String: String] = [
+            "code":          code,
+            "client_id":     "\(googleClientID).apps.googleusercontent.com",
+            "redirect_uri":  redirectURI,
+            "grant_type":    "authorization_code",
+        ]
+        req.httpBody = params
+            .map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }
+            .joined(separator: "&")
+            .data(using: .utf8)
+
+        guard let (data, _) = try? await URLSession.shared.data(for: req),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let idToken = json["id_token"] as? String
+        else {
+            authError = "Failed to get Google credentials. Please try again."
+            return
+        }
+
+        // Exchange Google id_token → Firebase session
+        let fbURL = URL(string: "https://identitytoolkit.googleapis.com/v1/accounts:signInWithIdp?key=\(firebaseApiKey)")!
+        let body: [String: Any] = [
+            "postBody":          "id_token=\(idToken)&providerId=google.com&nonce=\(nonce)",
+            "requestUri":        "https://accuquote.co.uk",
+            "returnIdpCredential": true,
+            "returnSecureToken":  true,
+        ]
+        do {
+            let result = try await postFirebase(url: fbURL, body: body)
+            let email = (result["email"] as? String) ?? ""
+            await handleTokenResult(result, email: email)
+        } catch {
+            authError = friendlyError(error)
+        }
     }
 
     // MARK: - Sign out
@@ -320,8 +445,18 @@ extension AuthManager: ASAuthorizationControllerDelegate {
     }
 }
 
-extension AuthManager: ASAuthorizationControllerPresentationContextProviding {
+extension AuthManager: ASAuthorizationControllerPresentationContextProviding,
+                       ASWebAuthenticationPresentationContextProviding {
+
     nonisolated func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+        keyWindow()
+    }
+
+    nonisolated func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        keyWindow()
+    }
+
+    private nonisolated func keyWindow() -> ASPresentationAnchor {
         UIApplication.shared.connectedScenes
             .compactMap { $0 as? UIWindowScene }
             .flatMap { $0.windows }

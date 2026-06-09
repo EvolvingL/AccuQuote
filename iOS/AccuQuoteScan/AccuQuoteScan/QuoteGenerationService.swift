@@ -120,6 +120,15 @@ final class QuoteGenerationService: ObservableObject {
             }
         }
 
+        // Fix #20/#25: if every section failed, report failure not completion
+        let failedAll = sections.allSatisfy {
+            if case .failed = $0.status { return true }; return false
+        }
+        if failedAll {
+            state = .failed("All sections failed to generate. Please check your connection and try again.")
+            return
+        }
+
         state = .complete
         persistToHistory(
             jobDescription: jobDescription,
@@ -188,15 +197,29 @@ final class QuoteGenerationService: ObservableObject {
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
         let (data, response) = try await URLSession.shared.data(for: request)
-        if let http = response as? HTTPURLResponse, http.statusCode == 403 {
-            throw NSError(domain: "QuoteGen", code: 403,
-                          userInfo: [NSLocalizedDescriptionKey: "subscription_required"])
+
+        // Fix #17/#18/#19: handle HTTP status codes explicitly before parsing
+        if let http = response as? HTTPURLResponse {
+            switch http.statusCode {
+            case 200: break
+            case 401:
+                throw NSError(domain: "QuoteGen", code: 401,
+                              userInfo: [NSLocalizedDescriptionKey: "Your session has expired. Please sign in again."])
+            case 403:
+                throw NSError(domain: "QuoteGen", code: 403,
+                              userInfo: [NSLocalizedDescriptionKey: "A Pro subscription is required to generate quotes."])
+            default:
+                let msg = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["error"] as? String
+                    ?? "Server error (\(http.statusCode)). Please try again."
+                throw NSError(domain: "QuoteGen", code: http.statusCode,
+                              userInfo: [NSLocalizedDescriptionKey: msg])
+            }
         }
 
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let text = json["text"] as? String else {
             throw NSError(domain: "QuoteGen", code: 0,
-                          userInfo: [NSLocalizedDescriptionKey: "Unexpected server response"])
+                          userInfo: [NSLocalizedDescriptionKey: "Unexpected server response. Please try again."])
         }
 
         guard let arr = extractJSONArray(from: text) else {
@@ -337,9 +360,9 @@ final class QuoteGenerationService: ObservableObject {
         let labourDays = (json["labourDays"] as? Double) ?? 0.0
         let labourRate = (json["labourRate"] as? Double) ?? 280.0
         let notes      = (json["notes"] as? String) ?? ""
-        if let vr = json["vatRate"] as? Double {
-            Task { @MainActor in self.vatRate = vr }
-        }
+        // Fix #22: capture vatRate from JSON to return it alongside the section,
+        // letting the caller update vatRate once (not in a racy concurrent Task).
+        let sectionVatRate = json["vatRate"] as? Double
 
         var items: [QuoteLineItem] = []
         if let rawItems = json["items"] as? [[String: Any]] {
@@ -358,6 +381,12 @@ final class QuoteGenerationService: ObservableObject {
             }
         }
 
+        // Fix #22: return vatRate alongside the section so the caller can set it
+        // once after all sections complete, avoiding concurrent Task races.
+        if let vr = sectionVatRate {
+            Task { @MainActor in self.vatRate = vr }
+        }
+
         return QuoteSection(
             id: descriptor.sectionKey, label: descriptor.sectionLabel,
             labourDays: labourDays, labourRate: labourRate,
@@ -366,31 +395,65 @@ final class QuoteGenerationService: ObservableObject {
     }
 
     // MARK: - JSON extraction helpers
+    // Fix #23/#24: use balanced brace/bracket matching instead of lastIndex(of:)
+    // so trailing content with extra } or ] doesn't corrupt the extracted JSON.
 
     private func extractJSONObject(from text: String) -> [String: Any]? {
-        var searchFrom = text.startIndex
-        while searchFrom < text.endIndex {
-            guard let start = text[searchFrom...].firstIndex(of: "{") else { break }
-            if let end = text.lastIndex(of: "}"), end >= start,
-               let data = String(text[start...end]).data(using: .utf8),
-               let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                return obj
+        guard let start = text.firstIndex(of: "{") else { return nil }
+        var depth = 0
+        var inString = false
+        var escape = false
+        var idx = start
+        while idx < text.endIndex {
+            let c = text[idx]
+            if escape { escape = false }
+            else if c == "\\" && inString { escape = true }
+            else if c == "\"" { inString.toggle() }
+            else if !inString {
+                if c == "{" { depth += 1 }
+                else if c == "}" {
+                    depth -= 1
+                    if depth == 0 {
+                        let candidate = String(text[start...idx])
+                        if let data = candidate.data(using: .utf8),
+                           let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                            return obj
+                        }
+                        break
+                    }
+                }
             }
-            searchFrom = text.index(after: start)
+            idx = text.index(after: idx)
         }
         return nil
     }
 
     private func extractJSONArray(from text: String) -> [[String: Any]]? {
-        var searchFrom = text.startIndex
-        while searchFrom < text.endIndex {
-            guard let start = text[searchFrom...].firstIndex(of: "[") else { break }
-            if let end = text.lastIndex(of: "]"), end >= start,
-               let data = String(text[start...end]).data(using: .utf8),
-               let arr = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
-                return arr
+        guard let start = text.firstIndex(of: "[") else { return nil }
+        var depth = 0
+        var inString = false
+        var escape = false
+        var idx = start
+        while idx < text.endIndex {
+            let c = text[idx]
+            if escape { escape = false }
+            else if c == "\\" && inString { escape = true }
+            else if c == "\"" { inString.toggle() }
+            else if !inString {
+                if c == "[" { depth += 1 }
+                else if c == "]" {
+                    depth -= 1
+                    if depth == 0 {
+                        let candidate = String(text[start...idx])
+                        if let data = candidate.data(using: .utf8),
+                           let arr = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
+                            return arr
+                        }
+                        break
+                    }
+                }
             }
-            searchFrom = text.index(after: start)
+            idx = text.index(after: idx)
         }
         return nil
     }

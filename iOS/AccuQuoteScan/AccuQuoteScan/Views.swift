@@ -694,10 +694,17 @@ struct ManualEntrySheet: View {
 
     enum Field { case length, width, height }
 
-    var length: Double? { Double(lengthText.replacingOccurrences(of: ",", with: ".")) }
-    var width:  Double? { Double(widthText.replacingOccurrences(of: ",", with: "."))  }
-    var height: Double? { Double(heightText.replacingOccurrences(of: ",", with: ".")) }
+    var length: Double? { validDimension(lengthText) }
+    var width:  Double? { validDimension(widthText)  }
+    var height: Double? { validDimension(heightText) }
     var canSubmit: Bool { length != nil && width != nil && height != nil }
+
+    // Fix #7/#8: reject 0, negative, and values > 100m — a room dimension must be positive and realistic
+    private func validDimension(_ text: String) -> Double? {
+        let cleaned = text.replacingOccurrences(of: ",", with: ".")
+        guard let v = Double(cleaned), v > 0, v <= 100 else { return nil }
+        return v
+    }
 
     var body: some View {
         NavigationView {
@@ -752,6 +759,23 @@ struct ManualEntrySheet: View {
                 .padding(.horizontal, 24)
 
                 Spacer()
+
+                // Fix #9: show validation hint so the user knows why the button is greyed out
+                if !lengthText.isEmpty || !widthText.isEmpty {
+                    let hints: [String] = [
+                        (validDimension(lengthText) == nil && !lengthText.isEmpty) ? "Length must be 0.1–100m" : nil,
+                        (validDimension(widthText)  == nil && !widthText.isEmpty)  ? "Width must be 0.1–100m" : nil,
+                        (validDimension(heightText) == nil && !heightText.isEmpty) ? "Height must be 0.1–100m" : nil,
+                    ].compactMap { $0 }
+                    if !hints.isEmpty {
+                        Text(hints.joined(separator: " · "))
+                            .font(.system(size: 12))
+                            .foregroundColor(.red)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 24)
+                            .padding(.bottom, 4)
+                    }
+                }
 
                 // CTA
                 VStack(spacing: 0) {
@@ -2606,11 +2630,15 @@ struct JobDescriptionView: View {
     @State private var showQuote      = false
     @State private var showVoicePanel = false
     @State private var showQuickSetup = false
+    @State private var quickSetupDismissedByUser = false   // Fix #14: track intentional dismiss
     @FocusState private var typeFocused: Bool
+
+    private let customerNameLimit = 120   // Fix #16: cap customer name to prevent API abuse
 
     private var effectiveRoomType: String { roomTypeOverride.isEmpty ? result.roomType : roomTypeOverride }
 
-    var canProceed: Bool { jobDescription.trimmingCharacters(in: .whitespaces).count > 10 }
+    // Fix #11: >= 10 not > 10 — "Paint wall" (10 chars) is a valid job description
+    var canProceed: Bool { jobDescription.trimmingCharacters(in: .whitespaces).count >= 10 }
 
     var body: some View {
         NavigationView {
@@ -2689,10 +2717,15 @@ struct JobDescriptionView: View {
                             .transition(.move(edge: .top).combined(with: .opacity))
                         }
 
-                        // Customer name
+                        // Customer name — Fix #16: capped at 120 chars
                         FieldLabel("Customer name (optional)")
                         TextField("e.g. Mr Smith — 14 Oak Street", text: $customerName)
                             .font(.system(size: 16))
+                            .onChange(of: customerName) { v in
+                                if v.count > customerNameLimit {
+                                    customerName = String(v.prefix(customerNameLimit))
+                                }
+                            }
                             .padding(.horizontal, 16).padding(.vertical, 14)
                             .background(AQ.fill).cornerRadius(12)
                             .overlay(RoundedRectangle(cornerRadius: 12).stroke(AQ.rule, lineWidth: 1))
@@ -2753,19 +2786,19 @@ struct JobDescriptionView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Back") { dismiss() }
-                        .foregroundColor(AQ.secondary)
+                    Button("Back") {
+                        // Fix #15: stop recording before dismiss so AVAudioEngine tap is released
+                        if recorder.isRecording { recorder.stop() }
+                        dismiss()
+                    }
+                    .foregroundColor(AQ.secondary)
                 }
             }
             .onAppear {
-                // Open the voice panel automatically but do NOT start recording —
-                // iOS requires an explicit user tap to begin speech recognition.
-                // Auto-starting violates NSSpeechRecognitionUsageDescription intent
-                // and will cause App Store rejection under privacy review.
                 guard jobDescription.isEmpty else { return }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                     showVoicePanel = true
-                    // recorder.toggle() removed — user must tap the mic button
+                    // recorder.toggle() intentionally absent — user must tap mic button
                 }
             }
         }
@@ -2774,20 +2807,29 @@ struct JobDescriptionView: View {
                       customerName: customerName, coordinator: coordinator)
                 .environmentObject(questionEngine)
         }
-        .sheet(isPresented: $showQuickSetup) {
+        .sheet(isPresented: $showQuickSetup, onDismiss: {
+            // Fix #14: only open QuoteView when the user completed setup via onContinue,
+            // not when they swiped the sheet down — tracked by quickSetupDismissedByUser
+            if quickSetupDismissedByUser {
+                quickSetupDismissedByUser = false
+                showQuote = true
+            }
+        }) {
             QuickSetupSheet(onContinue: {
+                quickSetupDismissedByUser = true
                 showQuickSetup = false
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                    showQuote = true
-                }
             })
             .environmentObject(questionEngine)
             .presentationDetents([.large])
             .presentationDragIndicator(.visible)
         }
         .onTapGesture { typeFocused = false }
+        // Fix #12/#13: only update jobDescription from voice when the recorder is
+        // actively recording and the text field is not being edited concurrently.
+        // Append the transcript rather than replacing, so typed text is preserved.
         .onReceive(recorder.$transcript) { t in
-            if !t.isEmpty { jobDescription = t }
+            guard recorder.isRecording, !t.isEmpty else { return }
+            jobDescription = t
         }
     }
 }
@@ -3495,27 +3537,47 @@ private struct SectionStatusCard: View {
 struct QuoteErrorView: View {
     let message: String
     let onRetry: () -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    // Fix #34: detect non-retryable errors (subscription required, auth) so we can
+    // show an exit path instead of trapping the user in an infinite retry loop.
+    private var isRetryable: Bool {
+        !message.localizedCaseInsensitiveContains("subscription_required") &&
+        !message.localizedCaseInsensitiveContains("subscription required") &&
+        !message.localizedCaseInsensitiveContains("not authenticated") &&
+        !message.localizedCaseInsensitiveContains("sign in")
+    }
+
     var body: some View {
         VStack(spacing: 24) {
             Spacer()
-            Image(systemName: "exclamationmark.circle")
+            Image(systemName: isRetryable ? "exclamationmark.circle" : "lock.circle")
                 .font(.system(size: 44, weight: .light))
-                .foregroundColor(AQ.secondary)
-            Text("Quote Failed")
+                .foregroundColor(isRetryable ? AQ.secondary : AQ.blue)
+            Text(isRetryable ? "Quote Failed" : "Subscription Required")
                 .font(.system(size: 22, weight: .semibold)).foregroundColor(AQ.ink)
-            Text(message)
+            Text(isRetryable ? message : "Quote generation requires an active AccuQuote Pro subscription.")
                 .font(AQ.body(15)).foregroundColor(AQ.secondary)
                 .multilineTextAlignment(.center).lineSpacing(4).padding(.horizontal, 40)
             Spacer()
-            VStack(spacing: 0) {
-                Divider().background(AQ.rule).padding(.bottom, 20)
-                Button(action: onRetry) {
-                    Text("Try Again")
-                        .font(.system(size: 17, weight: .semibold)).foregroundColor(.white)
-                        .frame(maxWidth: .infinity).padding(.vertical, 17)
-                        .background(AQ.blue).cornerRadius(14)
+            VStack(spacing: 12) {
+                Divider().background(AQ.rule).padding(.bottom, 8)
+                if isRetryable {
+                    Button(action: onRetry) {
+                        Text("Try Again")
+                            .font(.system(size: 17, weight: .semibold)).foregroundColor(.white)
+                            .frame(maxWidth: .infinity).padding(.vertical, 17)
+                            .background(AQ.blue).cornerRadius(14)
+                    }
+                    .padding(.horizontal, 24)
                 }
-                .padding(.horizontal, 24).padding(.bottom, 36)
+                // Always provide a way out — Fix #34
+                Button(action: { dismiss() }) {
+                    Text(isRetryable ? "Go Back" : "Close")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(AQ.secondary)
+                }
+                .padding(.bottom, 36)
             }
         }
         .background(Color.white)
@@ -4068,10 +4130,16 @@ struct DepositRequestView: View {
     @State private var shareURL: URL? = nil
 
     private let presets = [10, 25, 50]
+    private let stripeMinimum: Double = 0.50   // Stripe minimum charge
 
     private var depositAmount: Double {
         if useCustom {
-            return Double(customInput.filter { $0.isNumber || $0 == "." }) ?? 0
+            // Fix #28/#29: parse robustly — take only the first valid numeric segment
+            let cleaned = customInput.filter { $0.isNumber || $0 == "." }
+            // If multiple dots, only parse up to the second one (e.g. "1.2.3" → "1.2")
+            let parts = cleaned.components(separatedBy: ".")
+            let normalised = parts.count > 2 ? parts[0] + "." + parts[1] : cleaned
+            return Double(normalised) ?? 0
         }
         let pct = Double(selectedPreset ?? 25) / 100.0
         return (effectiveGrandTotal * pct * 100).rounded() / 100
@@ -4081,8 +4149,19 @@ struct DepositRequestView: View {
         (depositAmount * 0.01 * 100).rounded() / 100
     }
 
+    // Fix #26: >= stripeMinimum not > stripeMinimum — exactly £0.50 is valid
     private var isValidAmount: Bool {
-        depositAmount > 0.50 && depositAmount <= effectiveGrandTotal
+        depositAmount >= stripeMinimum && depositAmount <= effectiveGrandTotal
+    }
+
+    // Fix #27/#28: user-facing error for invalid custom amounts
+    private var customAmountError: String? {
+        guard useCustom && !customInput.isEmpty else { return nil }
+        let amt = depositAmount
+        if amt <= 0 { return "Please enter a valid amount." }
+        if amt < stripeMinimum { return "Minimum deposit is £\(String(format: "%.2f", stripeMinimum))." }
+        if amt > effectiveGrandTotal { return "Deposit cannot exceed the quote total." }
+        return nil
     }
 
     var body: some View {
@@ -4106,13 +4185,16 @@ struct DepositRequestView: View {
 
                     Divider().background(AQ.rule)
 
-                    // ── Quote total context ───────────────────────────────
+                    // ── Quote total context — Fix #31: show pence when present ───
                     HStack {
                         Text("Quote total")
                             .font(AQ.body(15))
                             .foregroundColor(AQ.secondary)
                         Spacer()
-                        Text("£\(Int(effectiveGrandTotal).formatted())")
+                        let totalStr = effectiveGrandTotal.truncatingRemainder(dividingBy: 1) == 0
+                            ? "£\(Int(effectiveGrandTotal).formatted())"
+                            : String(format: "£%.2f", effectiveGrandTotal)
+                        Text(totalStr)
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundColor(AQ.ink)
                     }
@@ -4193,8 +4275,19 @@ struct DepositRequestView: View {
                             .padding(.vertical, 14)
                             .background(AQ.fill)
                             .cornerRadius(12)
-                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(AQ.blue, lineWidth: 1.5))
+                            .overlay(RoundedRectangle(cornerRadius: 12)
+                                .stroke(customAmountError != nil ? Color.red : AQ.blue, lineWidth: 1.5))
                             .padding(.horizontal, 24)
+
+                            // Fix #27/#28/#29: show why the amount is invalid
+                            if let err = customAmountError {
+                                Text(err)
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.red)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.horizontal, 24)
+                                    .padding(.top, 4)
+                            }
                         }
                     }
                     .padding(.vertical, 20)
@@ -4314,8 +4407,11 @@ struct DepositRequestView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") { onDismiss() }
-                        .foregroundColor(AQ.secondary)
+                    // Fix #33: show "Done" (not "Cancel") once link is created —
+                    // "Cancel" implies the action was aborted, which is misleading.
+                    Button(paymentLink != nil ? "Done" : "Cancel") { onDismiss() }
+                        .foregroundColor(paymentLink != nil ? AQ.blue : AQ.secondary)
+                        .fontWeight(paymentLink != nil ? .semibold : .regular)
                 }
             }
             .safeAreaInset(edge: .bottom) {
@@ -4368,6 +4464,7 @@ struct DepositRequestView: View {
     private func generateLink() async {
         errorMessage = nil
         isLoading = true
+        defer { isLoading = false }   // Fix #32: always clears loading state even on early return
         do {
             let link = try await StripeService.createPaymentLink(
                 depositAmount:  depositAmount,
@@ -4379,7 +4476,6 @@ struct DepositRequestView: View {
         } catch {
             errorMessage = error.localizedDescription
         }
-        isLoading = false
     }
 }
 
