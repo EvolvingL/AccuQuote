@@ -69,16 +69,23 @@ final class EntitlementManager: ObservableObject {
 
     // MARK: - Keychain cache
 
-    private let cacheKey = "aq_entitlement_tier"
+    private let cacheKey      = "aq_entitlement_tier"
+    private let cacheAgeKey   = "aq_entitlement_cached_at"
+    private let cacheTTL: TimeInterval = 24 * 3600   // 24 hours
 
     // MARK: - Init
 
     private init() {
-        // Warm from cache immediately — prevents UI flash on cold launch
-        if let cached = SecureTokenStore.read(key: cacheKey),
-           let t = SubscriptionTier(rawValue: cached) {
+        // Fix #21: honour TTL — if cached tier is older than 24h, default to free
+        // and force a server refresh. Prevents cancelled subscriptions persisting indefinitely.
+        if let cached    = SecureTokenStore.read(key: cacheKey),
+           let t          = SubscriptionTier(rawValue: cached),
+           let ageStr     = SecureTokenStore.read(key: cacheAgeKey),
+           let ageSeconds = Double(ageStr),
+           Date().timeIntervalSince1970 - ageSeconds < cacheTTL {
             tier = t
         }
+        // expired or missing cache → tier stays .free, refresh() will hydrate it
     }
 
     // MARK: - Fetch from server
@@ -105,6 +112,8 @@ final class EntitlementManager: ObservableObject {
                let fetched = SubscriptionTier(rawValue: tierStr) {
                 tier = fetched
                 SecureTokenStore.write(key: cacheKey, value: fetched.rawValue)
+                // Fix #21: record cache time so TTL check in init() can expire stale entries
+                SecureTokenStore.write(key: cacheAgeKey, value: String(Date().timeIntervalSince1970))
             }
         } catch {
             // Network failure — keep cached value
@@ -114,5 +123,6 @@ final class EntitlementManager: ObservableObject {
     func clear() {
         tier = .free
         SecureTokenStore.delete(key: cacheKey)
+        SecureTokenStore.delete(key: cacheAgeKey)
     }
 }

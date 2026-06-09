@@ -219,7 +219,9 @@ final class AuthManager: NSObject, ObservableObject {
             }
         }
         session.presentationContextProvider = self
-        session.prefersEphemeralWebBrowserSession = false
+        // Fix #25: ephemeral session prevents Google cookies persisting across users
+        // on a shared device after the user signs out of AccuQuote.
+        session.prefersEphemeralWebBrowserSession = true
         session.start()
     }
 
@@ -467,14 +469,25 @@ extension AuthManager: ASAuthorizationControllerPresentationContextProviding,
 // MARK: - SecureTokenStore (Keychain wrapper)
 
 enum SecureTokenStore {
+    // Fix #10: the long-lived refresh token must use WhenUnlocked so it is only
+    // accessible while the screen is actively unlocked — not in background on first-unlock.
+    // Short-lived ID tokens can use AfterFirstUnlock for background refresh.
+    private static let sensitiveKeys: Set<String> = [
+        "aq_firebase_refresh_token",   // permanent credential — highest protection
+        "aq_apns_token",               // device identity token
+    ]
+
     @discardableResult
     static func write(key: String, value: String) -> Bool {
-        let data = Data(value.utf8)
+        let data        = Data(value.utf8)
+        let accessible  = sensitiveKeys.contains(key)
+            ? kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+            : kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
         let query: [String: Any] = [
             kSecClass as String:            kSecClassGenericPassword,
             kSecAttrAccount as String:      key,
             kSecValueData as String:        data,
-            kSecAttrAccessible as String:   kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
+            kSecAttrAccessible as String:   accessible,
         ]
         SecItemDelete(query as CFDictionary)
         return SecItemAdd(query as CFDictionary, nil) == errSecSuccess

@@ -84,9 +84,9 @@ final class NotificationService: NSObject, ObservableObject {
         do {
             let (_, response) = try await URLSession.shared.data(for: request)
             if let http = response as? HTTPURLResponse, http.statusCode == 200 {
-                print("[Push] Token registered")
-                // Persist token locally so we can detect rotation
-                UserDefaults.standard.set(token, forKey: "aq_apns_token")
+                // Fix #17: store APNs token in Keychain, not UserDefaults —
+                // UserDefaults is unencrypted on disk; Keychain is hardware-backed.
+                SecureTokenStore.write(key: "aq_apns_token", value: token)
             }
         } catch {
             print("[Push] Token upload failed: \(error.localizedDescription)")
@@ -97,10 +97,12 @@ final class NotificationService: NSObject, ObservableObject {
     // Call when quoteCount or trade changes so personalised pushes stay accurate.
 
     func syncMetadata(quoteCount: Int, trade: String) {
+        // Fix #18: trade/quoteCount are now fetched server-side from Firestore in
+        // /api/push/register, so these local values are only kept as a hint for
+        // token-rotation detection — the server ignores them from the client.
         UserDefaults.standard.set(quoteCount, forKey: "aq_total_quotes")
         UserDefaults.standard.set(trade, forKey: "aq_trade")
-        // Re-register if we have a token — uploads fresh metadata
-        guard let storedToken = UserDefaults.standard.string(forKey: "aq_apns_token"),
+        guard let storedToken = SecureTokenStore.read(key: "aq_apns_token"),
               !storedToken.isEmpty else { return }
         Task { await uploadToken(storedToken) }
     }
