@@ -50,6 +50,7 @@ struct LoginView: View {
     @State private var password = ""
     @State private var showSignUp = false
     @State private var showReset = false
+    @State private var showGoogleComingSoon = false
     @FocusState private var focusedField: Field?
 
     enum Field { case email, password }
@@ -148,17 +149,20 @@ struct LoginView: View {
                         .cornerRadius(12)
                         .padding(.horizontal, 28)
 
-                        // Google
+                        // Google — shows a clear message rather than silently doing nothing
                         SocialButton(
                             label: "Sign in with Google",
                             icon: "g.circle.fill",
                             color: Color(red: 0.85, green: 0.20, blue: 0.15)
                         ) {
-                            // TODO: open Google OAuth via SFSafariViewController
-                            // Google Sign-In requires GoogleSignIn-iOS SPM package
-                            // and a GoogleService-Info.plist from Firebase Console
+                            showGoogleComingSoon = true
                         }
                         .padding(.horizontal, 28)
+                        .alert("Google Sign-In", isPresented: $showGoogleComingSoon) {
+                            Button("OK", role: .cancel) {}
+                        } message: {
+                            Text("Google sign-in is coming soon. Please use email/password or Sign in with Apple for now.")
+                        }
                     }
 
                     // Sign up

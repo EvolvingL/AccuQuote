@@ -3,6 +3,7 @@ import Foundation
 // MARK: - Stripe Service
 // Calls the AccuQuote server to create a Stripe Payment Link.
 // The Stripe secret key never leaves the server.
+// Auth token is attached so the server can verify the user is on a paid tier.
 
 struct DepositPaymentLink {
     let url: URL
@@ -12,12 +13,14 @@ struct DepositPaymentLink {
 
 enum StripeServiceError: LocalizedError {
     case invalidURL
+    case notAuthenticated
     case serverError(String)
     case decodingError
 
     var errorDescription: String? {
         switch self {
         case .invalidURL:         return "Invalid server URL."
+        case .notAuthenticated:   return "Please sign in to request a deposit."
         case .serverError(let m): return m
         case .decodingError:      return "Unexpected response from server."
         }
@@ -26,9 +29,6 @@ enum StripeServiceError: LocalizedError {
 
 struct StripeService {
 
-    // Point at your Render server — no trailing slash
-    private static let baseURL = "https://accuquote.onrender.com"
-
     static func createPaymentLink(
         depositAmount: Double,
         customerName: String,
@@ -36,13 +36,19 @@ struct StripeService {
         traderName: String
     ) async throws -> DepositPaymentLink {
 
-        guard let url = URL(string: "\(baseURL)/api/stripe/payment-link") else {
+        guard let url = URL(string: "\(AQBackend.baseURL)/api/stripe/payment-link") else {
             throw StripeServiceError.invalidURL
+        }
+
+        // The server endpoint requires requireAuth + requirePaidTier — attach token
+        guard let idToken = await AuthManager.shared.currentIdToken() else {
+            throw StripeServiceError.notAuthenticated
         }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json",   forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(idToken)",  forHTTPHeaderField: "Authorization")
 
         let body: [String: Any] = [
             "depositAmount":   depositAmount,
@@ -58,9 +64,17 @@ struct StripeService {
             throw StripeServiceError.serverError("No HTTP response")
         }
 
-        // Always try to parse JSON — we need it for both success and error paths
         let json = (try? JSONSerialization.jsonObject(with: data) as? [String: Any]) ?? [:]
 
+        if http.statusCode == 401 {
+            throw StripeServiceError.notAuthenticated
+        }
+        if http.statusCode == 403 {
+            let msg = json["error"] as? String ?? "subscription_required"
+            throw StripeServiceError.serverError(msg == "subscription_required"
+                ? "A paid subscription is required to request deposits."
+                : msg)
+        }
         if http.statusCode != 200 {
             let msg = json["error"] as? String ?? "Server error (\(http.statusCode))"
             throw StripeServiceError.serverError(msg)
@@ -70,7 +84,6 @@ struct StripeService {
             let urlString = json["url"] as? String,
             let linkURL   = URL(string: urlString)
         else {
-            // Log the raw response for debugging
             let raw = String(data: data, encoding: .utf8) ?? "unreadable"
             throw StripeServiceError.serverError("Missing payment URL in response: \(raw)")
         }

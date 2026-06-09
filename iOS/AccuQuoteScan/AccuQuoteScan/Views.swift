@@ -2758,10 +2758,14 @@ struct JobDescriptionView: View {
                 }
             }
             .onAppear {
+                // Open the voice panel automatically but do NOT start recording —
+                // iOS requires an explicit user tap to begin speech recognition.
+                // Auto-starting violates NSSpeechRecognitionUsageDescription intent
+                // and will cause App Store rejection under privacy review.
                 guard jobDescription.isEmpty else { return }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                     showVoicePanel = true
-                    recorder.toggle()
+                    // recorder.toggle() removed — user must tap the mic button
                 }
             }
         }
@@ -2952,6 +2956,7 @@ final class VoiceRecorder: ObservableObject {
     @Published var permissionDenied = false
 
     private var audioEngine      = AVAudioEngine()
+    private var tapInstalled     = false   // guards removeTap — prevents crash when stop() called before beginRecording()
     private var recognitionTask:   SFSpeechRecognitionTask?
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-GB"))
@@ -3002,7 +3007,6 @@ final class VoiceRecorder: ObservableObject {
         let format = inputNode.outputFormat(forBus: 0)
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
             self?.recognitionRequest?.append(buffer)
-            // Derive amplitude from buffer for waveform
             guard let channelData = buffer.floatChannelData?[0] else { return }
             let frameCount = Int(buffer.frameLength)
             let bufPtr = UnsafeBufferPointer(start: channelData, count: frameCount)
@@ -3012,6 +3016,7 @@ final class VoiceRecorder: ObservableObject {
                 self?.pushAmplitude(db)
             }
         }
+        tapInstalled = true   // mark so stop() only calls removeTap when a tap exists
 
         try? audioEngine.start()
         isRecording = true
@@ -3034,7 +3039,10 @@ final class VoiceRecorder: ObservableObject {
 
     func stop() {
         amplitudeTimer?.invalidate(); amplitudeTimer = nil
-        audioEngine.inputNode.removeTap(onBus: 0)
+        if tapInstalled {
+            audioEngine.inputNode.removeTap(onBus: 0)
+            tapInstalled = false
+        }
         audioEngine.stop()
         recognitionRequest?.endAudio()
         recognitionTask?.cancel()
