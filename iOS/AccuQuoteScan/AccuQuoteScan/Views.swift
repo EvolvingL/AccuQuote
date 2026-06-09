@@ -506,7 +506,9 @@ struct ReadyView: View {
             .padding(.bottom, 28)
 
             Text("Measure the room.")
-                .font(.system(size: 34, weight: .bold))
+                .font(.largeTitle.weight(.bold))   // #1
+                .minimumScaleFactor(0.7)            // #7
+                .multilineTextAlignment(.center)
                 .foregroundColor(AQ.ink)
                 .padding(.bottom, 8)
 
@@ -707,7 +709,7 @@ struct ManualEntrySheet: View {
     }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 0) {
                 // Instruction
                 VStack(spacing: 6) {
@@ -934,7 +936,7 @@ struct CustomShapeSheet: View {
     }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 0) {
 
                 // Instructions
@@ -1365,11 +1367,14 @@ struct AIProfileButton: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 7)
+            .frame(minHeight: 44)   // #2 touch target
             .background(
-                RoundedRectangle(cornerRadius: 20)
+                RoundedRectangle(cornerRadius: AQRadius.xxl)   // #17
                     .stroke(answered > 0 ? AQ.green.opacity(0.3) : AQ.blue.opacity(0.3), lineWidth: 1)
             )
         }
+        .accessibilityLabel(answered > 0 ? "AI profile, \(pct) percent accurate. Tap to edit."
+                                         : "Set up AI profile")   // #8
     }
 }
 
@@ -1442,7 +1447,7 @@ struct OnboardingSheet: View {
     enum OnboardingTab { case questions, documents }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 0) {
 
                 // ── Progress bar ────────────────────────────────────────────
@@ -1465,13 +1470,20 @@ struct OnboardingSheet: View {
                             .foregroundColor(AQ.secondary)
                             .contentTransition(.numericText())
                             .animation(.easeInOut(duration: 0.3), value: engine.answeredCount)
+                        // #26: show how many questions remain so users understand the flow length
+                        let remaining = max(0, engine.questions.count - engine.answeredCount)
+                        if remaining > 0 {
+                            Text("· \(remaining) to go")
+                                .font(AQ.body(12))
+                                .foregroundColor(AQ.secondary.opacity(0.7))
+                        }
                         if engine.isGeneratingMore {
                             HStack(spacing: 4) {
                                 ProgressView()
                                     .scaleEffect(0.5)
                                     .tint(AQ.blue)
                                 Text("learning…")
-                                    .font(.system(size: 11))
+                                    .font(.caption2)   // #1
                                     .foregroundColor(AQ.blue)
                             }
                         }
@@ -1526,6 +1538,9 @@ struct OnboardingSheet: View {
     // MARK: - Questions tab
 
     @ViewBuilder var questionContent: some View {
+        // #21: ScrollViewReader auto-scrolls the active question into view when it
+        // changes, so the keyboard never hides the input the user is answering.
+        ScrollViewReader { proxy in
         ScrollView {
             VStack(spacing: 0) {
                 if let question = engine.currentQuestion {
@@ -1590,6 +1605,13 @@ struct OnboardingSheet: View {
 
                 Color.clear.frame(height: 40)
             }
+        }
+        // #21: scroll the current question to the top when it advances
+        .onChange(of: engine.currentQuestion?.id) { newID in
+            if let id = newID {
+                withAnimation { proxy.scrollTo(id, anchor: .top) }
+            }
+        }
         }
     }
 
@@ -1975,7 +1997,7 @@ struct AddDocumentSheet: View {
     }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
 
@@ -2426,33 +2448,41 @@ struct ScanHUD: View {
 
 struct ProcessingView: View {
     @State private var rotation = 0.0
-    @State private var dotPhase = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion   // #11
 
     var body: some View {
         VStack(spacing: 0) {
 
             Spacer()
 
-            // Spinner
-            ZStack {
-                Circle()
-                    .stroke(AQ.rule, lineWidth: 1.5)
-                    .frame(width: 64, height: 64)
-                Circle()
-                    .trim(from: 0, to: 0.7)
-                    .stroke(AQ.blue, style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
-                    .frame(width: 64, height: 64)
-                    .rotationEffect(.degrees(rotation))
-                    .onAppear {
-                        withAnimation(.linear(duration: 1).repeatForever(autoreverses: false)) {
-                            rotation = 360
+            // Spinner — uses a system ProgressView when Reduce Motion is on so there's
+            // no continuously spinning element (#11)
+            if reduceMotion {
+                ProgressView()
+                    .controlSize(.large)
+                    .tint(AQ.blue)
+                    .padding(.bottom, 32)
+            } else {
+                ZStack {
+                    Circle()
+                        .stroke(AQ.rule, lineWidth: 1.5)
+                        .frame(width: 64, height: 64)
+                    Circle()
+                        .trim(from: 0, to: 0.7)
+                        .stroke(AQ.blue, style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
+                        .frame(width: 64, height: 64)
+                        .rotationEffect(.degrees(rotation))
+                        .onAppear {
+                            withAnimation(.linear(duration: 1).repeatForever(autoreverses: false)) {
+                                rotation = 360
+                            }
                         }
-                    }
+                }
+                .padding(.bottom, 32)
             }
-            .padding(.bottom, 32)
 
             Text("Processing Scan")
-                .font(.system(size: 24, weight: .semibold))
+                .font(.title2.weight(.semibold))   // #1
                 .foregroundColor(AQ.ink)
                 .padding(.bottom, 8)
             Text("Calculating dimensions…")
@@ -2641,7 +2671,7 @@ struct JobDescriptionView: View {
     var canProceed: Bool { jobDescription.trimmingCharacters(in: .whitespaces).count >= 10 }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 0) {
 
                 ScrollView {
@@ -2659,7 +2689,9 @@ struct JobDescriptionView: View {
                         .padding(.horizontal, 24).padding(.top, 24).padding(.bottom, 28)
 
                         Text("What's the job?")
-                            .font(.system(size: 32, weight: .bold)).foregroundColor(AQ.ink)
+                            .font(.largeTitle.weight(.bold))   // #1
+                            .minimumScaleFactor(0.7)           // #7
+                            .foregroundColor(AQ.ink)
                             .padding(.horizontal, 24).padding(.bottom, 6)
 
                         Text("Just talk — describe the job out loud.")
@@ -3260,7 +3292,7 @@ struct QuoteView: View {
     }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Group {
                 switch service.state {
                 case .idle, .discoveringSections:
@@ -3615,18 +3647,21 @@ struct QuoteResultView: View {
     var body: some View {
         VStack(spacing: 0) {
         ScrollView {
-            VStack(spacing: 0) {
+            // #14 LazyVStack — defers rendering of off-screen quote sections/items
+            LazyVStack(spacing: 0) {
 
                 // Grand total hero
                 VStack(spacing: 6) {
                     Text("Total")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.caption.weight(.semibold))   // #1
                         .foregroundColor(AQ.secondary)
                         .kerning(0.8)
                         .textCase(.uppercase)
-                    Text("£\(Int(effectiveGrandTotal).formatted())")
+                    Text(Money.gbp(effectiveGrandTotal))   // #24 keeps pence
                         .font(.system(size: 52, weight: .bold, design: .rounded))
                         .foregroundColor(AQ.ink)
+                        .minimumScaleFactor(0.6)   // #7 large totals shrink to fit
+                        .lineLimit(1)
                     Text("inc. VAT")
                         .font(AQ.body(13))
                         .foregroundColor(AQ.secondary)
@@ -3673,7 +3708,7 @@ struct QuoteResultView: View {
                     labourTotalOverride = labourTotalOverride ?? quote.labourTotal
                     editingLabourTotal = true
                 } label: {
-                    QuoteRow(label: "Labour ✎", value: "£\(Int(effectiveLabourTotal).formatted())", bold: false)
+                    QuoteRow(label: "Labour ✎", value: Money.gbp(effectiveLabourTotal), bold: false)
                 }
                 Divider().background(AQ.rule).padding(.leading, 24)
                 if !quote.items.isEmpty {
@@ -3682,7 +3717,7 @@ struct QuoteResultView: View {
                 }
                 QuoteRow(label: "VAT (\(Int(quote.vatRate))%)", value: "£\(String(format: "%.2f", effectiveVatAmount))", bold: false)
                 Divider().background(AQ.rule).padding(.leading, 24)
-                QuoteRow(label: "Total", value: "£\(Int(effectiveGrandTotal).formatted())", bold: true)
+                QuoteRow(label: "Total", value: Money.gbp(effectiveGrandTotal), bold: true)
                 Divider().background(AQ.rule)
 
                 // Breakdown toggle
@@ -4165,7 +4200,7 @@ struct DepositRequestView: View {
     }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(spacing: 0) {
 
@@ -4185,16 +4220,13 @@ struct DepositRequestView: View {
 
                     Divider().background(AQ.rule)
 
-                    // ── Quote total context — Fix #31: show pence when present ───
+                    // ── Quote total context — #24 shared currency formatter ──────
                     HStack {
                         Text("Quote total")
                             .font(AQ.body(15))
                             .foregroundColor(AQ.secondary)
                         Spacer()
-                        let totalStr = effectiveGrandTotal.truncatingRemainder(dividingBy: 1) == 0
-                            ? "£\(Int(effectiveGrandTotal).formatted())"
-                            : String(format: "£%.2f", effectiveGrandTotal)
-                        Text(totalStr)
+                        Text(Money.gbp(effectiveGrandTotal))
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundColor(AQ.ink)
                     }

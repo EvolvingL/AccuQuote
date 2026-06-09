@@ -169,6 +169,10 @@ struct QuoteHistoryView: View {
     @ObservedObject var store: QuoteHistoryStore
     @Environment(\.dismiss) private var dismiss
 
+    @State private var searchText = ""                    // #9 search
+    @State private var pendingDeleteID: String? = nil     // #5 delete confirmation
+    @State private var showDeleteConfirm = false
+
     private let dateFormatter: DateFormatter = {
         let f = DateFormatter()
         f.dateStyle = .medium
@@ -176,8 +180,18 @@ struct QuoteHistoryView: View {
         return f
     }()
 
+    // #9 filtered list by customer name, job description, or room type
+    private var filtered: [SavedQuote] {
+        guard !searchText.isEmpty else { return store.quotes }
+        return store.quotes.filter {
+            $0.customerName.localizedCaseInsensitiveContains(searchText)
+            || $0.jobDescription.localizedCaseInsensitiveContains(searchText)
+            || $0.roomType.localizedCaseInsensitiveContains(searchText)
+        }
+    }
+
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Group {
                 if store.quotes.isEmpty {
                     VStack(spacing: 16) {
@@ -185,26 +199,55 @@ struct QuoteHistoryView: View {
                         Image(systemName: "doc.text.magnifyingglass")
                             .font(.system(size: 44, weight: .light))
                             .foregroundColor(AQ.secondary.opacity(0.5))
+                            .accessibilityHidden(true)   // #8
                         Text("No quotes yet")
-                            .font(.system(size: 20, weight: .semibold))
+                            .font(.title3.weight(.semibold))   // #1
                             .foregroundColor(AQ.ink)
                         Text("Your generated quotes will appear here.")
-                            .font(.system(size: 14))
+                            .font(.subheadline)   // #1
+                            .foregroundColor(AQ.secondary)
+                        Spacer()
+                    }
+                } else if filtered.isEmpty {
+                    // #9 no-results state
+                    VStack(spacing: 16) {
+                        Spacer()
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 40, weight: .light))
+                            .foregroundColor(AQ.secondary.opacity(0.5))
+                            .accessibilityHidden(true)
+                        Text("No matches")
+                            .font(.title3.weight(.semibold))
+                            .foregroundColor(AQ.ink)
+                        Text("No quotes match “\(searchText)”.")
+                            .font(.subheadline)
                             .foregroundColor(AQ.secondary)
                         Spacer()
                     }
                 } else {
                     List {
-                        ForEach(store.quotes) { quote in
+                        ForEach(filtered) { quote in
                             QuoteHistoryRow(quote: quote, dateFormatter: dateFormatter)
+                                // #29 context menu on long-press
+                                .contextMenu {
+                                    Button(role: .destructive) {
+                                        pendingDeleteID = quote.id
+                                        showDeleteConfirm = true
+                                    } label: {
+                                        Label("Delete Quote", systemImage: "trash")
+                                    }
+                                }
                         }
                         .onDelete { offsets in
-                            for i in offsets {
-                                store.delete(id: store.quotes[i].id)
+                            // #5 require confirmation — capture the id first
+                            if let i = offsets.first {
+                                pendingDeleteID = filtered[i].id
+                                showDeleteConfirm = true
                             }
                         }
                     }
                     .listStyle(.insetGrouped)
+                    .searchable(text: $searchText, prompt: "Search quotes")   // #9
                 }
             }
             .navigationTitle("Quote History")
@@ -214,6 +257,18 @@ struct QuoteHistoryView: View {
                     Button("Done") { dismiss() }
                         .foregroundColor(AQ.secondary)
                 }
+            }
+            // #5 confirmation dialog
+            .confirmationDialog("Delete this quote?",
+                                isPresented: $showDeleteConfirm,
+                                titleVisibility: .visible) {
+                Button("Delete", role: .destructive) {
+                    if let id = pendingDeleteID { store.delete(id: id) }
+                    pendingDeleteID = nil
+                }
+                Button("Cancel", role: .cancel) { pendingDeleteID = nil }
+            } message: {
+                Text("This quote will be permanently deleted.")
             }
         }
     }
@@ -228,39 +283,40 @@ private struct QuoteHistoryRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline) {
-                Text("£\(Int(quote.grandTotal).formatted())")
-                    .font(.system(size: 22, weight: .bold, design: .rounded))
+                Text(Money.gbp(quote.grandTotal))   // #24 keeps pence when present
+                    .font(.title2.weight(.bold))     // #1 (rounded design via modifier below)
+                    .fontDesign(.rounded)
                     .foregroundColor(AQ.ink)
                 Spacer()
                 Text(dateFormatter.string(from: quote.savedAt))
-                    .font(.system(size: 12))
+                    .font(.caption)   // #1
                     .foregroundColor(AQ.secondary)
             }
 
             if !quote.customerName.isEmpty {
                 Text(quote.customerName)
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.footnote.weight(.medium))   // #1
                     .foregroundColor(AQ.label)
                     .lineLimit(1)
             }
 
             Text(quote.jobDescription)
-                .font(.system(size: 13))
+                .font(.footnote)   // #1
                 .foregroundColor(AQ.secondary)
                 .lineLimit(2)
 
             HStack(spacing: 8) {
                 Label(quote.roomType.capitalized, systemImage: "cube.transparent")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.caption.weight(.medium))   // #1
                     .foregroundColor(AQ.blue)
                 Text("·").foregroundColor(AQ.rule)
                 Text(String(format: "%.1fm²", quote.floorArea))
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.caption.weight(.medium))   // #1
                     .foregroundColor(AQ.secondary)
                 if !quote.sections.isEmpty {
                     Text("·").foregroundColor(AQ.rule)
                     Text("\(quote.sections.count) sections")
-                        .font(.system(size: 11, weight: .medium))
+                        .font(.caption.weight(.medium))   // #1
                         .foregroundColor(AQ.secondary)
                 }
             }

@@ -41,7 +41,12 @@ struct ContentView: View {
             }
         }
         .animation(.easeInOut(duration: 0.4), value: showGuest)
+        // #6/#30: AccuQuote is a deliberately light, paper-document themed quoting tool —
+        // its quote PDFs, proposals and forms read as printed documents. The hardcoded
+        // AQ palette encodes the light values throughout. We keep .light as the design
+        // intent so the document aesthetic is consistent on every device.
         .preferredColorScheme(.light)
+        .tint(AQ.blue)   // #global consistent accent for all system controls
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if case .scanning = coordinator.state { EmptyView() } else { SlickFooter() }
         }

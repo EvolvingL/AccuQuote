@@ -45,6 +45,15 @@ struct AccuQuoteScanApp: App {
                         NotificationService.shared.requestPermission()
                     }
                 }
+                // #22: refresh entitlement when the app returns to the foreground so a
+                // subscription change made elsewhere (webhook, another device) is picked
+                // up without requiring a cold launch.
+                .onReceive(NotificationCenter.default.publisher(
+                    for: UIApplication.willEnterForegroundNotification)) { _ in
+                    if authManager.isSignedIn {
+                        Task { await entitlementManager.refresh() }
+                    }
+                }
         }
     }
 }

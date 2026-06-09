@@ -18,6 +18,10 @@ struct AuthGateView: View {
                     .task { await entitlement.refresh() }
             }
         }
+        // #15: ScaleButtonStyle cascades to every descendant Button across the whole
+        // app (login, main flow, sheets) giving consistent press feedback. System
+        // controls like SignInWithAppleButton are unaffected as they aren't plain Buttons.
+        .buttonStyle(ScaleButtonStyle())
         .animation(.easeInOut(duration: 0.3), value: auth.isSignedIn)
         .animation(.easeInOut(duration: 0.3), value: auth.isLoading)
     }
@@ -54,7 +58,7 @@ struct LoginView: View {
     enum Field { case email, password }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(spacing: 0) {
 
@@ -219,7 +223,7 @@ struct SignUpView: View {
     enum Field { case email, password, confirm }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(spacing: 24) {
                     Text("Create your account")
@@ -332,7 +336,7 @@ struct PasswordResetView: View {
     @State private var resetError: String? = nil  // Fix #2: show real network/server errors
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 24) {
                 Text("We'll send a reset link to your email address.")
                     .font(AQ.body(15))
@@ -429,7 +433,7 @@ struct PaywallSheet: View {
     ]
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(spacing: 28) {
 

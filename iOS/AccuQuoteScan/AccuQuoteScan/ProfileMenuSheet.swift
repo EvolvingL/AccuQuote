@@ -12,7 +12,7 @@ struct ProfileMenuSheet: View {
     enum ProfileTab { case quotes, update, account }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 0) {
 
                 // ── Tab bar ───────────────────────────────────────────────
@@ -60,19 +60,22 @@ struct ProfileMenuSheet: View {
             VStack(spacing: 4) {
                 Image(systemName: icon)
                     .font(.system(size: 16, weight: active ? .semibold : .regular))
+                    .accessibilityHidden(true)   // #8
                 Text(label)
-                    .font(.system(size: 11, weight: active ? .semibold : .regular))
+                    .font(.caption2.weight(active ? .semibold : .regular))   // #1
             }
             .foregroundColor(active ? AQ.blue : AQ.secondary)
             .frame(maxWidth: .infinity)
+            .frame(minHeight: 44)   // #2 touch target
             .padding(.vertical, 10)
-            .background(
-                active
-                    ? AQ.blue.opacity(0.07)
-                    : Color.clear
-            )
-            .cornerRadius(10)
+            .background(active ? AQ.blue.opacity(0.07) : Color.clear)
+            .cornerRadius(AQRadius.small)   // #17
         }
+        // #27 Large Content Viewer — fixed-size tab text stays usable at large sizes
+        .accessibilityShowsLargeContentViewer {
+            Label(label, systemImage: icon)
+        }
+        .accessibilityLabel("\(label) tab\(active ? ", selected" : "")")
     }
 }
 
@@ -674,7 +677,6 @@ struct ProfileIconButton: View {
                     .font(.system(size: 15, weight: .medium))
                     .foregroundColor(AQ.ink)
 
-                // Accuracy badge
                 if pct > 0 {
                     Circle()
                         .fill(pct >= 70 ? AQ.green : AQ.amber)
@@ -683,6 +685,10 @@ struct ProfileIconButton: View {
                         .offset(x: 11, y: -11)
                 }
             }
+            // #2 expand to 44pt minimum hit target while keeping the 36pt visual
+            .frame(width: 44, height: 44)
+            .contentShape(Circle())
         }
+        .accessibilityLabel("Profile and account")   // #8
     }
 }
