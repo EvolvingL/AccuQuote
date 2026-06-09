@@ -4,6 +4,8 @@ import RealityKit
 import UIKit
 
 // MARK: - ActiveScanView
+// Mirrors AccuQuote's scan UX: Face-ID coverage ring, glass-card HUD,
+// tutorial overlay on first use, pulsing status pill, instruction text.
 
 struct ActiveScanView: View {
     @EnvironmentObject var appState: AppState
@@ -12,39 +14,74 @@ struct ActiveScanView: View {
     @State private var showScanComplete = false
     @State private var completedRoom: CapturedRoom?
 
+    // Tutorial overlay — shown once, dismissed on tap or after 3s
+    @State private var showTutorial = !UserDefaults.standard.bool(forKey: "accuscan_tutorial_seen")
+
     var body: some View {
         ZStack {
             ScanViewControllerBridge(sessionManager: sessionManager)
                 .ignoresSafeArea()
 
-            // HUD is hidden while ARCoachingOverlayView is active so the two
-            // systems never overlap during initialisation (Fix #7)
+            // ── Main scan HUD ─────────────────────────────────────────────
+            // Hidden while coaching overlay is active (Apple AR HIG compliance)
             if !sessionManager.isCoachingActive {
                 VStack(spacing: 0) {
-                    ScanTopHUD(
-                        coverage: sessionManager.overallCoverage,
-                        instruction: sessionManager.instructionText,
-                        isInterrupted: sessionManager.isInterrupted,
+                    // Top: cancel button + status pill
+                    ScanTopBar(
                         onCancel: {
                             sessionManager.stopCapture()
                             sessionManager.reset()
                             appState.goHome()
-                        }
+                        },
+                        isInterrupted: sessionManager.isInterrupted
                     )
+
                     Spacer()
-                    // Wall strip only shown once walls start appearing (Fix #6)
-                    if sessionManager.walls.count >= 3 {
-                        WallCompletionStrip(walls: sessionManager.walls)
-                            .transition(.move(edge: .bottom).combined(with: .opacity))
-                    }
-                    ScanControlBar(sessionManager: sessionManager)
+
+                    // Instruction text above ring
+                    Text(sessionManager.instructionText)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white.opacity(0.85))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.bottom, 16)
+                        .onChange(of: sessionManager.instructionText) { _ in
+                            // Pulse haptic on critical instructions (matches AccuQuote)
+                            let txt = sessionManager.instructionText.lowercased()
+                            if txt.contains("light") || txt.contains("closer") || txt.contains("slow") {
+                                HapticService.shared.mediumImpact()
+                            }
+                        }
+
+                    // Face-ID coverage ring — matches AccuQuote exactly
+                    CoverageRingView(
+                        sectors:    sessionManager.coverageTracker.sectors,
+                        coverage:   sessionManager.coverageTracker.coverage,
+                        isComplete: sessionManager.coverageTracker.isComplete
+                    )
+                    .padding(.bottom, 20)
+
+                    // Glass-card HUD with wall strip + done button
+                    ScanGlassHUD(sessionManager: sessionManager)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 48)
                 }
-                .padding(.bottom, 8)
-                .animation(.easeInOut(duration: 0.4), value: sessionManager.walls.count >= 3)
                 .transition(.opacity)
+                .animation(.easeInOut(duration: 0.3), value: sessionManager.isCoachingActive)
             }
 
-            // Error overlay (Fix #5)
+            // ── Interruption banner ───────────────────────────────────────
+            if sessionManager.isInterrupted {
+                InterruptionBanner(onReset: {
+                    sessionManager.reset()
+                    sessionManager.startScan()
+                })
+                .transition(.move(edge: .top).combined(with: .opacity))
+                .animation(.easeInOut(duration: 0.3), value: sessionManager.isInterrupted)
+            }
+
+            // ── Error overlay ─────────────────────────────────────────────
             if case .error(let msg) = sessionManager.scanState {
                 ScanErrorOverlay(message: msg) {
                     sessionManager.reset()
@@ -55,23 +92,13 @@ struct ActiveScanView: View {
                 }
             }
 
-            // Interruption banner (Fix #3)
-            if sessionManager.isInterrupted {
-                InterruptionBanner(onReset: {
-                    sessionManager.reset()
-                    sessionManager.startScan()
-                })
-                .transition(.move(edge: .top).combined(with: .opacity))
-                .animation(.easeInOut(duration: 0.3), value: sessionManager.isInterrupted)
-            }
-
-            // Animated processing overlay (Fix #14)
+            // ── Processing overlay ────────────────────────────────────────
             if sessionManager.scanState == .processing {
                 AnimatedProcessingOverlay()
                     .transition(.opacity)
             }
 
-            // Scan complete celebration (Fix #9)
+            // ── Scan complete celebration ─────────────────────────────────
             if showScanComplete, let room = completedRoom {
                 ScanCompleteOverlay(room: room) {
                     showScanComplete = false
@@ -83,19 +110,19 @@ struct ActiveScanView: View {
                         roomType: .other,
                         date: Date(),
                         scanMethod: .lidar,
-                        wallCount: room.walls.count,
-                        doorCount: room.doors.count,
-                        windowCount: room.windows.count,
-                        floorArea: room.floors.first.map {
+                        wallCount:    room.walls.count,
+                        doorCount:    room.doors.count,
+                        windowCount:  room.windows.count,
+                        floorArea:    room.floors.first.map {
                             Double($0.dimensions.x * $0.dimensions.z)
                         } ?? 0,
-                        wallArea: room.walls.reduce(0) {
+                        wallArea:     room.walls.reduce(0) {
                             $0 + Double($1.dimensions.x * $1.dimensions.y)
                         },
                         ceilingHeight: room.walls.first.map {
                             Double($0.dimensions.y)
                         } ?? 2.4,
-                        deviceInfo: UIDevice.current.model,
+                        deviceInfo:   UIDevice.current.model,
                         thumbnailData: thumbnail.pngData()
                     )
                     let session = ScanSession(name: "", roomType: .other,
@@ -105,9 +132,18 @@ struct ActiveScanView: View {
                 }
                 .transition(.opacity)
             }
+
+            // ── First-use tutorial overlay (mirrors AccuQuote) ────────────
+            if showTutorial {
+                ScanTutorialOverlay {
+                    withAnimation(.easeOut(duration: 0.3)) { showTutorial = false }
+                    UserDefaults.standard.set(true, forKey: "accuscan_tutorial_seen")
+                }
+                .transition(.opacity)
+                .animation(.easeInOut(duration: 0.3), value: showTutorial)
+            }
         }
         .ignoresSafeArea()
-        .animation(.easeInOut(duration: 0.4), value: sessionManager.isCoachingActive)
         .onChange(of: sessionManager.scanState) { state in
             if case .complete(let room) = state {
                 completedRoom = room
@@ -117,95 +153,194 @@ struct ActiveScanView: View {
     }
 }
 
-// MARK: - Top HUD
+// MARK: - Top bar (cancel + pulsing status pill)
 
-struct ScanTopHUD: View {
-    let coverage: Float
-    let instruction: String
-    let isInterrupted: Bool
+private struct ScanTopBar: View {
     let onCancel: () -> Void
+    let isInterrupted: Bool
 
-    @State private var pulseInstruction = false
+    @State private var pulsing = false
+    // Matches AccuQuote's vivid scan blue
+    private let scanBlue = Color(red: 0.20, green: 0.60, blue: 1.00)
 
     var body: some View {
-        VStack(spacing: 10) {
-            HStack {
-                Button(action: onCancel) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white.opacity(0.8))
-                        .frame(width: 36, height: 36)
-                        .background(Color.black.opacity(0.4))
-                        .clipShape(Circle())
-                }
-                .accessibilityLabel("Cancel scan")
-                .accessibilityHint("Stops scanning and returns to home")
-
-                Spacer()
-
-                ScanProgressRing(coverage: coverage)
-                    .accessibilityLabel("Scan coverage: \(Int(coverage * 100)) percent")
+        HStack {
+            // Pulsing "Scanning" status pill — identical to AccuQuote
+            HStack(spacing: 7) {
+                Circle()
+                    .fill(scanBlue)
+                    .frame(width: 9, height: 9)
+                    .shadow(color: scanBlue.opacity(pulsing ? 0.9 : 0.2), radius: pulsing ? 8 : 2)
+                    .scaleEffect(pulsing ? 1.35 : 0.85)
+                    .animation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true),
+                               value: pulsing)
+                Text(isInterrupted ? "Paused" : "Scanning")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(.white)
+                    .opacity(pulsing ? 1.0 : 0.55)
+                    .animation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true),
+                               value: pulsing)
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 56)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(scanBlue.opacity(pulsing ? 0.28 : 0.12))
+            .animation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true), value: pulsing)
+            .cornerRadius(22)
+            .overlay(RoundedRectangle(cornerRadius: 22).stroke(scanBlue.opacity(0.5), lineWidth: 1))
+            .onAppear { pulsing = true }
 
-            // Instruction capsule — pulses orange on critical warnings (Fix #7)
-            Text(instruction)
-                .font(.system(size: 15, weight: .medium))
-                .foregroundColor(.white)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 9)
-                .background(isCriticalInstruction
-                    ? Color.orange.opacity(0.80)
-                    : Color.black.opacity(0.50))
-                .clipShape(Capsule())
-                .scaleEffect(pulseInstruction ? 1.06 : 1.0)
-                .animation(.easeInOut(duration: 0.18), value: pulseInstruction)
-                .padding(.bottom, 8)
-                .onChange(of: instruction) { _ in
-                    guard isCriticalInstruction else { return }
-                    HapticService.shared.mediumImpact()
-                    withAnimation { pulseInstruction = true }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                        withAnimation { pulseInstruction = false }
-                    }
-                }
-                .accessibilityLabel("Instruction: \(instruction)")
+            Spacer()
+
+            // Cancel button
+            Button(action: onCancel) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.white)
+                    .padding(10)
+                    .background(.ultraThinMaterial)
+                    .clipShape(Circle())
+            }
+            .accessibilityLabel("Cancel scan")
+            .accessibilityHint("Stops scanning and returns to home")
         }
-    }
-
-    private var isCriticalInstruction: Bool {
-        instruction.lowercased().contains("light") ||
-        instruction.lowercased().contains("closer") ||
-        instruction.lowercased().contains("slow")
+        .padding(.horizontal, 20)
+        .padding(.top, 60)
     }
 }
 
-// MARK: - Progress ring
+// MARK: - Glass HUD card (wall strip + done button)
+// Matches AccuQuote's ScanHUD card aesthetic with glass material background.
 
-struct ScanProgressRing: View {
-    let coverage: Float
+private struct ScanGlassHUD: View {
+    @ObservedObject var sessionManager: ScanSessionManager
+    @State private var localPaused = false
+
+    var body: some View {
+        VStack(spacing: 14) {
+            // Wall completion strip — only shown once walls detected (Fix #6 / HIG)
+            if sessionManager.walls.count >= 3 {
+                WallCompletionStrip(walls: sessionManager.walls)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .animation(.easeInOut(duration: 0.4), value: sessionManager.walls.count)
+            }
+
+            // Controls row
+            HStack(spacing: 14) {
+                // Pause / resume
+                Button {
+                    localPaused.toggle()
+                    if localPaused { sessionManager.pauseScan() } else { sessionManager.resumeScan() }
+                    HapticService.shared.mediumImpact()
+                } label: {
+                    Image(systemName: localPaused ? "play.fill" : "pause.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(width: 50, height: 50)
+                        .background(.ultraThinMaterial)
+                        .clipShape(Circle())
+                }
+                .accessibilityLabel(localPaused ? "Resume scan" : "Pause scan")
+                .onChange(of: sessionManager.isInterrupted) { interrupted in
+                    localPaused = interrupted
+                }
+
+                // Done — enabled immediately but fades in fully at 80%+ coverage (AccuQuote pattern)
+                Button {
+                    sessionManager.stopScan()
+                    HapticService.shared.heavyImpact()
+                } label: {
+                    Text("Done")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(AS.bg)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(AS.lightBlue)
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                }
+                .opacity(sessionManager.coverageTracker.coverage >= 0.80 ? 1.0 : 0.55)
+                .accessibilityLabel("Finish scan")
+                .accessibilityHint("Processes your scan and shows the 3D model")
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color.black.opacity(0.55))
+                .background(.ultraThinMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 20))
+        )
+    }
+}
+
+// MARK: - Tutorial overlay (first-use, mirrors AccuQuote's ScanTutorialAnimation)
+
+private struct ScanTutorialOverlay: View {
+    let onDismiss: () -> Void
+
+    @State private var sweepOffset: CGFloat = -40
+    @State private var opacity: Double = 0
 
     var body: some View {
         ZStack {
-            Circle()
-                .stroke(Color.white.opacity(0.15), lineWidth: 3)
-                .frame(width: 44, height: 44)
-            Circle()
-                .trim(from: 0, to: CGFloat(coverage))
-                .stroke(AS.lightBlue, style: StrokeStyle(lineWidth: 3, lineCap: .round))
-                .frame(width: 44, height: 44)
-                .rotationEffect(.degrees(-90))
-                .animation(.easeInOut(duration: 0.4), value: coverage)
-            Text("\(Int(coverage * 100))%")
-                .font(.system(size: 11, weight: .bold, design: .rounded))
-                .foregroundColor(.white)
+            Color.black.opacity(0.55).ignoresSafeArea()
+
+            VStack(spacing: 28) {
+                // Animated phone sweep — identical to AccuQuote
+                ZStack {
+                    ForEach(0..<3) { i in
+                        Capsule()
+                            .fill(Color.white.opacity(0.15 - Double(i) * 0.04))
+                            .frame(width: 3, height: 40 + CGFloat(i) * 16)
+                            .offset(x: sweepOffset + CGFloat(i) * 6)
+                            .animation(
+                                .easeInOut(duration: 1.4).repeatForever(autoreverses: true)
+                                    .delay(Double(i) * 0.08),
+                                value: sweepOffset
+                            )
+                    }
+                    Image(systemName: "iphone")
+                        .font(.system(size: 48, weight: .ultraLight))
+                        .foregroundColor(.white)
+                        .rotationEffect(.degrees(90))
+                        .offset(x: sweepOffset)
+                        .animation(.easeInOut(duration: 1.4).repeatForever(autoreverses: true),
+                                   value: sweepOffset)
+                }
+                .frame(width: 160, height: 100)
+
+                VStack(spacing: 8) {
+                    Text("Move around the room")
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundColor(.white)
+                    HStack(spacing: 6) {
+                        Image(systemName: "arrow.triangle.2.circlepath")
+                            .font(.system(size: 13))
+                            .foregroundColor(.white.opacity(0.7))
+                        Text("Cover every wall, ceiling and floor")
+                            .font(.system(size: 14))
+                            .foregroundColor(.white.opacity(0.7))
+                    }
+                }
+
+                Text("Tap anywhere to start")
+                    .font(.system(size: 13))
+                    .foregroundColor(.white.opacity(0.5))
+            }
+            .opacity(opacity)
+            .padding(.bottom, 140)
         }
+        .onAppear {
+            withAnimation(.easeIn(duration: 0.4)) { opacity = 1 }
+            sweepOffset = 40
+            // Auto-dismiss after 3s
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) { onDismiss() }
+        }
+        .onTapGesture { onDismiss() }
     }
 }
 
-// MARK: - Wall completion strip
-// Sorted by insertionOrder for stable detection-order display (Fix #12)
+// MARK: - Wall completion strip (unchanged — only shown ≥3 walls)
 
 struct WallCompletionStrip: View {
     let walls: [TrackedWall]
@@ -221,10 +356,9 @@ struct WallCompletionStrip: View {
                     WallTile(wall: wall)
                 }
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 4)
         }
-        .frame(height: 60)
-        .padding(.bottom, 8)
+        .frame(height: 52)
         .accessibilityLabel(
             "Wall progress: \(walls.filter { $0.highlightState == .complete }.count) of \(walls.count) complete"
         )
@@ -273,116 +407,7 @@ struct WallTile: View {
     }
 }
 
-// MARK: - Control bar
-// isPaused is derived from sessionManager state to prevent split-brain (Fix #18)
-
-struct ScanControlBar: View {
-    @ObservedObject var sessionManager: ScanSessionManager
-    @State private var localPaused = false
-
-    var body: some View {
-        HStack(spacing: 20) {
-            Button {
-                localPaused.toggle()
-                if localPaused {
-                    sessionManager.pauseScan()
-                } else {
-                    sessionManager.resumeScan()
-                }
-                HapticService.shared.mediumImpact()
-            } label: {
-                Image(systemName: localPaused ? "play.fill" : "pause.fill")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(width: 56, height: 56)
-                    .background(Color.white.opacity(0.15))
-                    .clipShape(Circle())
-            }
-            .accessibilityLabel(localPaused ? "Resume scan" : "Pause scan")
-            // Sync local state if OS interrupts the session
-            .onChange(of: sessionManager.isInterrupted) { interrupted in
-                if interrupted { localPaused = true } else { localPaused = false }
-            }
-
-            Button {
-                sessionManager.stopScan()
-                HapticService.shared.heavyImpact()
-            } label: {
-                Text("Done")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(AS.bg)
-                    .frame(width: 140, height: 56)
-                    .background(AS.lightBlue)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-            }
-            .accessibilityLabel("Finish scan")
-            .accessibilityHint("Processes your scan and shows the 3D model")
-        }
-        .padding(.bottom, 32)
-    }
-}
-
-// MARK: - Animated processing overlay (Fix #13 — uses .task for auto-cancellation)
-
-struct AnimatedProcessingOverlay: View {
-    @State private var currentStep = 0
-    private let steps = [
-        "Analysing walls…",
-        "Measuring doors and windows…",
-        "Building floor plan…",
-        "Finalising model…",
-        "Done"
-    ]
-
-    var body: some View {
-        ZStack {
-            Color.black.opacity(0.82).ignoresSafeArea()
-            VStack(spacing: 24) {
-                ProgressView()
-                    .tint(AS.lightBlue)
-                    .scaleEffect(1.4)
-
-                VStack(spacing: 10) {
-                    ForEach(Array(steps.enumerated()), id: \.offset) { i, step in
-                        HStack(spacing: 10) {
-                            if i < currentStep {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(AS.green)
-                                    .font(.system(size: 14))
-                            } else if i == currentStep {
-                                ProgressView()
-                                    .tint(AS.lightBlue)
-                                    .scaleEffect(0.7)
-                                    .frame(width: 14, height: 14)
-                            } else {
-                                Circle()
-                                    .fill(Color.white.opacity(0.15))
-                                    .frame(width: 14, height: 14)
-                            }
-                            Text(step)
-                                .font(.system(size: 14,
-                                              weight: i <= currentStep ? .semibold : .regular))
-                                .foregroundColor(i <= currentStep ? .white : Color.white.opacity(0.35))
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                }
-                .padding(.horizontal, 48)
-                .animation(.easeInOut(duration: 0.3), value: currentStep)
-            }
-        }
-        // .task is cancelled automatically when the overlay disappears (processing completes)
-        .task {
-            for i in steps.indices {
-                withAnimation { currentStep = i }
-                try? await Task.sleep(nanoseconds: 700_000_000)
-            }
-        }
-        .accessibilityLabel("Building your 3D model, please wait")
-    }
-}
-
-// MARK: - Error overlay (Fix #5)
+// MARK: - Error overlay
 
 struct ScanErrorOverlay: View {
     let message: String
@@ -396,17 +421,14 @@ struct ScanErrorOverlay: View {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .font(.system(size: 36))
                     .foregroundColor(.orange)
-
                 Text("Scan could not complete")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(.white)
-
                 Text(message)
                     .font(.system(size: 14))
                     .foregroundColor(Color.white.opacity(0.65))
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 32)
-
                 HStack(spacing: 14) {
                     Button(action: onExit) {
                         Text("Exit")
@@ -417,7 +439,6 @@ struct ScanErrorOverlay: View {
                             .clipShape(RoundedRectangle(cornerRadius: 14))
                     }
                     .accessibilityLabel("Exit and return to home")
-
                     Button(action: onReset) {
                         Text("Try again")
                             .font(.system(size: 16, weight: .semibold))
@@ -434,9 +455,7 @@ struct ScanErrorOverlay: View {
     }
 }
 
-// MARK: - Interruption banner (Fix #3)
-// Uses GeometryReader to position below the safe area top rather than a magic
-// constant, so it clears the coaching overlay and notch on all device sizes.
+// MARK: - Interruption banner
 
 struct InterruptionBanner: View {
     let onReset: () -> Void
@@ -444,8 +463,7 @@ struct InterruptionBanner: View {
     var body: some View {
         VStack {
             HStack(spacing: 12) {
-                Image(systemName: "pause.circle.fill")
-                    .foregroundColor(.orange)
+                Image(systemName: "pause.circle.fill").foregroundColor(.orange)
                 Text("Scan paused")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(.white)
@@ -454,25 +472,73 @@ struct InterruptionBanner: View {
                     Text("Restart")
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(AS.bg)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 7)
+                        .padding(.horizontal, 14).padding(.vertical, 7)
                         .background(AS.lightBlue)
                         .clipShape(Capsule())
                 }
                 .accessibilityLabel("Restart scan from the beginning")
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 14)
+            .padding(.horizontal, 20).padding(.vertical, 14)
             .background(Color.black.opacity(0.85))
             Spacer()
         }
-        // Reads safe area inset dynamically so the banner clears the notch/coaching
-        // overlay on all device sizes rather than using a hardcoded magic number.
         .safeAreaInset(edge: .top) { Color.clear.frame(height: 56) }
     }
 }
 
-// MARK: - Scan complete celebration (Fix #9)
+// MARK: - Animated processing overlay (step checklist — AccuScan's is better than AccuQuote's here)
+
+struct AnimatedProcessingOverlay: View {
+    @State private var currentStep = 0
+    private let steps = [
+        "Analysing walls…",
+        "Measuring doors and windows…",
+        "Building floor plan…",
+        "Finalising model…",
+        "Done"
+    ]
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.82).ignoresSafeArea()
+            VStack(spacing: 24) {
+                ProgressView().tint(AS.lightBlue).scaleEffect(1.4)
+                VStack(spacing: 10) {
+                    ForEach(Array(steps.enumerated()), id: \.offset) { i, step in
+                        HStack(spacing: 10) {
+                            if i < currentStep {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(AS.green).font(.system(size: 14))
+                            } else if i == currentStep {
+                                ProgressView().tint(AS.lightBlue).scaleEffect(0.7)
+                                    .frame(width: 14, height: 14)
+                            } else {
+                                Circle().fill(Color.white.opacity(0.15))
+                                    .frame(width: 14, height: 14)
+                            }
+                            Text(step)
+                                .font(.system(size: 14,
+                                              weight: i <= currentStep ? .semibold : .regular))
+                                .foregroundColor(i <= currentStep ? .white : Color.white.opacity(0.35))
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+                .padding(.horizontal, 48)
+                .animation(.easeInOut(duration: 0.3), value: currentStep)
+            }
+        }
+        .task {
+            for i in steps.indices {
+                withAnimation { currentStep = i }
+                try? await Task.sleep(nanoseconds: 700_000_000)
+            }
+        }
+        .accessibilityLabel("Building your 3D model, please wait")
+    }
+}
+
+// MARK: - Scan complete celebration
 
 struct ScanCompleteOverlay: View {
     let room: CapturedRoom
@@ -488,7 +554,6 @@ struct ScanCompleteOverlay: View {
     var body: some View {
         ZStack {
             Color.black.opacity(0.88).ignoresSafeArea()
-
             VStack(spacing: 24) {
                 ZStack {
                     Circle()
@@ -509,7 +574,7 @@ struct ScanCompleteOverlay: View {
                     .animation(.easeIn(duration: 0.3).delay(0.3), value: appeared)
 
                 HStack(spacing: 20) {
-                    StatBadge(value: "\(room.walls.count)", label: "walls")
+                    StatBadge(value: "\(room.walls.count)",  label: "walls")
                     StatBadge(value: String(format: "%.1f m²", floorArea), label: "floor area")
                     StatBadge(value: "\(room.doors.count + room.windows.count)", label: "openings")
                 }
@@ -529,8 +594,6 @@ struct ScanCompleteOverlay: View {
                 .accessibilityLabel("Open 3D model of the scanned room")
             }
         }
-        // Fix #14 — set appeared in onAppear directly; SwiftUI batches to next render pass
-        // so the spring animation triggers correctly without a manual delay.
         .onAppear {
             appeared = true
             HapticService.shared.success()
@@ -551,8 +614,7 @@ struct StatBadge: View {
                 .font(.system(size: 11, weight: .medium))
                 .foregroundColor(Color.white.opacity(0.5))
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 16).padding(.vertical, 10)
         .background(Color.white.opacity(0.06))
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }

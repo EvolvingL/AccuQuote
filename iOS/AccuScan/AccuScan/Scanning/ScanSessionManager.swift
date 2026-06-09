@@ -26,6 +26,9 @@ final class ScanSessionManager: NSObject, ObservableObject {
     private var captureSession: RoomCaptureSession?
     private let wallTracker = WallCoverageTracker()
 
+    // Coverage ring — mirrors AccuQuote's Face-ID-style scan ring
+    let coverageTracker = ScanCoverageTracker()
+
     // Tracks last wall count so haptics only fire on new wall detections, not every tick
     private var lastHapticWallCount = 0
 
@@ -77,6 +80,7 @@ final class ScanSessionManager: NSObject, ObservableObject {
 
     func startScan() {
         wallTracker.reset()
+        coverageTracker.reset()
         walls = []
         overallCoverage = 0
         errorMessage = nil
@@ -128,6 +132,7 @@ final class ScanSessionManager: NSObject, ObservableObject {
         captureSession = nil
         captureView = nil
         wallTracker.reset()
+        coverageTracker.reset()
         walls = []
         overallCoverage = 0
         capturedRoom = nil
@@ -155,7 +160,12 @@ extension ScanSessionManager: RoomCaptureSessionDelegate {
 
     nonisolated func captureSession(_ session: RoomCaptureSession,
                                     didUpdate room: CapturedRoom) {
-        // wallTracker access must happen on MainActor — move everything inside the Task
+        // Feed ARSession frames into the coverage tracker for the ring UI.
+        // This mirrors AccuQuote's approach of sampling frames alongside RoomPlan updates.
+        if let frame = session.arSession.currentFrame {
+            Task { @MainActor in self.coverageTracker.ingest(frame) }
+        }
+
         let wallCount = room.walls.count
         Task { @MainActor in
             let newWalls = self.wallTracker.update(from: room)
