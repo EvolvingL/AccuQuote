@@ -380,7 +380,9 @@ app.post('/api/claude', requireAuth, aiLimiter, async (req, res) => {
 
   const { userPrompt } = req.body || {};
   if (!userPrompt) return res.status(400).json({ error: 'Missing userPrompt' });
-  const maxTokens = 2000; // fixed server-side — not client-controllable
+  // Cap length server-side — prevent oversized payloads burning token budget
+  const safePrompt = String(userPrompt).slice(0, 8000);
+  const maxTokens  = 2000; // fixed server-side — not client-controllable
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -393,7 +395,7 @@ app.post('/api/claude', requireAuth, aiLimiter, async (req, res) => {
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: maxTokens,
-        messages: [{ role: 'user', content: userPrompt }],
+        messages: [{ role: 'user', content: safePrompt }],
       }),
     });
 
@@ -681,11 +683,10 @@ app.post('/api/subscribe', subscribeLimiter, async (req, res) => {
 
 function requireAdmin(req, res, next) {
   const secret = process.env.ADMIN_SECRET;
+  // No dev bypass — admin endpoints require a secret in all environments.
+  // The startup guard already ensures ADMIN_SECRET is set in production.
   if (!secret) {
-    if (process.env.NODE_ENV === 'production') {
-      return res.status(503).json({ error: 'Admin not configured' });
-    }
-    return next(); // dev: allow through
+    return res.status(503).json({ error: 'Admin not configured' });
   }
   const header = req.headers.authorization || '';
   if (header !== `Bearer ${secret}`) {
@@ -850,9 +851,8 @@ app.get('/api/admin/users.csv', requireAdmin, adminLimiter, async (req, res) => 
 async function sendPush(token, title, body, data = {}) {
   if (!adminApp) return { success: false, error: 'Firebase not initialised' };
   try {
-    const { createRequire } = await import('module');
-    const require = createRequire(import.meta.url);
-    const admin = require('firebase-admin');
+    // Use module-level require (createRequire already called at startup — no re-import needed)
+    const admin     = require('firebase-admin');
     const messaging = admin.messaging();
     await messaging.send({
       token,
@@ -955,6 +955,10 @@ app.post('/api/admin/broadcast', requireAdmin, adminLimiter, async (req, res) =>
 
   if (!title || !msgBody) return res.status(400).json({ error: 'title and body are required' });
 
+  // Sanitise all string inputs — cap lengths and strip nulls
+  const safeTitle  = String(title).slice(0, 100);
+  const safeBody   = String(msgBody).slice(0, 500);
+  const safeLink   = deepLink ? String(deepLink).slice(0, 500) : null;
   const isAB = !!(variantA && variantB);
 
   // Query matching device tokens from Firestore
@@ -980,11 +984,11 @@ app.post('/api/admin/broadcast', requireAdmin, adminLimiter, async (req, res) =>
   const countB = { success: 0, failure: 0 };
   const staleTokenUids = [];
 
-  const data = deepLink ? { deep_link: deepLink } : {};
+  const data = safeLink ? { deep_link: safeLink } : {};
 
   await Promise.all(devices.map(async (device) => {
-    let pushTitle = title;
-    let pushBody  = msgBody;
+    let pushTitle = safeTitle;
+    let pushBody  = safeBody;
     let variant   = null;
 
     if (isAB) {
@@ -993,11 +997,11 @@ app.post('/api/admin/broadcast', requireAdmin, adminLimiter, async (req, res) =>
       const hashHex = crypto.createHash('sha256').update(device.uid).digest('hex');
       variant = BigInt('0x' + hashHex.slice(0, 8)) % 2n === 0n ? 'a' : 'b';
       if (variant === 'a' && variantA) {
-        pushTitle = variantA.title || title;
-        pushBody  = variantA.body  || msgBody;
+        pushTitle = String(variantA.title || safeTitle).slice(0, 100);
+        pushBody  = String(variantA.body  || safeBody).slice(0, 500);
       } else if (variant === 'b' && variantB) {
-        pushTitle = variantB.title || title;
-        pushBody  = variantB.body  || msgBody;
+        pushTitle = String(variantB.title || safeTitle).slice(0, 100);
+        pushBody  = String(variantB.body  || safeBody).slice(0, 500);
       }
     }
 
@@ -1073,7 +1077,8 @@ app.post('/api/push/personal', requireAdmin, adminLimiter, async (req, res) => {
   try {
     deviceDoc = await adminFirestore.doc(`devices/${uid}`).get();
   } catch (err) {
-    return console.error("[server]", err); res.status(500).json({ error: "Internal server error." });
+    console.error("[push/personal]", err);
+    return res.status(500).json({ error: "Internal server error." });
   }
 
   if (!deviceDoc.exists) return res.status(404).json({ error: 'Device not registered for this user' });
@@ -1099,7 +1104,9 @@ app.post('/api/push/personal', requireAdmin, adminLimiter, async (req, res) => {
 
   if (!result.success) {
     if (result.stale) await adminFirestore.doc(`devices/${uid}`).delete().catch(() => {});
-    return res.status(500).json({ error: result.error });
+    // Do not leak FCM error codes — log server-side only
+    console.error('[push/personal] FCM error', result.error);
+    return res.status(500).json({ error: 'Push delivery failed.' });
   }
 
   // Log
