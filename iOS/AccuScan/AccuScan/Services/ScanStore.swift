@@ -25,6 +25,9 @@ final class ScanStore: ObservableObject {
 
     // MARK: - CRUD
 
+    // Maximum number of scans retained. Oldest are pruned when exceeded.
+    private let maxScans = 200
+
     func save(_ meta: ScanMetadata) {
         // Write thumbnail to disk separately so UserDefaults stays small
         if let data = meta.thumbnailData {
@@ -35,6 +38,15 @@ final class ScanStore: ObservableObject {
         stripped.thumbnailData = nil
         scans.removeAll { $0.id == stripped.id }
         scans.insert(stripped, at: 0)
+
+        // Cap scan count — prune oldest entries beyond the limit
+        while scans.count > maxScans {
+            let oldest = scans.removeLast()
+            try? FileManager.default.removeItem(
+                at: thumbsDir.appendingPathComponent("\(oldest.id.uuidString).png")
+            )
+        }
+
         persist()
     }
 

@@ -148,10 +148,21 @@ enum PNGExporter {
 // MARK: - Shared helpers
 
 private func tmpURL(name: String, ext: String) -> URL {
-    let safe = name.replacingOccurrences(of: " ", with: "_")
-    let ts   = Int(Date().timeIntervalSince1970)
+    // Security: sanitise the name before using it as a filename component.
+    // Allow only alphanumerics, spaces, hyphens, and underscores.
+    // This prevents path traversal (e.g. "../../etc/passwd") and null-byte injection.
+    let allowed = CharacterSet.alphanumerics.union(.init(charactersIn: " -_"))
+    let safe = name
+        .unicodeScalars
+        .filter { allowed.contains($0) }
+        .map { String($0) }
+        .joined()
+        .replacingOccurrences(of: " ", with: "_")
+        .prefix(64)   // cap length — very long names can exceed filesystem limits
+    let safeName = safe.isEmpty ? "scan" : String(safe)
+    let ts = Int(Date().timeIntervalSince1970)
     return FileManager.default.temporaryDirectory
-        .appendingPathComponent("accuscan_\(safe)_\(ts).\(ext)")
+        .appendingPathComponent("accuscan_\(safeName)_\(ts).\(ext)")
 }
 
 enum ExportError: LocalizedError {

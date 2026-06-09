@@ -24,6 +24,7 @@ struct HomeView: View {
     @EnvironmentObject var appState: AppState
     @StateObject private var store = ScanStore.shared
     @State private var showDeleteConfirm: UUID?
+    @State private var showReopenNotice = false   // Fix #17: scan card tap now gives feedback
 
     var body: some View {
         ZStack {
@@ -76,7 +77,8 @@ struct HomeView: View {
                         LazyVStack(spacing: 12) {
                             ForEach(store.scans) { meta in
                                 ScanCardView(meta: meta) {
-                                    // TODO: re-open saved scan (requires persisted USDZ)
+                                    // Fix #17: show informative message instead of doing nothing
+                                    showReopenNotice = true
                                 } onDelete: {
                                     store.delete(meta.id)
                                 }
@@ -88,6 +90,11 @@ struct HomeView: View {
 
                 Spacer(minLength: 0)
             }
+        }
+        .alert("Scan Details", isPresented: $showReopenNotice) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Re-opening saved scans is coming in a future update. To view a scan again, scan the same room.")
         }
     }
 }

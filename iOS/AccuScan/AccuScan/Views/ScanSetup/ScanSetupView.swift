@@ -50,6 +50,11 @@ struct ScanSetupView: View {
                                 .font(.system(size: 16))
                                 .foregroundColor(AS.text)
                                 .focused($nameFieldFocused)
+                                // Fix #21: cap room name at 64 chars — prevents excessively
+                                // long names becoming problematic export filenames
+                                .onChange(of: roomName) { v in
+                                    if v.count > 64 { roomName = String(v.prefix(64)) }
+                                }
                                 .padding(16)
                                 .background(AS.surface1)
                                 .clipShape(RoundedRectangle(cornerRadius: 12))

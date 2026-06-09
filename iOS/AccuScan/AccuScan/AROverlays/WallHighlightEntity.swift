@@ -34,8 +34,10 @@ class WallHighlightEntity: Entity, HasModel, HasAnchoring {
     // MARK: - Configure
 
     func configure(wall: TrackedWall) {
+        // Cancel any running animation and nil it immediately — prevents the old
+        // task racing with new geometry being added during configure.
         opacityTask?.cancel()
-        opacityTask = nil
+        opacityTask = nil          // explicit nil so animateOpacity can't re-trigger it
         children.forEach { $0.removeFromParent() }
         barChildren.removeAll(keepingCapacity: true)
         currentAlpha = 0

@@ -9,9 +9,11 @@ struct ExportView: View {
     let session: ScanSession
 
     @State private var isExporting = false
+    @State private var activeFormat: ExportFormat? = nil   // tracks which format is in progress
     @State private var shareURL: URL?
     @State private var showShareSheet = false
     @State private var exportError: String?
+    @State private var showErrorAlert = false
 
     private let formats: [(name: String, icon: String, desc: String, fmt: ExportFormat)] = [
         ("USDZ",  "cube.fill",          "3D model · opens in Quick Look",        .usdz),
@@ -79,6 +81,12 @@ struct ExportView: View {
                 ShareSheet(items: [url])
             }
         }
+        // Fix #16: show export errors to the user — previously silently swallowed
+        .alert("Export Failed", isPresented: $showErrorAlert) {
+            Button("OK", role: .cancel) { exportError = nil }
+        } message: {
+            Text(exportError ?? "An unknown error occurred.")
+        }
     }
 
     // MARK: - Export row
@@ -87,6 +95,8 @@ struct ExportView: View {
     private func exportRow(for fmt: ExportFormat) -> some View {
         if let info = formats.first(where: { $0.fmt == fmt }) {
             Button {
+                // Fix #18: guard against multiple concurrent exports
+                guard !isExporting else { return }
                 Task { await export(as: fmt) }
             } label: {
                 HStack(spacing: 14) {
@@ -98,11 +108,12 @@ struct ExportView: View {
                         Text(info.desc).font(.system(size: 12)).foregroundColor(AS.muted)
                     }
                     Spacer()
-                    if isExporting {
+                    // Fix #19: show spinner only for the active format, not all buttons
+                    if activeFormat == fmt {
                         ProgressView().tint(AS.lightBlue).scaleEffect(0.8)
                     } else {
                         Image(systemName: "square.and.arrow.up")
-                            .foregroundColor(AS.muted.opacity(0.5))
+                            .foregroundColor(isExporting ? AS.muted.opacity(0.2) : AS.muted.opacity(0.5))
                     }
                 }
                 .contentShape(Rectangle())
@@ -116,7 +127,8 @@ struct ExportView: View {
 
     private func export(as fmt: ExportFormat) async {
         isExporting = true
-        defer { isExporting = false }
+        activeFormat = fmt
+        defer { isExporting = false; activeFormat = nil }
         do {
             let name = session.name.isEmpty ? session.roomType.rawValue : session.name
             let url: URL
@@ -128,11 +140,13 @@ struct ExportView: View {
             case .csv:  url = try await CSVExporter.export(session.capturedRoom,  named: name)
             case .png:  url = try await PNGExporter.export(session.capturedRoom,  named: name)
             }
-            shareURL     = url
+            shareURL       = url
             showShareSheet = true
             HapticService.shared.success()
         } catch {
-            exportError = error.localizedDescription
+            // Fix #16: surface the error — was silently swallowed before
+            exportError    = error.localizedDescription
+            showErrorAlert = true
             HapticService.shared.error()
         }
     }
