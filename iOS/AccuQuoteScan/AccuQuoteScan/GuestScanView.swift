@@ -256,10 +256,12 @@ struct GuestResultView: View {
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
         }
-        .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                showUpsell = true
-            }
+        // Use a cancellable .task instead of DispatchQueue.asyncAfter so the upsell
+        // does not fire after the user has already navigated away (e.g. tapped
+        // "Scan again" within 2 s). Matches AccuScan's upsell-timer pattern.
+        .task {
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            showUpsell = true
         }
     }
 
