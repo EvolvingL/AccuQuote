@@ -112,8 +112,10 @@ struct FloorPlanView: View {
                 ctx.stroke(tick, with: dimShading, lineWidth: 0.8)
             }
             ctx.draw(
+                // #12: 11pt is the HIG legibility minimum (was 9pt). These are the
+                // measurement values — the most important text on the floor plan.
                 Text(dim.label)
-                    .font(.system(size: 9, weight: .medium, design: .monospaced))
+                    .font(.system(size: 11, weight: .medium, design: .monospaced))
                     .foregroundColor(Self.dimColor),
                 at: dim.midpoint
             )
@@ -127,7 +129,7 @@ struct FloorPlanView: View {
         bar.addLine(to: CGPoint(x: origin.x + ppm, y: origin.y))
         ctx.stroke(bar, with: .color(.black), lineWidth: 2)
         ctx.draw(
-            Text("1m").font(.system(size: 9, weight: .bold)).foregroundColor(.black),
+            Text("1m").font(.system(size: 11, weight: .bold)).foregroundColor(.black),   // #12
             at: CGPoint(x: origin.x + ppm / 2, y: origin.y - 12)
         )
     }

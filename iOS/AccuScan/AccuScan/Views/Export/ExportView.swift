@@ -37,16 +37,20 @@ struct ExportView: View {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(AS.lightBlue)
+                            .frame(width: 44, height: 44)   // #2 touch target
+                            .contentShape(Rectangle())
                     }
+                    .buttonStyle(ScaleButtonStyle())   // #15
+                    .accessibilityLabel("Back to review")
                     Spacer()
                     Text("Export")
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.subheadline.weight(.semibold))   // #1
                         .foregroundColor(AS.text)
                     Spacer()
-                    Color.clear.frame(width: 24)
+                    Color.clear.frame(width: 44)
                 }
                 .padding(.horizontal, 24)
-                .padding(.top, 56)
+                .padding(.top)   // #4 safe area
                 .padding(.bottom, 20)
 
                 List {
@@ -103,23 +107,29 @@ struct ExportView: View {
                     Image(systemName: info.icon)
                         .frame(width: 32)
                         .foregroundColor(AS.lightBlue)
+                        .symbolRenderingMode(.hierarchical)   // #19
+                        .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(info.name).font(.system(size: 15, weight: .semibold)).foregroundColor(AS.text)
-                        Text(info.desc).font(.system(size: 12)).foregroundColor(AS.muted)
+                        Text(info.name).font(.subheadline.weight(.semibold)).foregroundColor(AS.text)   // #1
+                        Text(info.desc).font(.caption).foregroundColor(AS.muted)   // #1
                     }
                     Spacer()
-                    // Fix #19: show spinner only for the active format, not all buttons
                     if activeFormat == fmt {
                         ProgressView().tint(AS.lightBlue).scaleEffect(0.8)
                     } else {
                         Image(systemName: "square.and.arrow.up")
                             .foregroundColor(isExporting ? AS.muted.opacity(0.2) : AS.muted.opacity(0.5))
+                            .accessibilityHidden(true)
                     }
                 }
                 .contentShape(Rectangle())
+                .frame(minHeight: 44)   // #2 touch target
             }
+            .buttonStyle(ScaleButtonStyle())   // #15
             .disabled(isExporting)
             .listRowBackground(AS.surface1)
+            .accessibilityLabel("Export as \(info.name)")
+            .accessibilityHint(info.desc)
         }
     }
 

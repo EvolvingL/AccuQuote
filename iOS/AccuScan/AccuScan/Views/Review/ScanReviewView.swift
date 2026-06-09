@@ -29,28 +29,37 @@ struct ScanReviewView: View {
                         HStack(spacing: 5) {
                             Image(systemName: "house")
                                 .font(.system(size: 14, weight: .semibold))
+                                .accessibilityHidden(true)
                             Text("Home")
-                                .font(.system(size: 14, weight: .semibold))
+                                .font(.subheadline.weight(.semibold))   // #1
                         }
                         .foregroundColor(AS.lightBlue)
+                        .frame(minHeight: 44)   // #2 touch target
                     }
+                    .buttonStyle(ScaleButtonStyle())   // #15
+                    .accessibilityLabel("Back to home")
                     Spacer()
                     Text(session.name.isEmpty ? session.roomType.rawValue : session.name)
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.subheadline.weight(.semibold))   // #1
                         .foregroundColor(AS.text)
+                        .lineLimit(1)
                     Spacer()
                     Button { appState.showExport(session) } label: {
                         HStack(spacing: 5) {
                             Image(systemName: "square.and.arrow.up")
                                 .font(.system(size: 14, weight: .semibold))
+                                .accessibilityHidden(true)
                             Text("Export")
-                                .font(.system(size: 14, weight: .semibold))
+                                .font(.subheadline.weight(.semibold))   // #1
                         }
                         .foregroundColor(AS.lightBlue)
+                        .frame(minHeight: 44)   // #2 touch target
                     }
+                    .buttonStyle(ScaleButtonStyle())   // #15
+                    .accessibilityLabel("Export this scan")
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 56)
+                .padding(.top)   // #4 safe area
                 .padding(.bottom, 16)
 
                 // Tab bar
@@ -61,10 +70,10 @@ struct ScanReviewView: View {
                             HapticService.shared.selection()
                         } label: {
                             Text(tab.rawValue)
-                                .font(.system(size: 14, weight: activeTab == tab ? .semibold : .medium))
+                                .font(.subheadline.weight(activeTab == tab ? .semibold : .medium))   // #1
                                 .foregroundColor(activeTab == tab ? AS.lightBlue : AS.muted)
                                 .frame(maxWidth: .infinity)
-                                .padding(.vertical, 10)
+                                .frame(minHeight: 44)   // #2 touch target
                         }
                         .overlay(alignment: .bottom) {
                             if activeTab == tab {
@@ -73,6 +82,9 @@ struct ScanReviewView: View {
                                     .frame(height: 2)
                             }
                         }
+                        // #27 Large Content Viewer — fixed-size tabs stay usable at large text
+                        .accessibilityShowsLargeContentViewer { Text(tab.rawValue) }
+                        .accessibilityLabel("\(tab.rawValue) tab\(activeTab == tab ? ", selected" : "")")
                     }
                 }
                 .background(AS.surface1)
@@ -109,6 +121,8 @@ struct ScanReviewView: View {
 
 struct AccuQuoteUpsellSheet: View {
     @Environment(\.dismiss) private var dismiss
+    // App Store link to AccuQuote — replace ID once the app is published
+    private let accuQuoteURL = URL(string: "https://apps.apple.com/app/accuquote")!
 
     var body: some View {
         VStack(spacing: 20) {
@@ -120,29 +134,41 @@ struct AccuQuoteUpsellSheet: View {
             Image(systemName: "bolt.fill")
                 .font(.system(size: 40))
                 .foregroundColor(AS.amber)
+                .accessibilityHidden(true)
 
             Text("Upgrade to AccuQuote")
-                .font(.system(size: 22, weight: .bold))
+                .font(.title2.weight(.bold))   // #1
                 .foregroundColor(AS.text)
 
             Text("Turn this room scan into an instant material quote and professional proposal — in under 2 minutes.")
-                .font(.system(size: 15))
+                .font(.subheadline)   // #1
                 .foregroundColor(AS.muted)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 24)
 
-            Button {
-                dismiss()
-            } label: {
-                Text("Learn more")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(AS.bg)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 52)
-                    .background(AS.amber)
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
+            // #25: "Learn more" now actually navigates to the App Store —
+            // previously it just dismissed the sheet and went nowhere.
+            Link(destination: accuQuoteURL) {
+                HStack(spacing: 8) {
+                    Text("Get AccuQuote")
+                        .font(.headline)   // #1
+                    Image(systemName: "arrow.up.forward")
+                        .font(.system(size: 14, weight: .semibold))
+                        .accessibilityHidden(true)
+                }
+                .foregroundColor(AS.bg)
+                .frame(maxWidth: .infinity)
+                .frame(height: 52)
+                .background(AS.amber)
+                .clipShape(RoundedRectangle(cornerRadius: Radius.large))   // #17
             }
+            .buttonStyle(ScaleButtonStyle())   // #15
             .padding(.horizontal, 24)
+            .accessibilityLabel("Get AccuQuote on the App Store")
+
+            Button("Maybe later") { dismiss() }
+                .font(.subheadline)
+                .foregroundColor(AS.muted)
 
             Spacer()
         }

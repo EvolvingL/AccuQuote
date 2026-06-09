@@ -104,10 +104,13 @@ struct ActiveScanView: View {
                     showScanComplete = false
                     let thumbnail = ThumbnailGenerator.generate(from: room,
                                                                 size: CGSize(width: 112, height: 112))
+                    // #20: preserve the room name + type the user entered in setup
+                    let roomName = appState.pendingRoomName
+                    let roomType = appState.pendingRoomType
                     let meta = ScanMetadata(
                         id: UUID(),
-                        name: "",
-                        roomType: .other,
+                        name: roomName,
+                        roomType: roomType,
                         date: Date(),
                         scanMethod: .lidar,
                         wallCount:    room.walls.count,
@@ -125,7 +128,7 @@ struct ActiveScanView: View {
                         deviceInfo:   UIDevice.current.model,
                         thumbnailData: thumbnail.pngData()
                     )
-                    let session = ScanSession(name: "", roomType: .other,
+                    let session = ScanSession(name: roomName, roomType: roomType,
                                              capturedRoom: room, scanMethod: .lidar)
                     ScanStore.shared.save(meta)
                     appState.showReview(session)
@@ -545,6 +548,7 @@ struct ScanCompleteOverlay: View {
     let onContinue: () -> Void
 
     @State private var appeared = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion   // #11
 
     private var floorArea: Double {
         room.floors.first.map { Double($0.dimensions.x * $0.dimensions.z) }
@@ -564,14 +568,16 @@ struct ScanCompleteOverlay: View {
                         .font(.system(size: 44, weight: .bold))
                         .foregroundColor(AS.lightBlue)
                         .scaleEffect(appeared ? 1.0 : 0.2)
+                        .accessibilityHidden(true)
                 }
-                .animation(.spring(response: 0.5, dampingFraction: 0.65), value: appeared)
+                // #11 respect Reduce Motion — no spring bounce when enabled
+                .animation(reduceMotion ? .none : .spring(response: 0.5, dampingFraction: 0.65), value: appeared)
 
                 Text("Room measured")
-                    .font(.system(size: 24, weight: .bold))
+                    .font(.title2.weight(.bold))   // #1
                     .foregroundColor(.white)
                     .opacity(appeared ? 1 : 0)
-                    .animation(.easeIn(duration: 0.3).delay(0.3), value: appeared)
+                    .animation(reduceMotion ? .none : .easeIn(duration: 0.3).delay(0.3), value: appeared)
 
                 HStack(spacing: 20) {
                     StatBadge(value: "\(room.walls.count)",  label: "walls")
@@ -579,24 +585,26 @@ struct ScanCompleteOverlay: View {
                     StatBadge(value: "\(room.doors.count + room.windows.count)", label: "openings")
                 }
                 .opacity(appeared ? 1 : 0)
-                .animation(.easeIn(duration: 0.3).delay(0.5), value: appeared)
+                .animation(reduceMotion ? .none : .easeIn(duration: 0.3).delay(0.5), value: appeared)
 
                 Button(action: onContinue) {
                     Text("View 3D Model")
-                        .font(.system(size: 17, weight: .semibold))
+                        .font(.headline)   // #1
                         .foregroundColor(AS.bg)
                         .frame(width: 200, height: 52)
                         .background(AS.lightBlue)
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                        .clipShape(RoundedRectangle(cornerRadius: Radius.xl))   // #17
                 }
+                .buttonStyle(ScaleButtonStyle())   // #15
                 .opacity(appeared ? 1 : 0)
-                .animation(.easeIn(duration: 0.3).delay(0.7), value: appeared)
+                .animation(reduceMotion ? .none : .easeIn(duration: 0.3).delay(0.7), value: appeared)
                 .accessibilityLabel("Open 3D model of the scanned room")
             }
         }
+        // #18 success haptic via sensoryFeedback (declarative, respects user settings)
+        .sensoryFeedback(.success, trigger: appeared)
         .onAppear {
             appeared = true
-            HapticService.shared.success()
         }
     }
 }

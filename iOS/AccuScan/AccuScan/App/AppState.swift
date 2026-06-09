@@ -18,6 +18,11 @@ final class AppState: ObservableObject {
 
     @Published var screen: Screen = .home
 
+    // #20: room name + type captured in ScanSetupView, carried through the scan
+    // so the saved ScanMetadata preserves what the user typed (was discarded before).
+    @Published var pendingRoomName: String = ""
+    @Published var pendingRoomType: RoomType = .other
+
     // MARK: - Core Data
     lazy var persistentContainer: NSPersistentContainer = {
         let container = NSPersistentContainer(name: "AccuScan")

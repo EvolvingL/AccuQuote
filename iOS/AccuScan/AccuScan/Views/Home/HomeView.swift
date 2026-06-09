@@ -3,14 +3,13 @@ import SwiftUI
 // MARK: - Design Tokens
 
 enum AS {
-    // Palette
     static let bg         = Color(hex: "#07080A")
     static let surface1   = Color(hex: "#0C0E13")
     static let surface2   = Color(hex: "#111720")
     static let surface3   = Color(hex: "#1A2232")
     static let text       = Color(hex: "#EEE9DF")
     static let muted      = Color(hex: "#5A6A7E")
-    static let lightBlue  = Color(hex: "#7DD3FC")  // accent — scan highlight
+    static let lightBlue  = Color(hex: "#7DD3FC")
     static let green      = Color(hex: "#22C55E")
     static let blue       = Color(hex: "#3B82F6")
     static let teal       = Color(hex: "#14B8A6")
@@ -23,8 +22,9 @@ enum AS {
 struct HomeView: View {
     @EnvironmentObject var appState: AppState
     @StateObject private var store = ScanStore.shared
-    @State private var showDeleteConfirm: UUID?
-    @State private var showReopenNotice = false   // Fix #17: scan card tap now gives feedback
+    @State private var showReopenNotice  = false
+    @State private var pendingDeleteID:  UUID? = nil   // #5 confirmation dialog
+    @State private var showDeleteConfirm = false
 
     var body: some View {
         ZStack {
@@ -35,36 +35,38 @@ struct HomeView: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 3) {
                         Text("ACCUSCAN")
-                            .font(.system(size: 22, weight: .black, design: .default))
+                            // #1 Dynamic Type: title text scales with user setting
+                            .font(.title2.weight(.black))
                             .tracking(4)
                             .foregroundColor(AS.lightBlue)
                         Text("Room Scanner")
-                            .font(.system(size: 13, weight: .medium))
+                            .font(.subheadline.weight(.medium))   // #1
                             .foregroundColor(AS.muted)
                     }
                     Spacer()
                 }
                 .padding(.horizontal, 24)
-                .padding(.top, 56)
+                // #4 safe area — use .padding(.top) and let SwiftUI read the inset
+                .padding(.top)
                 .padding(.bottom, 28)
 
                 // ── New scan CTA ───────────────────────────────────────────
-                Button {
-                    appState.goSetup()
-                } label: {
+                Button { appState.goSetup() } label: {
                     HStack(spacing: 12) {
-                        // Fix #11 — official AR glyph (arkit SF symbol)
                         Image(systemName: "arkit")
                             .font(.system(size: 20, weight: .semibold))
+                            .symbolRenderingMode(.hierarchical)  // #19
+                            .accessibilityHidden(true)           // #8 decorative inside button
                         Text("Scan a Room")
-                            .font(.system(size: 17, weight: .semibold))
+                            .font(.headline)                     // #1
                     }
                     .foregroundColor(AS.bg)
                     .frame(maxWidth: .infinity)
                     .frame(height: 56)
                     .background(AS.lightBlue)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .clipShape(RoundedRectangle(cornerRadius: Radius.xl))  // #17
                 }
+                .buttonStyle(ScaleButtonStyle())              // #15
                 .accessibilityLabel("Scan a new room")
                 .padding(.horizontal, 24)
                 .padding(.bottom, 32)
@@ -77,10 +79,11 @@ struct HomeView: View {
                         LazyVStack(spacing: 12) {
                             ForEach(store.scans) { meta in
                                 ScanCardView(meta: meta) {
-                                    // Fix #17: show informative message instead of doing nothing
                                     showReopenNotice = true
                                 } onDelete: {
-                                    store.delete(meta.id)
+                                    // #5 require confirmation before irreversible delete
+                                    pendingDeleteID  = meta.id
+                                    showDeleteConfirm = true
                                 }
                             }
                         }
@@ -91,11 +94,24 @@ struct HomeView: View {
                 Spacer(minLength: 0)
             }
         }
+        // #5 Confirmation before destructive delete
+        .confirmationDialog("Delete this scan?",
+                            isPresented: $showDeleteConfirm,
+                            titleVisibility: .visible) {
+            Button("Delete", role: .destructive) {
+                if let id = pendingDeleteID { store.delete(id) }
+                pendingDeleteID = nil
+            }
+            Button("Cancel", role: .cancel) { pendingDeleteID = nil }
+        } message: {
+            Text("This scan and its floor plan thumbnail will be permanently deleted.")
+        }
         .alert("Scan Details", isPresented: $showReopenNotice) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text("Re-opening saved scans is coming in a future update. To view a scan again, scan the same room.")
+            Text("Re-opening saved scans is coming in a future update.")
         }
+        // #6 Respond to system appearance — remove forced .dark override from AccuScanApp
     }
 }
 
@@ -107,12 +123,12 @@ struct EmptyScanStateView: View {
             Image(systemName: "square.3.layers.3d")
                 .font(.system(size: 48))
                 .foregroundColor(AS.muted.opacity(0.4))
+                .accessibilityHidden(true)   // #8 decorative
             Text("No scans yet")
-                .font(.system(size: 17, weight: .semibold))
+                .font(.title3.weight(.semibold))   // #1
                 .foregroundColor(AS.text.opacity(0.6))
-            // Fix #4 — no "LiDAR" tech term in user-facing copy
             Text("Tap Scan a Room to get started.\nWalls light up in real time as the room is measured.")
-                .font(.system(size: 14))
+                .font(.subheadline)   // #1
                 .foregroundColor(AS.muted)
                 .multilineTextAlignment(.center)
                 .lineSpacing(4)
@@ -133,9 +149,8 @@ struct ScanCardView: View {
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 16) {
-                // Thumbnail loaded lazily from disk via ScanStore
                 ZStack {
-                    RoundedRectangle(cornerRadius: 10)
+                    RoundedRectangle(cornerRadius: Radius.xs)   // #17
                         .fill(AS.surface2)
                         .frame(width: 56, height: 56)
                     if let data = ScanStore.shared.thumbnail(for: meta.id),
@@ -144,47 +159,54 @@ struct ScanCardView: View {
                             .resizable()
                             .scaledToFill()
                             .frame(width: 56, height: 56)
-                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                            .clipShape(RoundedRectangle(cornerRadius: Radius.xs))
+                            .accessibilityLabel("\(meta.name.isEmpty ? meta.roomType.rawValue : meta.name) floor plan thumbnail")  // #8
                     } else {
                         Image(systemName: meta.roomType.systemIcon)
                             .font(.system(size: 20))
                             .foregroundColor(AS.lightBlue)
+                            .accessibilityHidden(true)   // #8 decorative
                     }
                 }
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(meta.name.isEmpty ? meta.roomType.rawValue : meta.name)
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.subheadline.weight(.semibold))   // #1
                         .foregroundColor(AS.text)
                     HStack(spacing: 8) {
                         Text(String(format: "%.1f m²", meta.floorArea))
-                            .font(.system(size: 13, weight: .medium))
+                            .font(.footnote.weight(.medium))   // #1
                             .foregroundColor(AS.lightBlue)
-                        Text("·")
-                            .foregroundColor(AS.muted)
+                        Text("·").foregroundColor(AS.muted)
                         Text(meta.scanMethod.accuracyLabel)
-                            .font(.system(size: 12))
+                            .font(.caption)   // #1
                             .foregroundColor(AS.muted)
                     }
                     Text(meta.date.formatted(date: .abbreviated, time: .shortened))
-                        .font(.system(size: 11))
+                        .font(.caption2)   // #1
                         .foregroundColor(AS.muted.opacity(0.6))
                 }
 
                 Spacer()
 
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.caption.weight(.semibold))
                     .foregroundColor(AS.muted.opacity(0.4))
+                    .accessibilityHidden(true)   // #8 decorative
             }
             .padding(16)
             .background(AS.surface1)
-            .clipShape(RoundedRectangle(cornerRadius: 14))
-            .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(AS.surface3, lineWidth: 1)
-            )
+            .clipShape(RoundedRectangle(cornerRadius: Radius.large))   // #17
+            .overlay(RoundedRectangle(cornerRadius: Radius.large).stroke(AS.surface3, lineWidth: 1))
         }
+        .buttonStyle(ScaleButtonStyle())   // #15
+        // #29 Context menu for long-press quick actions
+        .contextMenu {
+            Button(role: .destructive) { onDelete() } label: {
+                Label("Delete Scan", systemImage: "trash")
+            }
+        }
+        // #5 Swipe-to-delete triggers confirmation (via parent)
         .swipeActions(edge: .trailing) {
             Button(role: .destructive, action: onDelete) {
                 Label("Delete", systemImage: "trash")
@@ -193,15 +215,15 @@ struct ScanCardView: View {
     }
 }
 
-// MARK: - Color hex init (shared across the app)
+// MARK: - Color hex init
 
 extension Color {
     init(hex: String) {
-        let h = hex.trimmingCharacters(in: .init(charactersIn: "#"))
+        let h   = hex.trimmingCharacters(in: .init(charactersIn: "#"))
         let num = UInt64(h, radix: 16) ?? 0
-        let r = Double((num >> 16) & 0xFF) / 255
-        let g = Double((num >> 8)  & 0xFF) / 255
-        let b = Double( num        & 0xFF) / 255
+        let r   = Double((num >> 16) & 0xFF) / 255
+        let g   = Double((num >> 8)  & 0xFF) / 255
+        let b   = Double( num        & 0xFF) / 255
         self.init(red: r, green: g, blue: b)
     }
 }

@@ -149,8 +149,7 @@ enum PNGExporter {
 
 private func tmpURL(name: String, ext: String) -> URL {
     // Security: sanitise the name before using it as a filename component.
-    // Allow only alphanumerics, spaces, hyphens, and underscores.
-    // This prevents path traversal (e.g. "../../etc/passwd") and null-byte injection.
+    // Prevents path traversal ("../../etc/passwd") and null-byte injection.
     let allowed = CharacterSet.alphanumerics.union(.init(charactersIn: " -_"))
     let safe = name
         .unicodeScalars
@@ -158,11 +157,19 @@ private func tmpURL(name: String, ext: String) -> URL {
         .map { String($0) }
         .joined()
         .replacingOccurrences(of: " ", with: "_")
-        .prefix(64)   // cap length — very long names can exceed filesystem limits
+        .prefix(64)
     let safeName = safe.isEmpty ? "scan" : String(safe)
-    let ts = Int(Date().timeIntervalSince1970)
+
+    // #28: human-readable, locale-stable timestamp (was an opaque Unix epoch).
+    // Fixed yyyy-MM-dd_HHmm format keeps filenames sortable and recognisable
+    // when shared (e.g. accuscan_Bedroom_2026-06-10_1430.pdf).
+    let formatter = DateFormatter()
+    formatter.dateFormat = "yyyy-MM-dd_HHmm"
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    let dateStr = formatter.string(from: Date())
+
     return FileManager.default.temporaryDirectory
-        .appendingPathComponent("accuscan_\(safeName)_\(ts).\(ext)")
+        .appendingPathComponent("accuscan_\(safeName)_\(dateStr).\(ext)")
 }
 
 enum ExportError: LocalizedError {
