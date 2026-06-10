@@ -125,7 +125,7 @@ struct ActiveScanView: View {
                         ceilingHeight: room.walls.first.map {
                             Double($0.dimensions.y)
                         } ?? 2.4,
-                        deviceInfo:   UIDevice.current.model,
+                        deviceInfo:   ScanSession.currentDeviceModel,
                         thumbnailData: thumbnail.pngData()
                     )
                     let session = ScanSession(name: roomName, roomType: roomType,

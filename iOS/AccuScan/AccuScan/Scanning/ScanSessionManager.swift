@@ -79,6 +79,12 @@ final class ScanSessionManager: NSObject, ObservableObject {
     // MARK: - Controls
 
     func startScan() {
+        // H5: re-entrancy guard. viewDidAppear can fire more than once (e.g. a sheet
+        // dismissed over the scan view); starting again would restart RoomPlan and
+        // discard partial scan data. Only begin a scan from idle/error/preparing.
+        if case .scanning = scanState { return }
+        if case .processing = scanState { return }
+
         wallTracker.reset()
         coverageTracker.reset()
         walls = []
@@ -91,6 +97,20 @@ final class ScanSessionManager: NSObject, ObservableObject {
             scanState = .error("This scan requires an iPhone 12 Pro or later.")
             return
         }
+        startLiDAR()
+    }
+
+    /// Restart capture on the existing session without tearing down the capture view.
+    /// Used by the coaching "Start Over" path — a full reset() nils the session and
+    /// the view, after which run() is a silent no-op and the scan freezes (H4).
+    func restartScan() {
+        guard captureSession != nil else { return }
+        wallTracker.reset()
+        coverageTracker.reset()
+        walls = []
+        overallCoverage = 0
+        lastHapticWallCount = 0
+        isInterrupted = false
         startLiDAR()
     }
 
@@ -147,8 +167,13 @@ final class ScanSessionManager: NSObject, ObservableObject {
     // MARK: - LiDAR
 
     private func startLiDAR() {
-        let config = RoomCaptureSession.Configuration()
-        captureSession?.run(configuration: config)
+        // H4: if the session was torn down, don't silently no-op into a frozen
+        // "scanning" state — surface an error the user can recover from.
+        guard let session = captureSession else {
+            scanState = .error("Scanner not ready. Tap Try again to restart.")
+            return
+        }
+        session.run(configuration: RoomCaptureSession.Configuration())
         scanState = .scanning
         instructionText = "Walk slowly around the room"
     }
@@ -215,6 +240,16 @@ extension ScanSessionManager: RoomCaptureViewDelegate {
                                  error: Error?) {
         if let error {
             Task { @MainActor in self.scanState = .error(error.localizedDescription) }
+            return
+        }
+        // C4/H1: reject an empty room. RoomPlan will happily return a CapturedRoom
+        // with zero walls if the user taps Done immediately. An empty room produces
+        // a 0 floor area downstream (and a divide-by-zero in any per-m² maths), so
+        // surface a clear error instead of completing with unusable geometry.
+        guard !processedResult.walls.isEmpty else {
+            Task { @MainActor in
+                self.scanState = .error("No walls detected. Move around the room and try again.")
+            }
             return
         }
         Task { @MainActor in

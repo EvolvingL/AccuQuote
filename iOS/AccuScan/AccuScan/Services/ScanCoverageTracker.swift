@@ -38,7 +38,8 @@ final class ScanCoverageTracker: ObservableObject {
     private var roomCentre:     SIMD2<Float>   = .zero
     private var centreReady     = false
 
-    private static let centreSampleCount  = 60
+    private static let centreSampleCount  = 60   // rolling window size
+    private static let centreReadyCount   = 30   // centre usable once this many samples collected
     private static let highPitch: Float   =  0.20
     private static let lowPitch:  Float   = -0.20
     private static let ceilingPitch: Float = 0.55
@@ -66,30 +67,50 @@ final class ScanCoverageTracker: ObservableObject {
     func ingest(_ frame: ARFrame) {
         let t   = frame.camera.transform
         let pos = SIMD3<Float>(t.columns.3.x, t.columns.3.y, t.columns.3.z)
-        let xz  = SIMD2<Float>(pos.x, pos.z)
+        let fwd = SIMD3<Float>(-t.columns.2.x, -t.columns.2.y, -t.columns.2.z)
+
+        // C1: reject degenerate frames. During ARKit tracking loss / relocalization
+        // the camera transform can contain NaN/Inf. Int(NaN) and Int(Inf) are hard
+        // traps, and a single bad frame would crash the coverage ring. Bail early.
+        guard pos.x.isFinite, pos.y.isFinite, pos.z.isFinite,
+              fwd.x.isFinite, fwd.y.isFinite, fwd.z.isFinite else { return }
+
+        let xz = SIMD2<Float>(pos.x, pos.z)
 
         if let last = lastCamPos { totalDistance += simd_distance(pos, last) }
         lastCamPos = pos
 
-        if !centreReady {
-            camSamples.append(xz)
-            if camSamples.count >= Self.centreSampleCount {
-                let xs = camSamples.map { $0.x }.sorted()
-                let ys = camSamples.map { $0.y }.sorted()
-                let m  = camSamples.count / 2
-                roomCentre  = SIMD2(xs[m], ys[m])
-                centreReady = true
-            }
+        // H3: keep refining the room centre instead of freezing it after the first
+        // 60 samples. If the user spent those opening seconds walking along one wall,
+        // a frozen centre lands on that wall and biases every azimuth bearing — some
+        // sectors then become unreachable and 100% can never be hit. We hold a
+        // rolling window of the most recent positions and recompute the median each
+        // tick (cheap for a bounded window), so the centre converges on the true
+        // middle as the user moves through the room.
+        camSamples.append(xz)
+        if camSamples.count > Self.centreSampleCount {
+            camSamples.removeFirst(camSamples.count - Self.centreSampleCount)
         }
-
-        let fwd = SIMD3<Float>(-t.columns.2.x, -t.columns.2.y, -t.columns.2.z)
+        if camSamples.count >= Self.centreReadyCount {
+            let xs = camSamples.map { $0.x }.sorted()
+            let ys = camSamples.map { $0.y }.sorted()
+            let m  = camSamples.count / 2
+            roomCentre  = SIMD2(xs[m], ys[m])
+            centreReady = true
+        }
 
         let rel = xz - roomCentre
         let azRad: Float = centreReady && simd_length(rel) > 0.4
             ? atan2(rel.x, rel.y)
             : atan2(fwd.x, fwd.z)
         let azDeg = (azRad * 180 / Float.pi + 360).truncatingRemainder(dividingBy: 360)
-        let sector = Int(azDeg / (360 / Float(Self.sectorCount))) % Self.sectorCount
+
+        // C2: clamp to a valid, non-negative sector index. Float rounding or a
+        // residual non-finite azDeg could otherwise produce a negative or
+        // out-of-range index → array trap.
+        guard azDeg.isFinite else { return }
+        let raw    = Int(azDeg / (360 / Float(Self.sectorCount)))
+        let sector = ((raw % Self.sectorCount) + Self.sectorCount) % Self.sectorCount
 
         azimuthHit[sector] = true
 
@@ -99,7 +120,9 @@ final class ScanCoverageTracker: ObservableObject {
 
         let now = frame.timestamp
         if let last = lastFrameTime, pitch > Self.ceilingPitch {
-            ceilingDwell += now - last
+            // H2: clamp dt — a new ARSession restarts the timestamp clock, so a
+            // frame straddling a reset could otherwise add a large negative dt.
+            ceilingDwell += max(0, now - last)
         }
         lastFrameTime = now
 

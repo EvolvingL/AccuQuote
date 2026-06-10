@@ -1,6 +1,7 @@
 import Foundation
 import CoreData
 import RoomPlan
+import UIKit
 
 // MARK: - ScanSession
 // In-memory model for a completed scan. Wraps the CapturedRoom
@@ -42,14 +43,30 @@ struct ScanSession: Identifiable {
          roomType: RoomType,
          date: Date = Date(),
          capturedRoom: CapturedRoom,
-         scanMethod: ScanMethod) {
+         scanMethod: ScanMethod,
+         deviceInfo: String = ScanSession.currentDeviceModel) {
         self.id          = id
         self.name        = name
         self.roomType    = roomType
         self.date        = date
         self.capturedRoom = capturedRoom
         self.scanMethod  = scanMethod
-        self.deviceInfo  = UIDevice.current.model
+        self.deviceInfo  = deviceInfo
+    }
+
+    // L4: read the device model off the main actor without touching
+    // UIDevice.current (which is MainActor-isolated under strict concurrency and
+    // would otherwise make this nonisolated init a data race). uname(2) gives the
+    // raw model identifier from any thread.
+    nonisolated static var currentDeviceModel: String {
+        var systemInfo = utsname()
+        uname(&systemInfo)
+        let mirror = Mirror(reflecting: systemInfo.machine)
+        let identifier = mirror.children.reduce(into: "") { result, element in
+            guard let value = element.value as? Int8, value != 0 else { return }
+            result.append(Character(UnicodeScalar(UInt8(value))))
+        }
+        return identifier.isEmpty ? "iOS device" : identifier
     }
 }
 

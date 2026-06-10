@@ -103,8 +103,9 @@ extension ScanViewController: ARCoachingOverlayViewDelegate {
     }
 
     func coachingOverlayViewDidRequestSessionReset(_ coachingOverlayView: ARCoachingOverlayView) {
-        // User tapped "Start Over" in the coaching overlay — reset and restart
-        sessionManager.reset()
-        sessionManager.startScan()
+        // H4: "Start Over" must restart the existing session, NOT full-reset.
+        // reset() nils the capture session + view, after which the subsequent
+        // run() is a silent no-op and the scan freezes on a dead view.
+        sessionManager.restartScan()
     }
 }

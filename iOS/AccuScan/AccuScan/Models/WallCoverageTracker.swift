@@ -37,15 +37,26 @@ final class WallCoverageTracker {
 
     func update(from room: CapturedRoom) -> [TrackedWall] {
         for wall in room.walls {
+            // C3/M6: skip walls with non-finite or non-positive geometry. RoomPlan
+            // can emit degenerate transforms/dimensions mid-merge; these would
+            // propagate NaN into Transform(matrix:), mesh generation and the
+            // coverage denominator.
             let pos = simd_float3(wall.transform.columns.3.x,
                                   wall.transform.columns.3.y,
                                   wall.transform.columns.3.z)
+            guard pos.x.isFinite, pos.y.isFinite, pos.z.isFinite,
+                  wall.dimensions.x.isFinite, wall.dimensions.y.isFinite,
+                  wall.dimensions.x > 0, wall.dimensions.y > 0 else { continue }
+
             let newHighlight = highlightState(for: wall.confidence)
             let newCoverage  = coveragePercent(for: wall.confidence)
 
-            if let existingKey = findExistingKey(near: pos) {
-                var existing = trackedWalls[existingKey]!
-                // Skip full update if nothing meaningful changed
+            // M5: key by RoomPlan's stable wall identifier instead of fragile
+            // spatial proximity. Proximity matching duplicated walls that shifted
+            // >15 cm/tick, growing trackedWalls unbounded with ghost entries.
+            let key = wall.identifier
+
+            if var existing = trackedWalls[key] {
                 guard existing.confidence != wall.confidence else { continue }
                 existing.confidence     = wall.confidence
                 existing.highlightState = newHighlight
@@ -53,20 +64,18 @@ final class WallCoverageTracker {
                 existing.worldPosition  = pos
                 existing.worldSize      = simd_float3(wall.dimensions.x, wall.dimensions.y, 0.1)
                 existing.worldTransform = wall.transform
-                // Only recompute corners when the wall actually moves/resizes
                 let corners             = extractCorners(wall: wall)
                 existing.topLeftCorner     = corners.topLeft
                 existing.topRightCorner    = corners.topRight
                 existing.bottomLeftCorner  = corners.bottomLeft
                 existing.bottomRightCorner = corners.bottomRight
-                trackedWalls[existingKey]  = existing
+                trackedWalls[key]          = existing
                 coverageDirty = true
             } else {
                 insertionCounter += 1
-                let newID   = UUID()
                 let corners = extractCorners(wall: wall)
-                trackedWalls[newID] = TrackedWall(
-                    id:             newID,
+                trackedWalls[key] = TrackedWall(
+                    id:             key,
                     insertionOrder: insertionCounter,
                     roomPlanWall:   wall,
                     confidence:     wall.confidence,
@@ -146,16 +155,5 @@ final class WallCoverageTracker {
             bottomLeft:  pt(simd_float4(-w, -h, 0, 1)),
             bottomRight: pt(simd_float4( w, -h, 0, 1))
         )
-    }
-
-    // O(n) proximity match — n is typically ≤ 12 walls so this is fast in practice.
-    // Using a flat array scan avoids the overhead of maintaining a spatial index
-    // for such small n.
-    private func findExistingKey(near pos: simd_float3) -> UUID? {
-        for (key, wall) in trackedWalls
-        where simd_distance_squared(wall.worldPosition, pos) < 0.0225 { // 0.15² = 0.0225
-            return key
-        }
-        return nil
     }
 }

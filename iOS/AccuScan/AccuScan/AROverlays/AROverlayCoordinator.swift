@@ -41,7 +41,11 @@ final class AROverlayCoordinator {
             }
         }
 
-        for id in highlightEntities.keys where !activeIDs.contains(id) {
+        // M4: snapshot the keys before mutating — iterating `highlightEntities.keys`
+        // (a live view over the dictionary) while calling removeValue on the same
+        // dictionary is undefined behaviour and can trap.
+        let staleIDs = highlightEntities.keys.filter { !activeIDs.contains($0) }
+        for id in staleIDs {
             anchorEntities[id]?.removeFromParent()
             highlightEntities.removeValue(forKey: id)
             anchorEntities.removeValue(forKey: id)
