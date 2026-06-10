@@ -4500,6 +4500,7 @@ struct DepositRequestView: View {
         do {
             let link = try await StripeService.createPaymentLink(
                 depositAmount:  depositAmount,
+                maxAmount:      effectiveGrandTotal,   // H4: deposit can't exceed the quote
                 customerName:   quote.customerName,
                 jobDescription: quote.jobDescription,
                 traderName:     traderName

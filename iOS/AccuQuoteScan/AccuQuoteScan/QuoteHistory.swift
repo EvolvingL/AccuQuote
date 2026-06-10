@@ -121,10 +121,16 @@ final class QuoteHistoryStore: ObservableObject {
             .appendingPathComponent("aq_quote_history.json")
     }
 
+    private static let maxQuotes = 200   // H7: cap history growth
+    private var writeTask: Task<Void, Never>?   // H6: serialise persistence
+
     private init() { load() }
 
     func save(_ quote: SavedQuote) {
         quotes.insert(quote, at: 0)
+        if quotes.count > Self.maxQuotes {
+            quotes.removeLast(quotes.count - Self.maxQuotes)
+        }
         persistAsync()
     }
 
@@ -155,9 +161,16 @@ final class QuoteHistoryStore: ObservableObject {
     }
 
     private func persistAsync() {
+        // H6: serialise writes — cancel any pending write and schedule a fresh one
+        // from the latest in-memory state, so a slow stale write can't resurrect a
+        // deleted quote or drop a just-saved one. Each write captures the current
+        // snapshot on the MainActor before handing off to a background encode.
+        writeTask?.cancel()
         let snapshot = quotes
-        Task.detached(priority: .utility) {
-            guard let data = try? JSONEncoder().encode(snapshot) else { return }
+        writeTask = Task.detached(priority: .utility) {
+            guard !Task.isCancelled,
+                  let data = try? JSONEncoder().encode(snapshot) else { return }
+            guard !Task.isCancelled else { return }
             try? data.write(to: Self.fileURL, options: .atomic)
         }
     }

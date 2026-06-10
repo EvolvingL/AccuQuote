@@ -38,8 +38,13 @@ extension View {
 
 enum Money {
     static func gbp(_ amount: Double) -> String {
-        amount.truncatingRemainder(dividingBy: 1) == 0
-            ? "£\(Int(amount).formatted())"
-            : String(format: "£%.2f", amount)
+        // Guard against NaN/Inf and astronomically large values that would trap
+        // in Int(...). A single poisoned value (e.g. unitPrice 1e308 from the AI)
+        // must never crash the quote/history/deposit screens.
+        guard amount.isFinite else { return "£0" }
+        let a = min(max(amount, -1_000_000_000), 1_000_000_000)   // clamp to ±£1bn
+        return a.truncatingRemainder(dividingBy: 1) == 0
+            ? "£\(Int(a).formatted())"
+            : String(format: "£%.2f", a)
     }
 }

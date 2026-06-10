@@ -36,6 +36,10 @@ final class AuthManager: NSObject, ObservableObject {
     private var idToken: String? = nil
     private var refreshToken: String? = nil
     private var tokenExpiry: Date = .distantPast
+    // R4: coalesces concurrent refreshes into one in-flight request so parallel
+    // section/entitlement/Stripe calls don't trigger N simultaneous token rotations
+    // (which would invalidate each other and silently sign the user out).
+    private var refreshInFlight: Task<Bool, Never>? = nil
 
     // MARK: - Keychain keys
     private let keychainIdToken      = "aq_firebase_id_token"
@@ -300,6 +304,19 @@ final class AuthManager: NSObject, ObservableObject {
 
     @discardableResult
     private func refreshIdToken() async -> Bool {
+        // R4: if a refresh is already running, await its result instead of starting
+        // a second one. This dedups the token-rotation stampede.
+        if let inFlight = refreshInFlight {
+            return await inFlight.value
+        }
+        let task = Task { @MainActor in await self.performRefresh() }
+        refreshInFlight = task
+        let result = await task.value
+        refreshInFlight = nil
+        return result
+    }
+
+    private func performRefresh() async -> Bool {
         guard let refresh = refreshToken, !refresh.isEmpty else { return false }
         let url = URL(string: "https://securetoken.googleapis.com/v1/token?key=\(firebaseApiKey)")!
         var req = URLRequest(url: url)

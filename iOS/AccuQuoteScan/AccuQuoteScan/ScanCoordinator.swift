@@ -129,6 +129,12 @@ final class ScanCoordinator: ObservableObject {
     private var lastCameraPos: SIMD3<Float>?
     private var distanceTravelled: Float = 0
 
+    // M-SC1: hard cap on accumulated points. A long camera sweep samples a
+    // ~16px depth grid at 4 Hz, which would otherwise grow worldPoints without
+    // bound and exhaust memory on a big room. Once full we drop incoming points
+    // (the early sweep already captured the room extents the bounding box needs).
+    private static let maxWorldPoints = 60_000
+
     init() {
         instructionText = scanMethod == .lidar
             ? "Walk slowly around the room"
@@ -171,6 +177,17 @@ final class ScanCoordinator: ObservableObject {
         // Shoelace formula for polygon area (vertices in metres)
         let n = vertices.count
         guard n >= 3 else { return }
+
+        // C4: validate every numeric input before it can flow into a persisted
+        // quote. A non-finite scale/height/vertex would yield NaN dimensions that
+        // crash Int()/JSONSerialization downstream, and a non-positive scale would
+        // produce a zero-area room. Reject and surface an error instead of trapping.
+        guard scale.isFinite, scale > 0, height.isFinite, height > 0,
+              vertices.allSatisfy({ $0.x.isFinite && $0.y.isFinite }) else {
+            state = .error("Couldn't read those measurements. Please re-enter the shape.")
+            return
+        }
+
         var shoelace: Double = 0
         for i in 0..<n {
             let j = (i + 1) % n
@@ -179,7 +196,8 @@ final class ScanCoordinator: ObservableObject {
         }
         let area = abs(shoelace) / 2.0 * scale * scale
 
-        // Bounding box for length/width approximation
+        // Bounding box for length/width approximation. xs/ys are non-empty
+        // (n >= 3) and finite (validated above), so max()/min() are safe.
         let xs = vertices.map { Double($0.x) * scale }
         let ys = vertices.map { Double($0.y) * scale }
         let length = (xs.max()! - xs.min()!).rounded(to: 2)
@@ -355,19 +373,23 @@ final class ScanCoordinator: ObservableObject {
                                         camTransform.columns.3.y,
                                         camTransform.columns.3.z)
 
-        // Accumulate distance walked
-        if let last = lastCameraPos {
-            distanceTravelled += simd_distance(camPos, last)
+        // Accumulate distance walked (guard against non-finite camera transforms
+        // during tracking loss, which would poison distanceTravelled).
+        if camPos.x.isFinite, camPos.y.isFinite, camPos.z.isFinite {
+            if let last = lastCameraPos {
+                distanceTravelled += simd_distance(camPos, last)
+            }
+            lastCameraPos = camPos
         }
-        lastCameraPos = camPos
 
-        // Project depth samples into world space
-        if let depthData = frame.sceneDepth {
-            ingestDepthMap(depthData, frame: frame)
-        } else {
-            // Fallback: project feature points
-            if let rawFeatures = frame.rawFeaturePoints {
-                for pt in rawFeatures.points {
+        // Project depth samples into world space (skip once the point budget is
+        // spent — see maxWorldPoints).
+        if worldPoints.count < Self.maxWorldPoints {
+            if let depthData = frame.sceneDepth {
+                ingestDepthMap(depthData, frame: frame)
+            } else if let rawFeatures = frame.rawFeaturePoints {
+                // Fallback: project feature points, filtering non-finite ones.
+                for pt in rawFeatures.points where pt.x.isFinite && pt.y.isFinite && pt.z.isFinite {
                     worldPoints.append(pt)
                 }
             }
@@ -404,14 +426,17 @@ final class ScanCoordinator: ObservableObject {
         let camTransform  = frame.camera.transform    // 4×4 world transform
         // Sample a sparse grid (every 16px) to keep point count manageable
         let step = 16
+        let fx = camIntrinsics[0][0], fy = camIntrinsics[1][1]
+        let cx = camIntrinsics[2][0], cy = camIntrinsics[2][1]
+        // A zero focal length (corrupt intrinsics) would divide-by-zero into Inf.
+        guard fx != 0, fy != 0 else { return }
         for row in stride(from: 0, to: h, by: step) {
             for col in stride(from: 0, to: w, by: step) {
+                if worldPoints.count >= Self.maxWorldPoints { return }
                 let depth = ptr[row * w + col]
-                guard depth > 0.1 && depth < 8.0 else { continue }
+                guard depth.isFinite, depth > 0.1, depth < 8.0 else { continue }
 
                 // Back-project pixel to camera space
-                let fx = camIntrinsics[0][0], fy = camIntrinsics[1][1]
-                let cx = camIntrinsics[2][0], cy = camIntrinsics[2][1]
                 let xCam = (Float(col) - cx) / fx * depth
                 let yCam = (Float(row) - cy) / fy * depth
                 let zCam = depth
@@ -419,6 +444,7 @@ final class ScanCoordinator: ObservableObject {
                 // Transform to world space
                 let localPt = SIMD4<Float>(xCam, yCam, -zCam, 1)
                 let worldPt = camTransform * localPt
+                guard worldPt.x.isFinite, worldPt.y.isFinite, worldPt.z.isFinite else { continue }
                 worldPoints.append(SIMD3<Float>(worldPt.x, worldPt.y, worldPt.z))
             }
         }
@@ -440,7 +466,12 @@ final class ScanCoordinator: ObservableObject {
 
     private static func resultFromLiDAR(_ room: CapturedRoom) -> RoomDimensions {
         let walls   = room.walls
-        let lengths = walls.map { Double($0.dimensions.x) }.sorted(by: >)
+        // Drop any wall with a non-finite/non-positive width so a single degenerate
+        // wall can't poison length/width/floorArea with NaN and crash the quote
+        // formatter (Int(NaN) traps; JSONSerialization rejects non-finite Doubles).
+        let lengths = walls.map { Double($0.dimensions.x) }
+                           .filter { $0.isFinite && $0 > 0 }
+                           .sorted(by: >)
         let length: Double, width: Double
         switch lengths.count {
         case 4...: length = (lengths[0]+lengths[1])/2; width = (lengths[2]+lengths[3])/2
@@ -448,7 +479,8 @@ final class ScanCoordinator: ObservableObject {
         case 1:    length = lengths[0]; width = lengths[0]
         default:   length = 3.0;        width = 2.5
         }
-        let height    = walls.first.map { Double($0.dimensions.y) } ?? 2.4
+        let rawHeight = walls.first.map { Double($0.dimensions.y) } ?? 2.4
+        let height    = (rawHeight.isFinite && rawHeight > 0) ? rawHeight : 2.4
         let floorArea = length * width
         return RoomDimensions(
             length: (length*10).rounded()/10, width: (width*10).rounded()/10,

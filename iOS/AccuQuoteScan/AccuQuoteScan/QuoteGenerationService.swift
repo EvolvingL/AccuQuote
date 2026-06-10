@@ -16,6 +16,7 @@ struct QuoteSection: Identifiable {
     var items: [QuoteLineItem]
     var notes: String
     var status: SectionStatus
+    var vatRate: Double? = nil   // VAT rate reported by this section's AI response
 
     var labourTotal: Double { labourDays * labourRate }
     var materialsTotal: Double { items.reduce(0) { $0 + $1.total } }
@@ -68,6 +69,11 @@ final class QuoteGenerationService: ObservableObject {
         preferredSupplier: String,
         usualItems: String
     ) async {
+        // R5: re-entrancy guard — if a generation is already running, ignore the
+        // new request rather than letting two runs clobber the shared sections array.
+        if case .discoveringSections = state { return }
+        if case .generatingSections = state { return }
+
         sections = []
         state = .discoveringSections
         vatRate = 20.0
@@ -97,11 +103,12 @@ final class QuoteGenerationService: ObservableObject {
         state = .generatingSections(total: descriptors.count, completed: 0)
 
         // ── Phase 2: Fan out one Sonnet call per section in parallel ──────────
-        await withTaskGroup(of: (Int, QuoteSection).self) { group in
+        await withTaskGroup(of: QuoteSection.self) { group in
             for (idx, descriptor) in descriptors.enumerated() {
-                sections[idx].status = .loading
+                // Index-by-id guard: array could have been replaced by a re-entrant call
+                if idx < sections.count { sections[idx].status = .loading }
                 group.addTask {
-                    let section = await self.generateSection(
+                    await self.generateSection(
                         descriptor: descriptor,
                         jobDescription: jobDescription,
                         roomDimensions: roomDimensions,
@@ -109,15 +116,22 @@ final class QuoteGenerationService: ObservableObject {
                         preferredSupplier: preferredSupplier,
                         usualItems: usualItems
                     )
-                    return (idx, section)
                 }
             }
 
-            for await (idx, section) in group {
-                sections[idx] = section
-                let done = completedCount
-                state = .generatingSections(total: descriptors.count, completed: done)
+            var resolvedVatRate: Double? = nil
+            for await section in group {
+                // R2: locate by id, never by a positional index that may be stale
+                if let i = sections.firstIndex(where: { $0.id == section.id }) {
+                    sections[i] = section
+                }
+                // R3: collect the first non-nil VAT rate; apply it once below
+                if resolvedVatRate == nil, let vr = section.vatRate { resolvedVatRate = vr }
+                state = .generatingSections(total: descriptors.count, completed: completedCount)
             }
+
+            // R3: set vatRate exactly once, deterministically, before completion
+            if let vr = resolvedVatRate { vatRate = vr }
         }
 
         // Fix #20/#25: if every section failed, report failure not completion
@@ -357,20 +371,28 @@ final class QuoteGenerationService: ObservableObject {
 
         guard let json = extractJSONObject(from: cleaned) else { return nil }
 
-        let labourDays = (json["labourDays"] as? Double) ?? 0.0
-        let labourRate = (json["labourRate"] as? Double) ?? 280.0
+        // Sanitise every numeric the AI returns: reject NaN/Inf and clamp to sane
+        // ranges. Unsanitised values (e.g. unitPrice 1e308, negative qty) propagate
+        // through total/VAT math into Inf/NaN and crash the display formatter.
+        func san(_ v: Double?, min lo: Double, max hi: Double, default d: Double) -> Double {
+            guard let v, v.isFinite else { return d }
+            return Swift.min(Swift.max(v, lo), hi)
+        }
+
+        let labourDays = san(json["labourDays"] as? Double, min: 0,  max: 365,     default: 0)
+        let labourRate = san(json["labourRate"] as? Double, min: 0,  max: 100_000, default: 280)
         let notes      = (json["notes"] as? String) ?? ""
-        // Fix #22: capture vatRate from JSON to return it alongside the section,
-        // letting the caller update vatRate once (not in a racy concurrent Task).
-        let sectionVatRate = json["vatRate"] as? Double
+        // Capture vatRate to return it via the section; the consumer loop applies it
+        // once on the MainActor (no racy per-section Task — see generate()).
+        let sectionVatRate = san(json["vatRate"] as? Double, min: 0, max: 100, default: 20)
 
         var items: [QuoteLineItem] = []
         if let rawItems = json["items"] as? [[String: Any]] {
             for raw in rawItems {
                 let desc     = (raw["description"] as? String) ?? "Item"
-                let qty      = (raw["qty"]         as? Double) ?? 1.0
+                let qty      = san(raw["qty"]       as? Double, min: 0, max: 1_000_000, default: 1)
                 let unit     = (raw["unit"]         as? String) ?? "each"
-                let price    = (raw["unitPrice"]    as? Double) ?? 0.0
+                let price    = san(raw["unitPrice"] as? Double, min: 0, max: 1_000_000, default: 0)
                 let sku      = (raw["sku"]          as? String) ?? ""
                 let supplier = (raw["supplier"]     as? String) ?? ""
                 items.append(QuoteLineItem(
@@ -381,16 +403,14 @@ final class QuoteGenerationService: ObservableObject {
             }
         }
 
-        // Fix #22: return vatRate alongside the section so the caller can set it
-        // once after all sections complete, avoiding concurrent Task races.
-        if let vr = sectionVatRate {
-            Task { @MainActor in self.vatRate = vr }
-        }
+        // vatRate is now carried on the section (see QuoteSection.vatRate) and applied
+        // once by the consumer loop — the racy concurrent Task here is removed.
 
         return QuoteSection(
             id: descriptor.sectionKey, label: descriptor.sectionLabel,
             labourDays: labourDays, labourRate: labourRate,
-            items: items, notes: notes, status: .complete
+            items: items, notes: notes, status: .complete,
+            vatRate: sectionVatRate
         )
     }
 

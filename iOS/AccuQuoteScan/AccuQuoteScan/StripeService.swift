@@ -31,10 +31,20 @@ struct StripeService {
 
     static func createPaymentLink(
         depositAmount: Double,
+        maxAmount: Double = .greatestFiniteMagnitude,
         customerName: String,
         jobDescription: String,
         traderName: String
     ) async throws -> DepositPaymentLink {
+
+        // H4: validate the amount client-side. A non-finite / negative / zero /
+        // over-quote amount must never reach Stripe (JSONSerialization also throws
+        // on non-finite Doubles, so guarding here gives a clean user-facing error).
+        let rounded = (depositAmount * 100).rounded() / 100   // pence precision
+        guard rounded.isFinite, rounded >= 0.50, rounded <= maxAmount else {
+            throw StripeServiceError.serverError(
+                "Enter a deposit between £0.50 and the quote total.")
+        }
 
         guard let url = URL(string: "\(AQBackend.baseURL)/api/stripe/payment-link") else {
             throw StripeServiceError.invalidURL
@@ -51,7 +61,7 @@ struct StripeService {
         request.setValue("Bearer \(idToken)",  forHTTPHeaderField: "Authorization")
 
         let body: [String: Any] = [
-            "depositAmount":   depositAmount,
+            "depositAmount":   rounded,
             "customerName":    customerName,
             "jobDescription":  jobDescription,
             "traderName":      traderName,
