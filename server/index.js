@@ -137,10 +137,13 @@ async function requirePaidTier(req, res, next) {
 }
 
 // ── Raw body for Stripe webhooks ──────────────────────────────────────────────
-app.use('/api/stripe/webhook', express.raw({ type: 'application/json' }));
+// Explicit size cap so a giant payload can't tie up HMAC verification (DoS).
+app.use('/api/stripe/webhook', express.raw({ type: 'application/json', limit: '1mb' }));
 
 // ── JSON body parser for everything else ─────────────────────────────────────
-app.use(express.json());
+// Cap request bodies. Job descriptions/context are truncated downstream anyway,
+// so 256kb is generous; this rejects multi-MB payloads before we spend CPU on them.
+app.use(express.json({ limit: '256kb' }));
 
 // ── Security headers ──────────────────────────────────────────────────────────
 // Fix #22: added Content-Security-Policy to protect admin panel from XSS
@@ -506,9 +509,14 @@ app.post('/api/stripe/webhook', async (req, res) => {
                                 .update(signedPayload)
                                 .digest('hex');
 
-    // Fix #2: timing-safe comparison to prevent HMAC oracle attacks
+    // Fix #2: timing-safe comparison to prevent HMAC oracle attacks.
+    // Reject anything that isn't a same-length hex string outright rather than
+    // padding it — padding could mask a malformed/truncated signature.
+    if (!/^[0-9a-f]+$/i.test(v1) || v1.length !== expectedHex.length) {
+      return res.status(400).json({ error: 'Invalid signature' });
+    }
     const expectedBuf = Buffer.from(expectedHex, 'hex');
-    const receivedBuf = Buffer.from(v1.padEnd(expectedHex.length, '0'), 'hex');
+    const receivedBuf = Buffer.from(v1, 'hex');
     if (expectedBuf.length !== receivedBuf.length ||
         !crypto.timingSafeEqual(expectedBuf, receivedBuf)) {
       return res.status(400).json({ error: 'Invalid signature' });
@@ -578,17 +586,26 @@ app.post('/api/stripe/payment-link', requireAuth, requirePaidTier, stripeLimiter
   if (!stripeKey) return res.status(500).json({ error: 'STRIPE_SECRET_KEY not set on server' });
 
   const { depositAmount, customerName, jobDescription, traderName } = req.body || {};
-  if (!depositAmount || isNaN(depositAmount) || depositAmount <= 0) {
+  // isNaN('Infinity') is false in JS, so check finiteness explicitly, and bound the
+  // upper end — an Infinity/huge amount would otherwise reach Stripe as garbage.
+  const amount = Number(depositAmount);
+  if (!Number.isFinite(amount) || amount < 0.5 || amount > 1_000_000) {
     return res.status(400).json({ error: 'Invalid depositAmount' });
   }
 
-  const depositPence = Math.round(depositAmount * 100);
-  const servicePence = Math.round(depositAmount * 0.01 * 100);
+  // Cap free-text fields passed through to Stripe so a client can't send megabytes.
+  const safeCustomerName = String(customerName || '').slice(0, 100);
+  const safeTraderName   = String(traderName   || '').slice(0, 100);
+  const safeJobDesc      = String(jobDescription || '').slice(0, 500);
+
+  // Compute everything in integer pence to avoid float-rounding drift on the fee.
+  const depositPence = Math.round(amount * 100);
+  const servicePence = Math.max(1, Math.round(depositPence * 0.01));
 
   const description = [
-    jobDescription ? `Job: ${jobDescription}` : null,
+    safeJobDesc ? `Job: ${safeJobDesc}` : null,
     'Deposit request via AccuQuote',
-    traderName ? `Trader: ${traderName}` : null,
+    safeTraderName ? `Trader: ${safeTraderName}` : null,
   ].filter(Boolean).join(' · ');
 
   try {
@@ -601,9 +618,9 @@ app.post('/api/stripe/payment-link', requireAuth, requirePaidTier, stripeLimiter
       body: new URLSearchParams({
         'currency': 'gbp',
         'unit_amount': String(depositPence),
-        'product_data[name]': customerName ? `Deposit — ${customerName}` : 'Deposit',
-        'product_data[metadata][job]': (jobDescription || '').substring(0, 500),
-        'product_data[metadata][trader]': traderName || '',
+        'product_data[name]': safeCustomerName ? `Deposit — ${safeCustomerName}` : 'Deposit',
+        'product_data[metadata][job]': safeJobDesc,
+        'product_data[metadata][trader]': safeTraderName,
       }),
     });
 
@@ -633,7 +650,7 @@ app.post('/api/stripe/payment-link', requireAuth, requirePaidTier, stripeLimiter
     if (!linkRes.ok) return res.status(500).json({ error: linkBody.error?.message || 'Stripe link error' });
     if (!linkBody.url) return res.status(500).json({ error: 'Stripe did not return a payment URL' });
 
-    res.json({ url: linkBody.url, depositAmount, serviceFee: servicePence / 100 });
+    res.json({ url: linkBody.url, depositAmount: amount, serviceFee: servicePence / 100 });
   } catch (err) {
     console.error("[server]", err);
     res.status(500).json({ error: "Internal server error." });
@@ -647,9 +664,12 @@ app.post('/api/subscribe', subscribeLimiter, async (req, res) => {
   if (!apiKey || !pubId) return res.status(500).json({ error: 'Beehiiv credentials not configured' });
 
   const { email, trade } = req.body || {};
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  if (!email || typeof email !== 'string' || email.length > 254 ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return res.status(400).json({ error: 'Invalid email' });
   }
+  // Bound the free-text trade before passing it upstream to Beehiiv.
+  const safeTrade = String(trade || '').slice(0, 50);
 
   try {
     const response = await fetch(`https://api.beehiiv.com/v2/publications/${pubId}/subscriptions`, {
@@ -657,7 +677,7 @@ app.post('/api/subscribe', subscribeLimiter, async (req, res) => {
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
       body: JSON.stringify({
         email, utm_source: 'prelaunch', utm_medium: 'organic',
-        custom_fields: trade ? [{ name: 'trade', value: trade }] : [],
+        custom_fields: safeTrade ? [{ name: 'trade', value: safeTrade }] : [],
         send_welcome_email: true, reactivate_existing: false,
       }),
     });

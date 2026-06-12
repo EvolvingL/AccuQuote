@@ -149,6 +149,15 @@ tr:hover td{background:#f9f9fb}
 let allUsers = [];
 let lastSecret = '';
 
+// Escape user-controlled values before interpolating into innerHTML. Without this,
+// a user who signs up with an email/trade like "<img src=x onerror=...>" gets their
+// payload executed in the admin's browser (stored XSS).
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 function getSecret() {
   return document.getElementById('secretInput').value.trim();
 }
@@ -166,7 +175,7 @@ async function loadData() {
       headers: { 'Authorization': 'Bearer ' + secret }
     });
     if (!res.ok) {
-      document.getElementById('tableWrap').innerHTML = `<div class="empty">Error ${res.status}: ${(await res.json()).error}</div>`;
+      document.getElementById('tableWrap').innerHTML = `<div class="empty">Error ${res.status}: ${esc((await res.json()).error)}</div>`;
       return;
     }
     const data = await res.json();
@@ -175,7 +184,7 @@ async function loadData() {
     renderTable();
     document.getElementById('totalBadge').textContent = allUsers.length + ' users';
   } catch (e) {
-    document.getElementById('tableWrap').innerHTML = `<div class="empty">${e.message}</div>`;
+    document.getElementById('tableWrap').innerHTML = `<div class="empty">${esc(e.message)}</div>`;
   }
 }
 
@@ -241,10 +250,10 @@ function renderTable() {
       <tbody>
         ${rows.map(u => `
           <tr>
-            <td style="font-size:13px">${u.email || '<span style="color:#8e8e93">'+u.uid.slice(0,12)+'…</span>'}</td>
-            <td>${u.trade || '–'}</td>
-            <td><span class="pill pill-${u.tier}">${u.tier}</span></td>
-            <td><span class="pill pill-${u.engagementTier}">${u.engagementTier}</span></td>
+            <td style="font-size:13px">${u.email ? esc(u.email) : '<span style="color:#8e8e93">'+esc(u.uid.slice(0,12))+'…</span>'}</td>
+            <td>${u.trade ? esc(u.trade) : '–'}</td>
+            <td><span class="pill pill-${esc(u.tier)}">${esc(u.tier)}</span></td>
+            <td><span class="pill pill-${esc(u.engagementTier)}">${esc(u.engagementTier)}</span></td>
             <td style="font-variant-numeric:tabular-nums">${u.totalScans || 0}</td>
             <td style="color:#8e8e93;font-size:12px">${formatDate(u.lastActive)}</td>
           </tr>
@@ -303,12 +312,9 @@ function toast(msg) {
   setTimeout(() => el.classList.remove('show'), 3500);
 }
 
-// Auto-load if secret pre-filled (e.g. from URL param for dev convenience)
-const params = new URLSearchParams(location.search);
-if (params.get('secret')) {
-  document.getElementById('secretInput').value = params.get('secret');
-  loadData();
-}
+// Note: the admin secret is intentionally NOT read from the URL query string.
+// A secret in the URL leaks into browser history, server access logs, and Referer
+// headers. The admin must type it into the field each session.
 </script>
 </body>
 </html>
