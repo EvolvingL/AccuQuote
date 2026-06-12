@@ -22,16 +22,22 @@ enum ThumbnailGenerator {
 
         guard !room.walls.isEmpty else { return }
 
-        // Extract wall endpoints in XZ plane
-        let segments: [(CGPoint, CGPoint)] = room.walls.map { wall in
+        // Extract wall endpoints in XZ plane. Drop any wall whose geometry isn't
+        // finite — a NaN/Inf point would poison the min/max bounds below (giving a
+        // NaN scale) and draw garbage into the thumbnail.
+        let segments: [(CGPoint, CGPoint)] = room.walls.compactMap { wall in
             let w = wall.dimensions.x / 2
             let t = wall.transform
+            guard w.isFinite,
+                  t.columns.3.x.isFinite, t.columns.3.z.isFinite,
+                  t.columns.0.x.isFinite, t.columns.0.z.isFinite else { return nil }
             let s = CGPoint(x: CGFloat(t.columns.3.x + t.columns.0.x * (-w)),
                             y: CGFloat(t.columns.3.z + t.columns.0.z * (-w)))
             let e = CGPoint(x: CGFloat(t.columns.3.x + t.columns.0.x * w),
                             y: CGFloat(t.columns.3.z + t.columns.0.z * w))
             return (s, e)
         }
+        guard !segments.isEmpty else { return }
 
         let allPts = segments.flatMap { [$0.0, $0.1] }
         guard let minX = allPts.map({ $0.x }).min(),

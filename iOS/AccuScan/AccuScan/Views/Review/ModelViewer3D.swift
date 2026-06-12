@@ -123,7 +123,8 @@ struct SceneKitView: UIViewRepresentable {
         let scene = SCNScene()
 
         for wall in room.walls {
-            scene.rootNode.addChildNode(wallNode(wall))
+            guard let node = wallNode(wall) else { continue }   // skip degenerate walls
+            scene.rootNode.addChildNode(node)
             let label = dimensionLabel(for: wall)
             label.name   = Coordinator.dimensionTag
             label.isHidden = !showDimensions
@@ -150,7 +151,14 @@ struct SceneKitView: UIViewRepresentable {
 
     // MARK: - Node builders (called once each during buildScene)
 
-    private func wallNode(_ wall: CapturedRoom.Wall) -> SCNNode {
+    private func wallNode(_ wall: CapturedRoom.Wall) -> SCNNode? {
+        // Skip degenerate geometry: a NaN/Inf or non-positive dimension makes
+        // SCNBox/SceneKit assert or render garbage. RoomPlan very rarely emits one.
+        guard wall.dimensions.x.isFinite, wall.dimensions.y.isFinite,
+              wall.dimensions.x > 0, wall.dimensions.y > 0,
+              wall.transform.columns.3.x.isFinite,
+              wall.transform.columns.3.y.isFinite,
+              wall.transform.columns.3.z.isFinite else { return nil }
         let geo = SCNBox(width: CGFloat(wall.dimensions.x),
                          height: CGFloat(wall.dimensions.y),
                          length: 0.08, chamferRadius: 0)
