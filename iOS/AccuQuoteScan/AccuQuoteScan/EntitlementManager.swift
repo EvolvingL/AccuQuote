@@ -71,7 +71,11 @@ final class EntitlementManager: ObservableObject {
 
     private let cacheKey      = "aq_entitlement_tier"
     private let cacheAgeKey   = "aq_entitlement_cached_at"
-    private let cacheTTL: TimeInterval = 24 * 3600   // 24 hours
+    // 3 hours: long enough to keep a paying user working through brief offline
+    // spells, short enough that a cancelled/downgraded subscription stops granting
+    // access within hours rather than a full day. The app also force-refreshes on
+    // foreground, so this only bounds the offline grace period.
+    private let cacheTTL: TimeInterval = 3 * 3600
 
     // MARK: - Init
 

@@ -913,7 +913,14 @@ struct CustomShapeSheet: View {
     // We use a 10m × 10m room space mapped to the canvas
     let metersPerPoint: Double = 10.0 / 300.0   // 300pt canvas = 10m
 
-    var height: Double { Double(heightText.replacingOccurrences(of: ",", with: ".")) ?? 2.4 }
+    var height: Double {
+        // Double("nan")/Double("inf") parse to non-nil non-finite values, so a plain
+        // `?? 2.4` wouldn't catch them — guard isFinite and a realistic range so a
+        // bad height can't flow as NaN/Inf into area math, the UI, or a saved quote.
+        guard let v = Double(heightText.replacingOccurrences(of: ",", with: ".")),
+              v.isFinite, v > 0, v <= 100 else { return 2.4 }
+        return v
+    }
     var canSubmit: Bool { vertices.count >= 3 }
 
     // Vertex positions in metres
@@ -3454,7 +3461,7 @@ struct SectionedQuoteLoadingView: View {
                             .foregroundColor(AQ.secondary)
                         Spacer()
                         if service.grandTotal > 0 {
-                            Text("£\(Int(service.grandTotal).formatted())")
+                            Text(Money.gbp(service.grandTotal))
                                 .font(.system(size: 17, weight: .bold, design: .rounded))
                                 .foregroundColor(AQ.ink)
                                 .contentTransition(.numericText())
@@ -3514,7 +3521,7 @@ private struct SectionStatusCard: View {
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(AQ.ink)
                     if case .complete = section.status {
-                        Text("\(section.items.count) items · £\(Int(section.sectionSubtotal).formatted())")
+                        Text("\(section.items.count) items · \(Money.gbp(section.sectionSubtotal))")
                             .font(.system(size: 12))
                             .foregroundColor(AQ.secondary)
                     } else if case .loading = section.status {
@@ -3534,7 +3541,7 @@ private struct SectionStatusCard: View {
                 }
                 Spacer()
                 if case .complete = section.status {
-                    Text("£\(Int(section.sectionSubtotal).formatted())")
+                    Text(Money.gbp(section.sectionSubtotal))
                         .font(.system(size: 15, weight: .bold, design: .rounded))
                         .foregroundColor(AQ.ink)
                 }
@@ -3712,10 +3719,10 @@ struct QuoteResultView: View {
                 }
                 Divider().background(AQ.rule).padding(.leading, 24)
                 if !quote.items.isEmpty {
-                    QuoteRow(label: "Materials", value: "£\(Int(quote.items.reduce(0) { $0 + $1.total }).formatted())", bold: false)
+                    QuoteRow(label: "Materials", value: Money.gbp(quote.items.reduce(0) { $0 + $1.total }), bold: false)
                     Divider().background(AQ.rule).padding(.leading, 24)
                 }
-                QuoteRow(label: "VAT (\(Int(quote.vatRate))%)", value: "£\(String(format: "%.2f", effectiveVatAmount))", bold: false)
+                QuoteRow(label: "VAT (\(Int(quote.vatRate))%)", value: Money.gbp(effectiveVatAmount), bold: false)
                 Divider().background(AQ.rule).padding(.leading, 24)
                 QuoteRow(label: "Total", value: Money.gbp(effectiveGrandTotal), bold: true)
                 Divider().background(AQ.rule)
@@ -3746,8 +3753,8 @@ struct QuoteResultView: View {
                             // Labour row for this section
                             if section.labourDays > 0 {
                                 QuoteRow(
-                                    label: "\(String(format: "%.1f", section.labourDays))d labour @ £\(Int(section.labourRate))/day",
-                                    value: "£\(Int(section.labourTotal).formatted())",
+                                    label: "\(String(format: "%.1f", section.labourDays))d labour @ \(Money.gbp(section.labourRate))/day",
+                                    value: Money.gbp(section.labourTotal),
                                     bold: false
                                 )
                                 Divider().background(AQ.rule).padding(.leading, 24)
@@ -3764,7 +3771,7 @@ struct QuoteResultView: View {
                             }
                             QuoteRow(
                                 label: "Section subtotal",
-                                value: "£\(Int(section.sectionSubtotal).formatted())",
+                                value: Money.gbp(section.sectionSubtotal),
                                 bold: true
                             )
                             Divider().background(AQ.rule)
@@ -3773,8 +3780,8 @@ struct QuoteResultView: View {
                         // ── Single-section (legacy) breakdown ────────────────
                         QuoteSectionHeader(title: "Labour")
                         QuoteRow(
-                            label: "\(String(format: "%.1f", quote.labourDays)) day\(quote.labourDays == 1 ? "" : "s") @ £\(Int(quote.labourRate))/day",
-                            value: "£\(Int(effectiveLabourTotal).formatted())",
+                            label: "\(String(format: "%.1f", quote.labourDays)) day\(quote.labourDays == 1 ? "" : "s") @ \(Money.gbp(quote.labourRate))/day",
+                            value: Money.gbp(effectiveLabourTotal),
                             bold: false
                         )
                         Divider().background(AQ.rule).padding(.leading, 24)
@@ -3995,7 +4002,7 @@ struct QuoteResultView: View {
             }
 
             // Grand total right block
-            let totalStr = "£\(Int(quote.grandTotal).formatted())"
+            let totalStr = Money.gbp(quote.grandTotal)
             let totalAttrs: [NSAttributedString.Key: Any] = [
                 .font: UIFont.systemFont(ofSize: 36, weight: .bold),
                 .foregroundColor: UIColor(AQ.ink),
@@ -4062,7 +4069,7 @@ struct QuoteResultView: View {
             // ── Labour ───────────────────────────────────────────────────────
             sectionHeader("Labour")
             let labourLabel = "\(String(format: "%.1f", quote.labourDays)) day\(quote.labourDays == 1 ? "" : "s") @ £\(Int(quote.labourRate))/day"
-            row(left: labourLabel, right: "£\(Int(quote.labourTotal).formatted())")
+            row(left: labourLabel, right: Money.gbp(quote.labourTotal))
 
             // ── Materials ────────────────────────────────────────────────────
             if !quote.items.isEmpty {
@@ -4071,7 +4078,7 @@ struct QuoteResultView: View {
                     // Customer quote: single materials total, no SKUs or supplier names
                     sectionHeader("Materials")
                     let matTotal = quote.items.reduce(0) { $0 + $1.total }
-                    row(left: "Materials & supplies", right: "£\(Int(matTotal).formatted())")
+                    row(left: "Materials & supplies", right: Money.gbp(matTotal))
                 } else {
                     // Full BOM: every line item with SKU and supplier
                     sectionHeader("Materials & Items")
@@ -4100,9 +4107,9 @@ struct QuoteResultView: View {
             // ── Summary ──────────────────────────────────────────────────────
             y += 6
             sectionHeader("Summary")
-            row(left: "Subtotal",               right: "£\(Int(quote.subtotal).formatted())")
-            row(left: "VAT (\(Int(quote.vatRate))%)", right: "£\(String(format: "%.2f", quote.vatAmount))")
-            row(left: "Total",                  right: "£\(Int(quote.grandTotal).formatted())", bold: true)
+            row(left: "Subtotal",               right: Money.gbp(quote.subtotal))
+            row(left: "VAT (\(Int(quote.vatRate))%)", right: Money.gbp(quote.vatAmount))
+            row(left: "Total",                  right: Money.gbp(quote.grandTotal), bold: true)
 
             // ── Notes ────────────────────────────────────────────────────────
             if !quote.notes.isEmpty {
@@ -4256,7 +4263,7 @@ struct DepositRequestView: View {
                                     VStack(spacing: 3) {
                                         Text("\(pct)%")
                                             .font(.system(size: 16, weight: .semibold))
-                                        Text("£\(Int((effectiveGrandTotal * Double(pct) / 100).rounded()).formatted())")
+                                        Text(Money.gbp((effectiveGrandTotal * Double(pct) / 100).rounded()))
                                             .font(.system(size: 12))
                                     }
                                     .foregroundColor((!useCustom && selectedPreset == pct) ? .white : AQ.ink)
@@ -4658,7 +4665,15 @@ private struct LabourEditSheet: View {
     @State private var text = ""
     @FocusState private var focused: Bool
 
-    var parsed: Double? { Double(text.replacingOccurrences(of: "£", with: "").replacingOccurrences(of: ",", with: "")) }
+    // Reject NaN/Inf (which Double(_:) happily parses from "nan"/"inf"), negatives,
+    // and absurd values. An unvalidated override here would poison every downstream
+    // total (VAT, grand total, Stripe deposit, PDF) with a non-finite or junk number.
+    var parsed: Double? {
+        guard let v = Double(text.replacingOccurrences(of: "£", with: "")
+                                  .replacingOccurrences(of: ",", with: "")),
+              v.isFinite, v >= 0, v <= 10_000_000 else { return nil }
+        return v
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {

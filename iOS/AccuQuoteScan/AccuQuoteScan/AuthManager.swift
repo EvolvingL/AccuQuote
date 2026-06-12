@@ -67,11 +67,19 @@ final class AuthManager: NSObject, ObservableObject {
         refreshToken = stored
         userId = SecureTokenStore.read(key: keychainUserId) ?? ""
         userEmail = SecureTokenStore.read(key: keychainEmail) ?? ""
-        // Attempt to get a fresh ID token
-        if await refreshIdToken() {
+        // Attempt to get a fresh ID token. Only sign the user out if the server
+        // explicitly rejects the refresh token (revoked/expired) — a transient
+        // network failure (offline launch, server hiccup) must NOT wipe the
+        // session, or every user who opens the app without signal gets logged out.
+        switch await performRefreshDetailed() {
+        case .success:
             isSignedIn = true
-        } else {
+        case .invalidToken:
             clearLocalSession()
+        case .transientFailure:
+            // Keep the stored session; treat as signed-in optimistically. The next
+            // authenticated API call will refresh again once connectivity returns.
+            isSignedIn = true
         }
     }
 
@@ -316,18 +324,43 @@ final class AuthManager: NSObject, ObservableObject {
         return result
     }
 
+    /// Outcome of a token refresh attempt — lets callers tell a genuinely
+    /// revoked/expired refresh token (must sign out) apart from a transient
+    /// network problem (keep the session and retry later).
+    private enum RefreshOutcome {
+        case success
+        case invalidToken       // server rejected the refresh token (4xx) — sign out
+        case transientFailure   // offline / timeout / 5xx / malformed — keep session
+    }
+
     private func performRefresh() async -> Bool {
-        guard let refresh = refreshToken, !refresh.isEmpty else { return false }
+        if case .success = await performRefreshDetailed() { return true }
+        return false
+    }
+
+    private func performRefreshDetailed() async -> RefreshOutcome {
+        guard let refresh = refreshToken, !refresh.isEmpty else { return .invalidToken }
         let url = URL(string: "https://securetoken.googleapis.com/v1/token?key=\(firebaseApiKey)")!
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         req.httpBody = "grant_type=refresh_token&refresh_token=\(refresh)".data(using: .utf8)
 
-        guard let (data, _) = try? await URLSession.shared.data(for: req),
+        // A thrown error here is a transport failure (offline, timeout, DNS) —
+        // never a reason to destroy the session.
+        guard let (data, response) = try? await URLSession.shared.data(for: req) else {
+            return .transientFailure
+        }
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        // 400/401/403 from Google's secure-token endpoint means the refresh token
+        // is invalid/revoked. 5xx and anything else are transient.
+        if (400...499).contains(status) { return .invalidToken }
+        guard status == 200,
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let token   = json["id_token"]      as? String,
-              let newRefresh = json["refresh_token"] as? String else { return false }
+              let newRefresh = json["refresh_token"] as? String else {
+            return .transientFailure
+        }
 
         let expiresIn = TimeInterval(json["expires_in"] as? String ?? "3600") ?? 3600
         idToken      = token
@@ -335,7 +368,7 @@ final class AuthManager: NSObject, ObservableObject {
         tokenExpiry  = Date().addingTimeInterval(expiresIn)
         SecureTokenStore.write(key: keychainIdToken,      value: token)
         SecureTokenStore.write(key: keychainRefreshToken, value: newRefresh)
-        return true
+        return .success
     }
 
     private func postFirebase(url: URL, body: [String: Any]) async throws -> [String: Any] {
@@ -425,6 +458,9 @@ extension AuthManager: ASAuthorizationControllerDelegate {
               let tokenData   = credential.identityToken,
               let idTokenStr  = String(data: tokenData, encoding: .utf8),
               let nonce        = currentNonce else { return }
+        // Consume the nonce immediately so it can't be reused by a subsequent
+        // Sign-in-with-Apple attempt (a fresh nonce is generated per request).
+        currentNonce = nil
 
         Task { @MainActor in
             await exchangeAppleToken(idToken: idTokenStr, nonce: nonce,
