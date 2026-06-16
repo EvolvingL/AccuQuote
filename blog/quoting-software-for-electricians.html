@@ -30,15 +30,15 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --gold: #C8922A;
-      --gold-hover: #b07e22;
-      --dark: #1D1D1F;
-      --secondary: #6E6E73;
-      --navy: #0A0A1A;
-      --navy-mid: #0f0f2a;
+      --gold: #007AFF;
+      --gold-hover: #0060d6;
+      --dark: #121217;
+      --secondary: #85858F;
+      --navy: #0B0B0F;
+      --navy-mid: #141419;
       --white: #FFFFFF;
       --off-white: #F5F5F7;
-      --border: #E0E0E5;
+      --border: #E0E0E8;
       --radius: 14px;
       --radius-sm: 8px;
       --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
@@ -52,10 +52,10 @@
     /* NAV */
     nav {
       position: sticky; top: 0; z-index: 1000;
-      background: var(--navy);
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+      background: rgba(255,255,255,0.72);
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
     }
     .nav-inner {
       max-width: 1200px; margin: 0 auto; padding: 0 24px;
@@ -63,21 +63,21 @@
     }
     .nav-logo { display: flex; align-items: center; gap: 10px; }
     .nav-logo svg { width: 32px; height: 32px; flex-shrink: 0; border-radius: 7px; overflow: hidden; }
-    .nav-logo-wordmark { font-size: 1.125rem; font-weight: 700; letter-spacing: -0.02em; color: var(--white); }
+    .nav-logo-wordmark { font-size: 1.125rem; font-weight: 700; letter-spacing: -0.02em; color: var(--dark); }
     .nav-links { display: flex; align-items: center; gap: 32px; list-style: none; }
-    .nav-links a { color: rgba(255,255,255,0.75); font-size: 0.9375rem; font-weight: 500; letter-spacing: -0.01em; transition: color 0.2s ease; }
-    .nav-links a:hover { color: var(--white); }
-    .nav-links a.active { color: var(--white); }
+    .nav-links a { color: var(--secondary); font-size: 0.9375rem; font-weight: 500; letter-spacing: -0.01em; transition: color 0.2s ease; }
+    .nav-links a:hover { color: var(--dark); }
+    .nav-links a.active { color: var(--dark); }
     .nav-cta { background: var(--gold); color: var(--white) !important; padding: 9px 20px; border-radius: 100px; font-weight: 600 !important; transition: background 0.2s ease !important; }
     .nav-cta:hover { background: var(--gold-hover) !important; }
     .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 4px; background: none; border: none; }
-    .hamburger span { display: block; width: 24px; height: 2px; background: rgba(255,255,255,0.8); border-radius: 2px; transition: all 0.25s ease; }
+    .hamburger span { display: block; width: 24px; height: 2px; background: var(--dark); border-radius: 2px; transition: all 0.25s ease; }
     .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
     .hamburger.open span:nth-child(2) { opacity: 0; }
     .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
-    .mobile-menu { display: none; flex-direction: column; background: var(--navy-mid); border-top: 1px solid rgba(255,255,255,0.06); padding: 8px 0 16px; }
+    .mobile-menu { display: none; flex-direction: column; background: rgba(255,255,255,0.98); border-top: 1px solid var(--border); padding: 8px 0 16px; backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); }
     .mobile-menu.open { display: flex; }
-    .mobile-menu a { padding: 13px 24px; color: rgba(255,255,255,0.8); font-size: 1rem; font-weight: 500; }
+    .mobile-menu a { padding: 13px 24px; color: var(--dark); font-size: 1rem; font-weight: 500; }
     .mobile-menu a.nav-cta { margin: 12px 24px 0; text-align: center; border-radius: 10px; }
 
     /* BREADCRUMB */
@@ -121,7 +121,7 @@
       letter-spacing: 0.06em;
       text-transform: uppercase;
       color: var(--gold);
-      background: rgba(200,146,42,0.1);
+      background: rgba(0,122,255,0.1);
       border-radius: 100px;
       padding: 4px 10px;
       margin-bottom: 16px;
@@ -187,7 +187,7 @@
     .article-body strong { color: var(--dark); font-weight: 600; }
 
     .callout-box {
-      background: rgba(200,146,42,0.07);
+      background: rgba(0,122,255,0.07);
       border-left: 3px solid var(--gold);
       border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
       padding: 20px 24px;
@@ -237,7 +237,7 @@
     .article-sidebar { position: sticky; top: 88px; }
 
     .sidebar-cta {
-      background: linear-gradient(140deg, var(--navy) 0%, #1a0f05 100%);
+      background: radial-gradient(ellipse 90% 80% at 30% -20%, rgba(0,122,255,0.22), transparent 60%), linear-gradient(140deg, #0B0B0F 0%, #141419 100%);
       border-radius: var(--radius);
       padding: 28px 24px;
       margin-bottom: 24px;
@@ -331,7 +331,7 @@
     }
 
     .related-card:hover {
-      border-color: rgba(200,146,42,0.35);
+      border-color: rgba(0,122,255,0.35);
       box-shadow: 0 6px 24px rgba(0,0,0,0.07);
     }
 
@@ -367,14 +367,14 @@
     }
 
     /* FOOTER */
-    footer { background: var(--navy); border-top: 1px solid rgba(255,255,255,0.06); padding: 48px 24px; text-align: center; }
+    footer { background: var(--off-white); border-top: 1px solid var(--border); padding: 48px 24px; text-align: center; }
     .footer-logo { display: flex; flex-direction: column; align-items: center; gap: 12px; margin: 0 auto 28px; }
-    .footer-logo svg { width: 48px; height: 48px; border-radius: 11px; overflow: hidden; box-shadow: 0 4px 16px rgba(200,146,42,0.18), 0 1px 4px rgba(0,0,0,0.35); }
-    .footer-logo-wordmark { font-size: 1rem; font-weight: 700; letter-spacing: -0.015em; color: rgba(255,255,255,0.75); }
+    .footer-logo img, .footer-logo svg { width: 48px; height: 48px; border-radius: 11px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,122,255,0.18), 0 1px 4px rgba(0,0,0,0.2); }
+    .footer-logo-wordmark { font-size: 1rem; font-weight: 700; letter-spacing: -0.015em; color: var(--dark); }
     .footer-links { display: flex; gap: 28px; justify-content: center; flex-wrap: wrap; margin-bottom: 24px; }
-    .footer-links a { font-size: 0.9375rem; color: rgba(255,255,255,0.45); transition: color 0.2s ease; }
-    .footer-links a:hover { color: rgba(255,255,255,0.8); }
-    .footer-copy p { font-size: 0.875rem; color: rgba(255,255,255,0.3); }
+    .footer-links a { font-size: 0.9375rem; color: var(--secondary); transition: color 0.2s ease; }
+    .footer-links a:hover { color: var(--gold); }
+    .footer-copy p { font-size: 0.875rem; color: var(--secondary); } .footer-built { margin-top: 8px; font-size: 0.8125rem; color: var(--secondary); } .footer-built a { color: var(--dark); font-weight: 600; } .footer-built a:hover { color: var(--gold); }
 
     /* RESPONSIVE */
     @media (max-width: 900px) {
@@ -392,27 +392,10 @@
 </head>
 <body>
 
-<svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true">
-  <symbol id="aq-icon" viewBox="0 0 632 632">
-    <defs>
-      <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#1A1200"/><stop offset="100%" stop-color="#0A0800"/></linearGradient>
-      <linearGradient id="gv" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFE566"/><stop offset="40%" stop-color="#C8920A"/><stop offset="100%" stop-color="#7A4800"/></linearGradient>
-      <linearGradient id="gcb" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFE566"/><stop offset="100%" stop-color="#A06800"/></linearGradient>
-      <radialGradient id="grs" cx="38%" cy="35%" r="65%"><stop offset="0%" stop-color="#FFE566"/><stop offset="55%" stop-color="#C8920A"/><stop offset="100%" stop-color="#7A4800"/></radialGradient>
-    </defs>
-    <rect width="632" height="632" fill="url(#bg)" rx="126"/>
-    <polygon points="298.58,32.55 321.42,43.45 60.46,574.61 49.54,569.39" fill="url(#gv)" opacity="0.88"/>
-    <polygon points="298.58,43.45 321.42,32.55 570.46,569.39 559.54,574.61" fill="url(#gv)" opacity="0.88"/>
-    <rect x="203.0" y="251.0" width="213.9" height="22.0" fill="url(#gcb)" rx="8.8"/>
-    <circle cx="310" cy="262" r="20.2" fill="rgba(8,4,0,0.90)" stroke="#FFE135" stroke-width="3.7"/>
-    <circle cx="310" cy="262" r="5.5" fill="rgba(255,253,200,0.88)"/>
-  </symbol>
-</svg>
-
 <nav role="navigation" aria-label="Main navigation">
   <div class="nav-inner">
     <a href="../website.html" class="nav-logo" aria-label="AccuQuote home">
-      <svg width="32" height="32" viewBox="0 0 632 632" aria-hidden="true" focusable="false"><use href="#aq-icon"/></svg>
+      <img src="../images/accuquote-logo.png" alt="" width="32" height="32" style="border-radius:7px;display:block;" />
       <span class="nav-logo-wordmark">AccuQuote</span>
     </a>
     <ul class="nav-links" role="list">
@@ -628,7 +611,7 @@
 
 <footer role="contentinfo">
   <div class="footer-logo" role="img" aria-label="AccuQuote">
-    <svg width="48" height="48" viewBox="0 0 632 632" aria-hidden="true" focusable="false"><use href="#aq-icon"/></svg>
+    <img src="../images/accuquote-logo.png" alt="" width="48" height="48" style="border-radius:11px;display:block;" />
     <span class="footer-logo-wordmark">AccuQuote</span>
   </div>
   <nav class="footer-links" aria-label="Footer navigation">
@@ -639,6 +622,7 @@
   </nav>
   <div class="footer-copy">
     <p>&copy; 2025 AccuQuote. All rights reserved.</p>
+    <p class="footer-built">Built by <a href="https://slickdigital.co.uk" target="_blank" rel="noopener">Slick Digital</a></p>
   </div>
 </footer>
 

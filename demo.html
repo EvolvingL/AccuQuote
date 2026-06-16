@@ -6,14 +6,18 @@
 <title>Try the Demo — AccuQuote</title>
 <style>
   :root {
-    --gold: #C8922A;
-    --gold-hover: #b07e22;
-    --dark: #1D1D1F;
-    --secondary: #6E6E73;
-    --navy: #0A0A1A;
+    --gold: #007AFF;
+    --gold-hover: #0060d6;
+    --blue: #007AFF;
+    --ink: #121217;
+    --surface: #F5F5F7;
+    --dark: #121217;
+    --secondary: #85858F;
+    --navy: #0B0B0F;
+    --navy-mid: #141419;
     --white: #FFFFFF;
     --off-white: #F5F5F7;
-    --border: #E0E0E5;
+    --border: #E0E0E8;
   }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -21,15 +25,17 @@
   html { scroll-behavior: smooth; }
 
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
-    background: var(--off-white);
-    color: var(--dark);
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, 'Helvetica Neue', Arial, sans-serif;
+    background: var(--white);
+    color: var(--ink);
     line-height: 1.5;
   }
 
   /* ── NAV ── */
   nav {
-    background: var(--navy);
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
     padding: 0 24px;
     height: 64px;
     display: flex;
@@ -38,7 +44,7 @@
     position: sticky;
     top: 0;
     z-index: 100;
-    border-bottom: 1px solid rgba(255,255,255,0.07);
+    border-bottom: 1px solid rgba(0,0,0,0.06);
   }
 
   .nav-logo {
@@ -46,13 +52,13 @@
     align-items: center;
     gap: 10px;
     text-decoration: none;
-    color: var(--white);
+    color: var(--ink);
     font-weight: 700;
     font-size: 18px;
     letter-spacing: -0.3px;
   }
 
-  .nav-logo svg { width: 36px; height: 36px; border-radius: 8px; }
+  .nav-logo img { width: 30px; height: 30px; border-radius: 7px; display: block; }
 
   .nav-links {
     display: flex;
@@ -70,14 +76,14 @@
     transition: background 0.18s, color 0.18s;
   }
 
-  .nav-links .link-plain { color: rgba(255,255,255,0.72); }
-  .nav-links .link-plain:hover { color: var(--white); background: rgba(255,255,255,0.08); }
+  .nav-links .link-plain { color: var(--secondary); }
+  .nav-links .link-plain:hover { color: var(--ink); background: rgba(0,0,0,0.04); }
 
   .nav-links .link-outline {
-    color: var(--white);
-    border: 1.5px solid rgba(255,255,255,0.55);
+    color: var(--ink);
+    border: 1px solid var(--border);
   }
-  .nav-links .link-outline:hover { border-color: var(--white); background: rgba(255,255,255,0.08); }
+  .nav-links .link-outline:hover { border-color: var(--blue); color: var(--blue); }
 
   .nav-links .link-gold {
     background: var(--gold);
@@ -99,7 +105,7 @@
     display: block;
     width: 22px;
     height: 2px;
-    background: rgba(255,255,255,0.8);
+    background: var(--ink);
     border-radius: 2px;
     transition: 0.2s;
   }
@@ -109,8 +115,10 @@
     position: absolute;
     top: 64px;
     left: 0; right: 0;
-    background: var(--navy);
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid var(--border);
     padding: 12px 16px 16px;
     flex-direction: column;
     gap: 4px;
@@ -122,16 +130,16 @@
     font-weight: 500;
     padding: 10px 14px;
     border-radius: 8px;
-    color: rgba(255,255,255,0.8);
+    color: var(--ink);
     transition: background 0.15s;
   }
-  .nav-mobile a:hover { background: rgba(255,255,255,0.08); color: var(--white); }
+  .nav-mobile a:hover { background: rgba(0,0,0,0.04); color: var(--ink); }
   .nav-mobile a.mob-gold { background: var(--gold); color: var(--white); margin-top: 4px; text-align: center; }
   .nav-mobile a.mob-gold:hover { background: var(--gold-hover); }
 
   /* ── HERO ── */
   .hero {
-    background: var(--navy);
+    background: radial-gradient(ellipse 70% 60% at 50% -10%, rgba(0,122,255,0.16), transparent 60%), linear-gradient(180deg, #0B0B0F, #141419);
     color: var(--white);
     padding: 64px 24px 72px;
     text-align: center;
@@ -145,7 +153,7 @@
     margin-bottom: 16px;
   }
 
-  .hero h1 span { color: var(--gold); }
+  .hero h1 span { color: #5EAEFF; }
 
   .hero p {
     font-size: clamp(16px, 2vw, 19px);
@@ -159,8 +167,8 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    background: rgba(200,146,42,0.15);
-    border: 1px solid rgba(200,146,42,0.35);
+    background: rgba(0,122,255,0.15);
+    border: 1px solid rgba(0,122,255,0.35);
     border-radius: 40px;
     padding: 8px 18px;
     font-size: 13px;
@@ -375,7 +383,7 @@
     gap: 6px;
   }
   .preset-btn::before { content: '↗'; font-size: 11px; color: var(--gold); }
-  .preset-btn:hover { border-color: var(--gold); color: var(--gold); background: rgba(200,146,42,0.04); }
+  .preset-btn:hover { border-color: var(--gold); color: var(--gold); background: rgba(0,122,255,0.04); }
 
   /* ── TRADE / RATE ROW ── */
   .trade-rate-row {
@@ -447,9 +455,9 @@
     letter-spacing: -0.3px;
     cursor: pointer;
     transition: all 0.18s;
-    box-shadow: 0 4px 20px rgba(200,146,42,0.4);
+    box-shadow: 0 4px 20px rgba(0,122,255,0.4);
   }
-  #generate-btn:hover { background: var(--gold-hover); transform: translateY(-1px); box-shadow: 0 6px 28px rgba(200,146,42,0.45); }
+  #generate-btn:hover { background: var(--gold-hover); transform: translateY(-1px); box-shadow: 0 6px 28px rgba(0,122,255,0.45); }
   #generate-btn:active { transform: translateY(0); }
   #generate-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
 
@@ -597,7 +605,7 @@
     font-weight: 500;
   }
   .quote-tag.room { background: rgba(10,10,26,0.07); color: var(--dark); }
-  .quote-tag.area { background: rgba(200,146,42,0.1); color: #7a4c00; }
+  .quote-tag.area { background: rgba(0,122,255,0.1); color: #0060d6; }
 
   /* ── BREAKDOWN TOGGLE ── */
   .breakdown-toggle {
@@ -652,7 +660,7 @@
   .bd-table tr:last-child td { border-bottom: none; }
   .bd-table td:first-child { font-weight: 500; }
   .bd-table .section-row td {
-    background: rgba(200,146,42,0.06);
+    background: rgba(0,122,255,0.06);
     font-weight: 700;
     font-size: 12px;
     color: var(--gold);
@@ -798,8 +806,8 @@
 
   /* ── DEMO REFERRAL BANNER ── */
   .demo-referral-banner {
-    background: linear-gradient(135deg, #0a1628 0%, #152242 100%);
-    border: 1.5px solid var(--gold);
+    background: radial-gradient(ellipse 80% 80% at 50% 0%, rgba(0,122,255,0.18), transparent 60%), linear-gradient(135deg, #0B0B0F 0%, #141419 100%);
+    border: 1.5px solid rgba(0,122,255,0.5);
     border-radius: 14px;
     padding: 24px 20px;
     margin-top: 20px;
@@ -815,7 +823,7 @@
     display: block;
     font-size: 18px;
     font-weight: 800;
-    color: var(--gold);
+    color: #5EAEFF;
     letter-spacing: -0.3px;
     margin-bottom: 6px;
   }
@@ -844,8 +852,8 @@
     display: flex;
     align-items: flex-start;
     gap: 14px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.1);
+    background: var(--off-white);
+    border: 1px solid var(--border);
     border-radius: 12px;
     padding: 20px;
     margin-bottom: 20px;
@@ -855,9 +863,9 @@
     width: 38px;
     height: 38px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #1a2a4a, #2a4070);
-    border: 2px solid rgba(200,146,42,0.5);
-    color: var(--gold);
+    background: rgba(0,122,255,0.1);
+    border: 2px solid rgba(0,122,255,0.35);
+    color: var(--blue);
     font-size: 0.65rem;
     font-weight: 700;
     display: flex;
@@ -869,7 +877,7 @@
   .dpq-text {
     font-size: 13px;
     line-height: 1.6;
-    color: rgba(255,255,255,0.7);
+    color: var(--dark);
     margin: 0;
     font-style: italic;
   }
@@ -880,14 +888,14 @@
     font-style: normal;
     font-size: 11px;
     font-weight: 600;
-    color: var(--gold);
+    color: var(--blue);
     opacity: 0.85;
   }
 
   /* ── DEMO TRUST STRIP ── */
   .demo-trust-strip {
-    background: #f8f4ef;
-    border-bottom: 1px solid #e8e0d4;
+    background: var(--off-white);
+    border-bottom: 1px solid var(--border);
     padding: 12px 20px;
   }
 
@@ -910,9 +918,9 @@
     width: 26px;
     height: 26px;
     border-radius: 50%;
-    background: #1a2a4a;
+    background: var(--blue);
     border: 2px solid #fff;
-    color: var(--gold);
+    color: #fff;
     font-size: 0.58rem;
     font-weight: 700;
     display: flex;
@@ -932,7 +940,7 @@
   .demo-trust-divider {
     width: 1px;
     height: 16px;
-    background: #d0c8be;
+    background: var(--border);
     flex-shrink: 0;
   }
 
@@ -969,6 +977,48 @@
   .demo-promise-item { font-size: 11.5px; font-weight: 500; color: rgba(134,239,172,0.9); }
   .demo-promise-sep { color: rgba(34,197,94,0.3); font-size: 11px; }
   @media (max-width: 540px) { .demo-promise-bar { display: none; } }
+
+  /* ── DEMO vs APP NOTICE ── */
+  .demo-app-notice {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    background: rgba(0,122,255,0.06);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--blue);
+    border-radius: 14px;
+    padding: 18px 20px;
+  }
+  .demo-app-notice .dan-icon {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    background: rgba(0,122,255,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .demo-app-notice .dan-icon svg { display: block; }
+  .demo-app-notice .dan-text { font-size: 13.5px; line-height: 1.55; color: var(--secondary); }
+  .demo-app-notice .dan-text strong { display: block; font-size: 15px; font-weight: 700; color: var(--ink); letter-spacing: -0.2px; margin-bottom: 4px; }
+  .demo-app-notice .dan-text a { color: var(--blue); font-weight: 600; text-decoration: none; }
+  .demo-app-notice .dan-text a:hover { text-decoration: underline; }
+
+  /* Inline "preview only" tag for the scan/dimensions step */
+  .preview-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-left: auto;
+    padding: 4px 10px;
+    border-radius: 100px;
+    background: rgba(0,122,255,0.1);
+    color: var(--blue);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+  }
 
   /* ── RESPONSIVE ── */
   @media (max-width: 640px) {
@@ -1011,28 +1061,10 @@
 </head>
 <body>
 
-<!-- Hidden SVG sprite -->
-<svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true">
-  <symbol id="aq-icon" viewBox="0 0 632 632">
-    <defs>
-      <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#1A1200"/><stop offset="100%" stop-color="#0A0800"/></linearGradient>
-      <linearGradient id="gv" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFE566"/><stop offset="40%" stop-color="#C8920A"/><stop offset="100%" stop-color="#7A4800"/></linearGradient>
-      <linearGradient id="gcb" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFE566"/><stop offset="100%" stop-color="#A06800"/></linearGradient>
-      <radialGradient id="grs" cx="38%" cy="35%" r="65%"><stop offset="0%" stop-color="#FFE566"/><stop offset="55%" stop-color="#C8920A"/><stop offset="100%" stop-color="#7A4800"/></radialGradient>
-    </defs>
-    <rect width="632" height="632" fill="url(#bg)" rx="126"/>
-    <polygon points="298.58,32.55 321.42,43.45 60.46,574.61 49.54,569.39" fill="url(#gv)" opacity="0.88"/>
-    <polygon points="298.58,43.45 321.42,32.55 570.46,569.39 559.54,574.61" fill="url(#gv)" opacity="0.88"/>
-    <rect x="203.0" y="251.0" width="213.9" height="22.0" fill="url(#gcb)" rx="8.8"/>
-    <circle cx="310" cy="262" r="20.2" fill="rgba(8,4,0,0.90)" stroke="#FFE135" stroke-width="3.7"/>
-    <circle cx="310" cy="262" r="5.5" fill="rgba(255,253,200,0.88)"/>
-  </symbol>
-</svg>
-
 <!-- NAV -->
 <nav>
   <a href="./website.html" class="nav-logo" aria-label="AccuQuote home">
-    <svg aria-hidden="true"><use href="#aq-icon"/></svg>
+    <img src="./images/accuquote-logo.png" alt="" width="30" height="30" style="border-radius:7px;display:block;" />
     AccuQuote
   </a>
   <ul class="nav-links">
@@ -1095,11 +1127,29 @@
 <!-- DEMO WRAP -->
 <main class="demo-wrap">
 
+  <!-- DEMO vs APP NOTICE -->
+  <div class="demo-app-notice" role="note">
+    <div class="dan-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
+        <rect x="6" y="2.5" width="12" height="19" rx="2.5" stroke="#007AFF" stroke-width="1.6"/>
+        <path d="M9.5 7.5 L14.5 7.5 M9.5 11 L14.5 11 M9.5 14.5 L12.5 14.5" stroke="#007AFF" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="12" cy="18.6" r="0.9" fill="#007AFF"/>
+      </svg>
+    </div>
+    <div class="dan-text">
+      <strong>This is a guided walkthrough — type your numbers in.</strong>
+      It shows the full AccuQuote process end to end, so you can see exactly how a quote gets built.
+      The clever bit — scanning a real room with your phone (LiDAR / AR) so the dimensions fill themselves in —
+      only works in the iOS app. <a href="./website.html#pricing">Download AccuQuote on your iPhone</a> to scan real rooms on the job.
+    </div>
+  </div>
+
   <!-- STEP 1: ROOM DIMENSIONS -->
   <div class="step-card">
     <div class="step-header">
       <div class="step-num">1</div>
       <h2>Room Dimensions</h2>
+      <span class="preview-tag" title="The live phone scanner is only in the iOS app">Demo preview — scan in the app</span>
     </div>
     <div class="step-body">
 
@@ -1313,8 +1363,8 @@
       <div class="feature-item">
         <div class="feature-icon">📐</div>
         <div class="feature-text">
-          <div class="ft">LiDAR room scanning</div>
-          <div class="fd">Point your phone at the room — dimensions auto-fill in seconds, no tape measure needed</div>
+          <div class="ft">LiDAR room scanning <span style="color:var(--blue);font-weight:700">(app only)</span></div>
+          <div class="fd">Here you typed the dimensions in. In the iOS app you just point your phone at the room — it scans the walls and fills the numbers itself. No tape measure, no typing.</div>
         </div>
       </div>
       <div class="feature-item">
@@ -1352,6 +1402,18 @@
   </div>
 
 </main>
+
+<!-- FOOTER -->
+<footer style="background:#F5F5F7;border-top:1px solid #E0E0E8;padding:32px 24px;color:#85858F;font-size:0.85rem;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text',system-ui,sans-serif;">
+  <div style="max-width:1140px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;">
+    <a href="./website.html" style="display:flex;align-items:center;gap:10px;color:#121217;font-weight:700;text-decoration:none;letter-spacing:-0.02em;" aria-label="AccuQuote home">
+      <img src="./images/accuquote-logo.png" alt="" width="28" height="28" style="border-radius:7px;display:block;" />
+      AccuQuote
+    </a>
+    <span>&copy; 2026 AccuQuote. All rights reserved.</span>
+    <span>Built by <a href="https://slickdigital.co.uk" target="_blank" rel="noopener" style="color:#121217;font-weight:600;text-decoration:none;">Slick Digital</a></span>
+  </div>
+</footer>
 
 <script>
 (function () {
@@ -1462,14 +1524,14 @@
     var html = '';
 
     // Floor fill
-    html += '<rect x="' + rx + '" y="' + ry + '" width="' + rW + '" height="' + rH + '" fill="#F8F3EC" rx="4"/>';
+    html += '<rect x="' + rx + '" y="' + ry + '" width="' + rW + '" height="' + rH + '" fill="#EAF3FF" rx="4"/>';
     // Floor hatch (subtle)
     html += '<defs><pattern id="hatch" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">'
-      + '<line x1="0" y1="0" x2="0" y2="12" stroke="#e8dfd0" stroke-width="1"/>'
+      + '<line x1="0" y1="0" x2="0" y2="12" stroke="#cfe2fb" stroke-width="1"/>'
       + '</pattern></defs>';
     html += '<rect x="' + rx + '" y="' + ry + '" width="' + rW + '" height="' + rH + '" fill="url(#hatch)"/>';
     // Border
-    html += '<rect x="' + rx + '" y="' + ry + '" width="' + rW + '" height="' + rH + '" fill="none" stroke="#C8922A" stroke-width="2" rx="4"/>';
+    html += '<rect x="' + rx + '" y="' + ry + '" width="' + rW + '" height="' + rH + '" fill="none" stroke="#007AFF" stroke-width="2" rx="4"/>';
 
     // Width dimension (bottom)
     var dimY = ry + rH + dimLineOffset;
@@ -1486,7 +1548,7 @@
     html += '<text x="' + (dimX + 9) + '" y="' + (ry + rH / 2 + 4) + '" text-anchor="middle" fill="#555" font-size="10" font-family="inherit">' + w.toFixed(1) + 'm</text>';
 
     // Centre label
-    html += '<text x="' + (rx + rW / 2) + '" y="' + (ry + rH / 2 + 4) + '" text-anchor="middle" fill="rgba(200,146,42,0.6)" font-size="11" font-weight="600" font-family="inherit">' + state.roomType + '</text>';
+    html += '<text x="' + (rx + rW / 2) + '" y="' + (ry + rH / 2 + 4) + '" text-anchor="middle" fill="rgba(0,122,255,0.6)" font-size="11" font-weight="600" font-family="inherit">' + state.roomType + '</text>';
 
     svg.innerHTML = html;
   }

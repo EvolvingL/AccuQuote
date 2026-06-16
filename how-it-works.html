@@ -21,18 +21,23 @@
     }
 
     :root {
-      --gold: #C8922A;
-      --gold-hover: #b07e22;
-      --gold-light: rgba(200,146,42,0.1);
-      --gold-border: rgba(200,146,42,0.28);
-      --dark: #1D1D1F;
-      --secondary: #6E6E73;
-      --navy: #0A0A1A;
+      --gold: #007AFF;
+      --gold-hover: #0060d6;
+      --gold-light: rgba(0,122,255,0.1);
+      --gold-border: rgba(0,122,255,0.28);
+      --blue: #007AFF;
+      --blue-hover: #0060d6;
+      --ink: #121217;
+      --dark: #121217;
+      --secondary: #85858F;
+      --navy: #0B0B0F;
+      --navy-mid: #141419;
       --white: #FFFFFF;
       --off-white: #F5F5F7;
-      --border: #E0E0E5;
+      --surface: #F5F5F7;
+      --border: #E0E0E8;
       --radius: 14px;
-      --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+      --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, 'Helvetica Neue', Arial, sans-serif;
     }
 
     html {
@@ -58,10 +63,10 @@
       position: sticky;
       top: 0;
       z-index: 1000;
-      background: var(--navy);
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+      background: rgba(255,255,255,0.72);
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
     }
 
     .nav-inner {
@@ -88,11 +93,15 @@
       overflow: hidden;
     }
 
+    .nav-logo svg, .nav-logo img {
+      box-shadow: 0 1px 3px rgba(0,0,0,0.18);
+    }
+
     .nav-logo-wordmark {
       font-size: 1.125rem;
       font-weight: 700;
       letter-spacing: -0.02em;
-      color: var(--white);
+      color: var(--ink);
     }
 
     .nav-links {
@@ -103,16 +112,16 @@
     }
 
     .nav-links a {
-      color: rgba(255,255,255,0.75);
+      color: var(--secondary);
       font-size: 0.9375rem;
       font-weight: 500;
       letter-spacing: -0.01em;
       transition: color 0.2s ease;
     }
 
-    .nav-links a:hover { color: var(--white); }
+    .nav-links a:hover { color: var(--ink); }
 
-    .nav-links a.active { color: var(--white); }
+    .nav-links a.active { color: var(--ink); }
 
     .nav-cta {
       background: var(--gold);
@@ -143,7 +152,7 @@
       display: block;
       width: 22px;
       height: 1.5px;
-      background: rgba(255,255,255,0.8);
+      background: var(--ink);
       border-radius: 2px;
       transition: all 0.25s ease;
     }
@@ -155,8 +164,10 @@
     .mobile-menu {
       display: none;
       flex-direction: column;
-      background: var(--navy);
-      border-top: 1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.96);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      border-top: 1px solid var(--border);
       padding: 16px 24px 24px;
       gap: 4px;
     }
@@ -164,16 +175,16 @@
     .mobile-menu.open { display: flex; }
 
     .mobile-menu a {
-      color: rgba(255,255,255,0.75);
+      color: var(--ink);
       font-size: 1.0625rem;
       font-weight: 500;
       padding: 12px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
+      border-bottom: 1px solid var(--border);
       transition: color 0.2s ease;
     }
 
     .mobile-menu a:last-child { border-bottom: none; }
-    .mobile-menu a:hover { color: var(--white); }
+    .mobile-menu a:hover { color: var(--blue); }
 
     .mobile-menu .nav-cta {
       margin-top: 12px;
@@ -220,13 +231,13 @@
       border-radius: 100px;
       letter-spacing: -0.01em;
       transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
-      box-shadow: 0 4px 20px rgba(200,146,42,0.3);
+      box-shadow: 0 4px 20px rgba(0,122,255,0.3);
     }
 
     .btn-primary:hover {
       background: var(--gold-hover);
       transform: translateY(-2px);
-      box-shadow: 0 8px 32px rgba(200,146,42,0.4);
+      box-shadow: 0 8px 32px rgba(0,122,255,0.4);
     }
 
     .btn-secondary {
@@ -243,13 +254,15 @@
     }
 
     .btn-secondary:hover {
-      background: rgba(200,146,42,0.08);
+      background: rgba(0,122,255,0.08);
       transform: translateY(-1px);
     }
 
     /* ── HERO ── */
     .page-hero {
-      background: var(--navy);
+      background:
+        radial-gradient(ellipse 70% 60% at 50% -10%, rgba(0,122,255,0.16) 0%, transparent 60%),
+        linear-gradient(180deg, #0B0B0F 0%, #141419 100%);
       padding: 80px 24px 90px;
       text-align: center;
       position: relative;
@@ -264,7 +277,7 @@
       transform: translateX(-50%);
       width: 700px;
       height: 700px;
-      background: radial-gradient(circle, rgba(200,146,42,0.07) 0%, transparent 65%);
+      background: radial-gradient(circle, rgba(0,122,255,0.22) 0%, transparent 65%);
       pointer-events: none;
     }
 
@@ -272,14 +285,14 @@
       display: inline-flex;
       align-items: center;
       gap: 7px;
-      background: var(--gold-light);
-      border: 1px solid var(--gold-border);
+      background: rgba(0,122,255,0.15);
+      border: 1px solid rgba(0,122,255,0.35);
       border-radius: 100px;
       padding: 6px 18px;
       margin-bottom: 28px;
       font-size: 0.8125rem;
       font-weight: 600;
-      color: var(--gold);
+      color: #5EAEFF;
       text-transform: uppercase;
       letter-spacing: 0.07em;
     }
@@ -290,7 +303,7 @@
       margin: 0 auto 18px;
     }
 
-    .page-hero h1 span { color: var(--gold); }
+    .page-hero h1 span { color: #5EAEFF; }
 
     .page-hero .hero-sub {
       font-size: clamp(1rem, 2vw, 1.2rem);
@@ -387,7 +400,7 @@
       height: 48px;
       border-radius: 50%;
       background: var(--navy);
-      color: var(--gold);
+      color: #5EAEFF;
       font-size: 1.125rem;
       font-weight: 700;
       display: flex;
@@ -457,7 +470,7 @@
 
     .mock-label {
       font-size: 0.75rem;
-      color: var(--gold);
+      color: #5EAEFF;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.08em;
@@ -494,7 +507,7 @@
     .mock-item:last-child { border-bottom: none; }
 
     .mock-item .name { color: rgba(255,255,255,0.8); max-width: 160px; line-height: 1.35; }
-    .mock-item .price { color: var(--gold); font-weight: 700; white-space: nowrap; padding-left: 8px; }
+    .mock-item .price { color: #5EAEFF; font-weight: 700; white-space: nowrap; padding-left: 8px; }
 
     .mock-shape {
       display: flex;
@@ -507,16 +520,16 @@
       width: 100%;
       max-width: 220px;
       height: 140px;
-      border: 1.5px solid rgba(200,146,42,0.4);
+      border: 1.5px solid rgba(0,122,255,0.4);
       border-radius: 8px;
       position: relative;
-      background: rgba(200,146,42,0.04);
+      background: rgba(0,122,255,0.04);
     }
 
     .shape-outline {
       position: absolute;
       inset: 18px 24px 18px 24px;
-      border: 2px dashed rgba(200,146,42,0.6);
+      border: 2px dashed rgba(0,122,255,0.6);
       border-right: none;
       border-bottom: none;
       border-radius: 2px;
@@ -529,7 +542,7 @@
       left: 50%;
       width: 50%;
       height: 50px;
-      border: 2px dashed rgba(200,146,42,0.6);
+      border: 2px dashed rgba(0,122,255,0.6);
       border-top: none;
       border-left: none;
     }
@@ -624,7 +637,7 @@
 
     .compare-inner { max-width: 1100px; margin: 0 auto; }
 
-    .compare-section .section-label { color: rgba(200,146,42,0.8); }
+    .compare-section .section-label { color: #5EAEFF; }
 
     .compare-section h2 {
       color: var(--white);
@@ -667,7 +680,7 @@
     }
 
     .compare-col.before .col-label { color: rgba(255,255,255,0.3); }
-    .compare-col.after .col-label { color: var(--gold); }
+    .compare-col.after .col-label { color: #5EAEFF; }
 
     .compare-item {
       display: flex;
@@ -730,7 +743,7 @@
     .profile-card-label {
       font-size: 0.75rem;
       font-weight: 700;
-      color: var(--gold);
+      color: #5EAEFF;
       text-transform: uppercase;
       letter-spacing: 0.08em;
       margin-bottom: 24px;
@@ -799,7 +812,7 @@
       transform: translate(-50%, -50%);
       width: 600px;
       height: 600px;
-      background: radial-gradient(circle, rgba(200,146,42,0.08) 0%, transparent 65%);
+      background: radial-gradient(circle, rgba(0,122,255,0.08) 0%, transparent 65%);
       pointer-events: none;
     }
 
@@ -826,8 +839,8 @@
 
     /* ── FOOTER ── */
     footer {
-      background: var(--navy);
-      border-top: 1px solid rgba(255,255,255,0.06);
+      background: var(--surface);
+      border-top: 1px solid var(--border);
       padding: 60px 24px 40px;
       text-align: center;
     }
@@ -840,18 +853,17 @@
       margin-bottom: 28px;
     }
 
-    .footer-logo svg {
-      width: 48px;
-      height: 48px;
+    .footer-logo svg, .footer-logo img {
       border-radius: 11px;
       overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.18);
     }
 
     .footer-logo-wordmark {
       font-size: 1.375rem;
       font-weight: 700;
       letter-spacing: -0.025em;
-      color: var(--white);
+      color: var(--ink);
     }
 
     .footer-links {
@@ -863,18 +875,38 @@
     }
 
     .footer-links a {
-      color: rgba(255,255,255,0.45);
+      color: var(--secondary);
       font-size: 0.9375rem;
       font-weight: 500;
       transition: color 0.2s ease;
     }
 
-    .footer-links a:hover { color: rgba(255,255,255,0.8); }
+    .footer-links a:hover { color: var(--blue); }
+
+    .footer-copy {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px 20px;
+      flex-wrap: wrap;
+    }
 
     .footer-copy p {
       font-size: 0.875rem;
-      color: rgba(255,255,255,0.2);
+      color: var(--secondary);
     }
+
+    .footer-built {
+      font-size: 0.875rem;
+      color: var(--secondary);
+    }
+
+    .footer-built a {
+      color: var(--ink);
+      font-weight: 600;
+      transition: color 0.2s ease;
+    }
+    .footer-built a:hover { color: var(--blue); }
 
     /* ── RESPONSIVE ── */
     @media (max-width: 900px) {
@@ -914,76 +946,12 @@
 </head>
 <body>
 
-<!-- ══ INLINE SVG SYMBOL (AccuQuote compass icon) ══ -->
-<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
-  <symbol id="aq-icon" viewBox="0 0 632 632">
-    <defs>
-      <radialGradient id="aq-gbg" cx="50%" cy="38%" r="62%"><stop offset="0%" stop-color="#1e1a2e"/><stop offset="100%" stop-color="#0a0612"/></radialGradient>
-      <radialGradient id="aq-gbg-glow" cx="50%" cy="32%" r="44%"><stop offset="0%" stop-color="rgba(200,146,42,0.13)"/><stop offset="100%" stop-color="rgba(200,146,42,0)"/></radialGradient>
-      <linearGradient id="aq-gv" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#FFD84D"/><stop offset="38%" stop-color="#C8922A"/><stop offset="72%" stop-color="#8B5E10"/><stop offset="100%" stop-color="#5A3A08"/></linearGradient>
-      <linearGradient id="aq-gxL" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="rgba(255,255,180,0.0)"/><stop offset="45%" stop-color="rgba(255,255,180,0.22)"/><stop offset="100%" stop-color="rgba(255,255,180,0.0)"/></linearGradient>
-      <linearGradient id="aq-gxR" x1="100%" y1="0%" x2="0%" y2="0%"><stop offset="0%" stop-color="rgba(255,255,180,0.0)"/><stop offset="45%" stop-color="rgba(255,255,180,0.22)"/><stop offset="100%" stop-color="rgba(255,255,180,0.0)"/></linearGradient>
-      <linearGradient id="aq-gcb" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#FFD84D"/><stop offset="100%" stop-color="#8B5E10"/></linearGradient>
-      <linearGradient id="aq-gtip" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#C8922A"/><stop offset="100%" stop-color="#FFD070"/></linearGradient>
-      <radialGradient id="aq-grs" cx="35%" cy="30%" r="65%"><stop offset="0%" stop-color="#FFE87A"/><stop offset="55%" stop-color="#C8922A"/><stop offset="100%" stop-color="#7A4800"/></radialGradient>
-      <radialGradient id="aq-grh" cx="38%" cy="28%" r="62%"><stop offset="0%" stop-color="#FFD84D"/><stop offset="60%" stop-color="#B07820"/><stop offset="100%" stop-color="#5A3A08"/></radialGradient>
-      <radialGradient id="aq-gri" cx="35%" cy="30%" r="65%"><stop offset="0%" stop-color="#FFFDE0"/><stop offset="100%" stop-color="#C8922A"/></radialGradient>
-      <linearGradient id="aq-gwood" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#c49a56"/><stop offset="50%" stop-color="#e8c078"/><stop offset="100%" stop-color="#c49a56"/></linearGradient>
-      <linearGradient id="aq-ggraph" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#e8e8e8"/><stop offset="100%" stop-color="#bdbdbd"/></linearGradient>
-      <filter id="aq-glow"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-      <filter id="aq-hglow"><feGaussianBlur stdDeviation="7" result="g"/><feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-      <filter id="aq-blur2"><feGaussianBlur stdDeviation="1.8"/></filter>
-      <filter id="aq-dshadow"><feDropShadow dx="3" dy="5" stdDeviation="8" flood-color="#000" flood-opacity="0.45"/></filter>
-    </defs>
-    <rect width="632" height="632" fill="url(#aq-gbg)" rx="126"/>
-    <rect width="632" height="632" fill="url(#aq-gbg-glow)" rx="126"/>
-    <g transform="translate(6,6)">
-      <g filter="url(#aq-dshadow)" opacity="0.75">
-        <polygon points="298.58,32.55 321.42,43.45 60.46,574.61 49.54,569.39" fill="#7A4800"/>
-        <polygon points="298.58,43.45 321.42,32.55 570.46,569.39 559.54,574.61" fill="#7A4800"/>
-        <line x1="203.0" y1="262" x2="417.0" y2="262" stroke="#7A4800" stroke-width="18.7" stroke-linecap="round"/>
-      </g>
-      <polygon points="298.58,32.55 321.42,43.45 60.46,574.61 49.54,569.39" fill="url(#aq-gv)" opacity="0.88"/>
-      <polygon points="298.58,32.55 321.42,43.45 60.46,574.61 49.54,569.39" fill="url(#aq-gxL)" opacity="0.68"/>
-      <polygon points="298.58,32.55 321.42,43.45 60.46,574.61 49.54,569.39" fill="none" stroke="rgba(70,35,0,0.52)" stroke-width="1.3"/>
-      <line x1="313.2" y1="39.5" x2="58.2" y2="573.5" stroke="rgba(255,252,185,0.85)" stroke-width="3.0" stroke-linecap="round" filter="url(#aq-blur2)"/>
-      <polygon points="298.58,43.45 321.42,32.55 570.46,569.39 559.54,574.61" fill="url(#aq-gv)" opacity="0.88"/>
-      <polygon points="298.58,43.45 321.42,32.55 570.46,569.39 559.54,574.61" fill="url(#aq-gxR)" opacity="0.68"/>
-      <polygon points="298.58,43.45 321.42,32.55 570.46,569.39 559.54,574.61" fill="none" stroke="rgba(70,35,0,0.52)" stroke-width="1.3"/>
-      <line x1="306.8" y1="39.5" x2="561.8" y2="573.5" stroke="rgba(255,252,185,0.85)" stroke-width="3.0" stroke-linecap="round" filter="url(#aq-blur2)"/>
-      <polygon points="45.3,510.4 64.7,510.4 60.3,564.3 49.7,564.3" fill="url(#aq-gtip)"/>
-      <polygon points="49.7,564.3 60.3,564.3 55,585.2" fill="url(#aq-gtip)"/>
-      <rect x="545.6" y="440.0" width="38.7" height="33.0" rx="4.8" fill="url(#aq-gri)"/>
-      <rect x="548.7" y="473.0" width="32.6" height="55.0" fill="url(#aq-gwood)" rx="3.3"/>
-      <polygon points="548.7,528.0 581.3,528.0 576.0,572.0 554.0,572.0" fill="url(#aq-gwood)" opacity="0.88"/>
-      <polygon points="554.0,572.0 576.0,572.0 565,605.0" fill="url(#aq-ggraph)"/>
-      <rect x="203.0" y="251.0" width="213.9" height="22.0" fill="rgba(0,0,0,0.38)" rx="8.8" transform="translate(2.5,4)"/>
-      <rect x="203.0" y="251.0" width="213.9" height="22.0" fill="url(#aq-gcb)" rx="8.8" stroke="rgba(70,35,0,0.48)" stroke-width="0.9"/>
-      <rect x="205.0" y="253.2" width="209.9" height="6.6" fill="rgba(255,250,185,0.52)" rx="4.8"/>
-      <circle cx="310" cy="262" r="30.8" fill="rgba(0,0,0,0.62)" filter="url(#aq-glow)"/>
-      <circle cx="310" cy="262" r="27.3" fill="url(#aq-grs)"/>
-      <circle cx="310" cy="262" r="20.2" fill="rgba(8,4,0,0.90)" stroke="#FFE135" stroke-width="3.7"/>
-      <circle cx="310" cy="262" r="13.2" fill="url(#aq-grs)"/>
-      <circle cx="310" cy="262" r="5.5" fill="rgba(255,253,200,0.88)"/>
-      <circle cx="203.0" cy="262.0" r="19.8" fill="rgba(0,0,0,0.82)" stroke="#C8920A" stroke-width="4.4"/><circle cx="203.0" cy="262.0" r="11.9" fill="url(#aq-grs)"/><circle cx="203.0" cy="262.0" r="4.4" fill="rgba(255,250,170,0.82)"/>
-      <circle cx="417.0" cy="262.0" r="19.8" fill="rgba(0,0,0,0.82)" stroke="#C8920A" stroke-width="4.4"/><circle cx="417.0" cy="262.0" r="11.9" fill="url(#aq-grs)"/><circle cx="417.0" cy="262.0" r="4.4" fill="rgba(255,250,170,0.82)"/>
-      <circle cx="310" cy="38" r="46.6" fill="url(#aq-grh)" filter="url(#aq-hglow)"/>
-      <circle cx="310" cy="38" r="36.3" fill="rgba(8,4,0,0.90)" stroke="#C8920A" stroke-width="4.6"/>
-      <circle cx="310" cy="38" r="29.5" fill="url(#aq-grh)"/>
-      <circle cx="310" cy="38" r="19.8" fill="rgba(8,4,0,0.86)" stroke="#FFE135" stroke-width="3.3"/>
-      <circle cx="310" cy="38" r="12.1" fill="url(#aq-gri)"/>
-      <circle cx="310" cy="38" r="4.2" fill="rgba(255,255,220,0.92)"/>
-      <ellipse cx="295.7" cy="23.7" rx="16.5" ry="9.7" fill="rgba(255,255,242,0.80)" transform="rotate(-43,310,38)" filter="url(#aq-blur2)"/>
-    </g>
-  </symbol>
-</svg>
-
 
 <!-- ══ NAV ══ -->
 <nav role="navigation" aria-label="Main navigation">
   <div class="nav-inner">
     <a href="./index.html" class="nav-logo" aria-label="AccuQuote home">
-      <svg width="32" height="32" viewBox="0 0 632 632" aria-hidden="true" focusable="false"><use href="#aq-icon"/></svg>
+      <img src="./images/accuquote-logo.png" alt="" width="32" height="32" style="border-radius:7px;display:block;" />
       <span class="nav-logo-wordmark">AccuQuote</span>
     </a>
     <ul class="nav-links" role="list">
@@ -1336,7 +1304,7 @@
 <!-- ══ FOOTER ══ -->
 <footer role="contentinfo">
   <div class="footer-logo" role="img" aria-label="AccuQuote">
-    <svg width="48" height="48" viewBox="0 0 632 632" aria-hidden="true" focusable="false"><use href="#aq-icon"/></svg>
+    <img src="./images/accuquote-logo.png" alt="" width="48" height="48" style="border-radius:11px;display:block;" />
     <span class="footer-logo-wordmark">AccuQuote</span>
   </div>
   <nav class="footer-links" aria-label="Footer navigation">
@@ -1347,7 +1315,8 @@
     <a href="mailto:hello@accuquote.app">Contact</a>
   </nav>
   <div class="footer-copy">
-    <p>&copy; 2025 AccuQuote. All rights reserved.</p>
+    <p>&copy; 2026 AccuQuote. All rights reserved.</p>
+    <span class="footer-built">Built by <a href="https://slickdigital.co.uk" target="_blank" rel="noopener">Slick Digital</a></span>
   </div>
 </footer>
 

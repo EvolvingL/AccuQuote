@@ -59,19 +59,28 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg-dark:    #0F0F12;
-      --bg-mid:     #1A1A1F;
-      --bg-light:   #2A2A2F;
-      --accent:     #F4B82A;
-      --accent-hover: #e0a820;
-      --white:      #F5F5F0;
-      --muted:      #7A7A82;
+      /* Light-first surfaces */
+      --bg-dark:    #FFFFFF;
+      --bg-mid:     #F5F5F7;
+      --bg-light:   #E0E0E8;
+      --accent:     #007AFF;
+      --accent-hover: #0060d6;
+      --blue:       #007AFF;
+      --blue-light: #5EAEFF;
+      --ink:        #121217;
+      --white:      #121217;   /* legacy alias: "white" now means primary ink text */
+      --muted:      #85858F;
       --red:        #E63946;
-      --green:      #3FA796;
+      --green:      #21B86E;
       --cream:      #F5F1E8;
-      --border:     rgba(255,255,255,0.08);
-      --font: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
-      --radius: 12px;
+      --border:     #E0E0E8;
+      --surface:    #F5F5F7;
+      /* Dark band (hero / immersive sections) */
+      --night:      #0B0B0F;
+      --night-mid:  #141419;
+      --gold:       #007AFF;   /* legacy alias used by .pledge-card */
+      --font: 'Poppins', -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+      --radius: 14px;
       --max-w: 1100px;
     }
 
@@ -115,6 +124,20 @@
       align-items: center;
       gap: 16px;
     }
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: rgba(255,255,255,0.72);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+    }
+    .brand-lockup {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
     .wordmark {
       font-size: 20px;
       font-weight: 800;
@@ -132,23 +155,29 @@
     }
     .header-sep { color: var(--muted); font-size: 18px; }
 
-    /* ── Hero ────────────────────────────────────────────────────────────── */
+    /* ── Hero (dark immersive band) ──────────────────────────────────────── */
     .hero {
       padding: 72px 0 80px;
       text-align: center;
+      background:
+        radial-gradient(ellipse 70% 60% at 50% -10%, rgba(0,122,255,0.18) 0%, transparent 60%),
+        linear-gradient(180deg, #0B0B0F 0%, #141419 100%);
+      color: #FFFFFF;
+      position: relative;
+      overflow: hidden;
     }
 
     .status-pill {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      background: rgba(244,184,42,0.12);
-      border: 1px solid rgba(244,184,42,0.3);
+      background: rgba(0,122,255,0.15);
+      border: 1px solid rgba(0,122,255,0.35);
       border-radius: 100px;
       padding: 6px 16px;
       font-size: 12px;
       font-weight: 600;
-      color: var(--accent);
+      color: var(--blue-light);
       text-transform: uppercase;
       letter-spacing: 0.06em;
       margin-bottom: 32px;
@@ -161,27 +190,28 @@
       line-height: 1.05;
       letter-spacing: -0.02em;
       margin-bottom: 24px;
+      color: #FFFFFF;
     }
     .hero h1 em {
       font-style: normal;
-      color: var(--accent);
+      color: var(--blue-light);
     }
 
     .hero-subhead {
       font-size: clamp(17px, 2.5vw, 21px);
-      color: var(--muted);
+      color: rgba(255,255,255,0.65);
       max-width: 640px;
       margin: 0 auto 20px;
       line-height: 1.55;
     }
     .hero-subhead strong {
-      color: var(--white);
+      color: #FFFFFF;
       font-weight: 600;
     }
 
     .founding-offer {
-      background: var(--bg-mid);
-      border: 1px solid rgba(244,184,42,0.25);
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(0,122,255,0.35);
       border-radius: var(--radius);
       padding: 28px 32px;
       max-width: 600px;
@@ -191,15 +221,15 @@
     .founding-offer__title {
       font-size: 18px;
       font-weight: 700;
-      color: var(--accent);
+      color: var(--blue-light);
       margin-bottom: 12px;
     }
     .founding-offer__body {
       font-size: 15px;
-      color: var(--muted);
+      color: rgba(255,255,255,0.6);
       line-height: 1.65;
     }
-    .founding-offer__body strong { color: var(--white); }
+    .founding-offer__body strong { color: #FFFFFF; }
 
     /* ── Email form ──────────────────────────────────────────────────────── */
     .email-form-wrap {
@@ -222,10 +252,10 @@
     .form-field select {
       width: 100%;
       padding: 14px 18px;
-      background: var(--bg-mid);
+      background: #FFFFFF;
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      color: var(--white);
+      color: var(--ink);
       font-family: var(--font);
       font-size: 15px;
       outline: none;
@@ -260,17 +290,17 @@
       width: 100%;
       padding: 16px 24px;
       background: var(--accent);
-      color: #0F0F12;
+      color: #FFFFFF;
       font-family: var(--font);
       font-size: 17px;
       font-weight: 700;
       border: none;
       border-radius: var(--radius);
       cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
+      transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
       letter-spacing: 0.01em;
     }
-    .btn-claim:hover { background: var(--accent-hover); }
+    .btn-claim:hover { background: var(--accent-hover); box-shadow: 0 8px 28px rgba(0,122,255,0.28); }
     .btn-claim:active { transform: scale(0.98); }
     .btn-claim:disabled { opacity: 0.6; cursor: default; }
 
@@ -291,6 +321,9 @@
       font-weight: 600;
       color: var(--accent);
     }
+    .hero .counter-bar { color: var(--blue-light); }
+    .hero .form-reassurance,
+    .hero .reassurance-item { color: rgba(255,255,255,0.6); }
     .counter-bar .bolt { font-size: 16px; }
     .counter-track {
       background: var(--bg-light);
@@ -407,7 +440,7 @@
     .tl-dot.current {
       background: var(--accent);
       border-color: var(--accent);
-      box-shadow: 0 0 0 4px rgba(244,184,42,0.25);
+      box-shadow: 0 0 0 4px rgba(0,122,255,0.25);
     }
     .tl-label {
       font-size: 12px;
@@ -519,7 +552,7 @@
     }
     .founder-story p {
       font-size: 18px;
-      color: rgba(245,245,240,0.85);
+      color: #3A3A40;
       line-height: 1.75;
       margin-bottom: 20px;
     }
@@ -583,7 +616,7 @@
     .step-icon {
       width: 52px;
       height: 52px;
-      background: rgba(244,184,42,0.1);
+      background: rgba(0,122,255,0.1);
       border-radius: 12px;
       display: flex;
       align-items: center;
@@ -651,8 +684,8 @@
     .pledge-card {
       max-width: 680px;
       margin: 0 auto;
-      background: linear-gradient(135deg, rgba(244,184,42,0.08) 0%, rgba(244,184,42,0.03) 100%);
-      border: 1.5px solid rgba(244,184,42,0.4);
+      background: linear-gradient(135deg, rgba(0,122,255,0.08) 0%, rgba(0,122,255,0.03) 100%);
+      border: 1.5px solid rgba(0,122,255,0.4);
       border-radius: var(--radius);
       padding: 48px 48px 40px;
       text-align: center;
@@ -680,13 +713,13 @@
     .pledge-card p strong { color: var(--white); }
     .pledge-signature {
       font-size: 14px;
-      color: rgba(255,255,255,0.4);
+      color: var(--muted);
       font-style: italic;
-      border-top: 1px solid rgba(244,184,42,0.15);
+      border-top: 1px solid rgba(0,122,255,0.15);
       padding-top: 20px;
     }
     .pledge-signature strong {
-      color: rgba(255,255,255,0.7);
+      color: var(--ink);
       font-style: normal;
     }
     @media (max-width: 600px) {
@@ -724,7 +757,7 @@
       font-weight: 700;
       color: var(--accent);
       flex-shrink: 0;
-      border: 2px solid rgba(244,184,42,0.2);
+      border: 2px solid rgba(0,122,255,0.2);
     }
     .member-info { min-width: 0; }
     .member-name {
@@ -819,8 +852,8 @@
     .final-cta .pain-lines span {
       display: block;
     }
-    .final-cta .pain-lines span:nth-child(2) { color: rgba(245,245,240,0.65); }
-    .final-cta .pain-lines span:nth-child(3) { color: rgba(245,245,240,0.4); }
+    .final-cta .pain-lines span:nth-child(2) { color: rgba(18,18,23,0.55); }
+    .final-cta .pain-lines span:nth-child(3) { color: rgba(18,18,23,0.35); }
     .final-cta .subhead {
       font-size: 20px;
       color: var(--muted);
@@ -859,8 +892,8 @@
       font-size: 13px;
       color: var(--muted);
     }
-    .footer-built a { color: var(--muted); text-decoration: underline; }
-    .footer-built a:hover { color: var(--white); }
+    .footer-built a { color: var(--ink); font-weight: 600; text-decoration: none; }
+    .footer-built a:hover { color: var(--blue); }
     .footer-links {
       display: flex;
       gap: 20px;
@@ -917,7 +950,10 @@
   <!-- ── Header ─────────────────────────────────────────────────────────── -->
   <header class="site-header">
     <div class="container">
-      <div class="wordmark">ACCU<span>QUOTE</span></div>
+      <div class="brand-lockup">
+        <img src="./images/accuquote-logo.png" alt="" width="30" height="30" style="border-radius:7px;display:block;box-shadow:0 1px 3px rgba(0,0,0,0.18);" />
+        <div class="wordmark">ACCU<span>QUOTE</span></div>
+      </div>
       <span class="header-sep">•</span>
       <div class="tagline-small">Measure. Scope. Quote.</div>
     </div>
@@ -930,7 +966,7 @@
       <div class="status-pill">
         <span class="dot">🟡</span>
         IN BUILD
-        <span style="color:rgba(244,184,42,0.4)">•</span>
+        <span style="color:rgba(0,122,255,0.4)">•</span>
         LAUNCHING Q3 2026
       </div>
 
@@ -1298,9 +1334,12 @@
   <footer class="site-footer">
     <div class="container">
       <div class="footer-inner">
-        <div>
-          <div class="footer-wordmark">ACCU<span>QUOTE</span></div>
-          <div class="footer-tagline" style="margin-top:6px">Measure. Scope. Quote.</div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <img src="./images/accuquote-logo.png" alt="" width="30" height="30" style="border-radius:7px;display:block;box-shadow:0 1px 3px rgba(0,0,0,0.18);" />
+            <div class="footer-wordmark">ACCU<span>QUOTE</span></div>
+          </div>
+          <div class="footer-tagline">Measure. Scope. Quote.</div>
         </div>
         <div class="footer-built">
           Built by <a href="https://slickdigital.co.uk" target="_blank" rel="noopener">Slick Digital</a> · Made in Watford
@@ -1343,7 +1382,7 @@
       if (!grid) return;
 
       // Colour palette for initials avatars
-      var colours = ['#F4B82A','#3FA796','#E63946','#7B61FF','#0EA5E9'];
+      var colours = ['#007AFF','#3FA796','#E63946','#7B61FF','#0EA5E9'];
 
       FOUNDING_MEMBERS.forEach(function (m, i) {
         var card = document.createElement('div');

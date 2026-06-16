@@ -8,14 +8,14 @@
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
     :root {
-      --navy: #0D1120;
-      --gold: #C8922A;
-      --gold-light: rgba(200,146,42,0.12);
-      --gold-border: rgba(200,146,42,0.3);
-      --text: #1a1a1a;
-      --muted: #666;
-      --light: #f7f7f3;
-      --border: #e8e8e0;
+      --navy: #0B0B0F;
+      --gold: #007AFF;
+      --gold-light: rgba(0,122,255,0.1);
+      --gold-border: rgba(0,122,255,0.3);
+      --text: #121217;
+      --muted: #85858F;
+      --light: #F5F5F7;
+      --border: #E0E0E8;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -59,11 +59,12 @@
       text-decoration: none;
     }
 
-    .nav-logo-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: var(--gold);
+    .nav-logo-icon {
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      display: block;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.18);
     }
 
     .nav-logo-text {
@@ -84,7 +85,7 @@
       transition: background 0.2s;
     }
 
-    .nav-cta:hover { background: #1e2540; }
+    .nav-cta:hover { background: #141419; }
 
     /* ───── HERO ───── */
     .hero {
@@ -339,7 +340,7 @@
 
     .feature-card:hover {
       border-color: var(--gold-border);
-      box-shadow: 0 4px 20px rgba(200,146,42,0.08);
+      box-shadow: 0 4px 20px rgba(0,122,255,0.08);
     }
 
     .feature-emoji {
@@ -663,12 +664,13 @@
 
     .btn-gold:hover {
       transform: translateY(-2px);
-      box-shadow: 0 10px 30px rgba(200,146,42,0.35);
+      box-shadow: 0 10px 30px rgba(0,122,255,0.35);
     }
 
     /* ───── FOOTER ───── */
     footer {
-      background: #0a0c16;
+      background: var(--light);
+      border-top: 1px solid var(--border);
       padding: 40px;
       text-align: center;
     }
@@ -681,23 +683,40 @@
       margin-bottom: 12px;
     }
 
-    .footer-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--gold);
+    .footer-icon {
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      display: block;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.18);
     }
 
     .footer-name {
       font-size: 14px;
       font-weight: 700;
-      color: #fff;
+      color: var(--text);
       letter-spacing: -0.01em;
     }
 
     footer p {
       font-size: 12px;
-      color: rgba(255,255,255,0.25);
+      color: var(--muted);
+    }
+
+    .footer-built {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .footer-built a {
+      color: var(--text);
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .footer-built a:hover {
+      color: var(--gold);
     }
 
   </style>
@@ -708,7 +727,7 @@
   <nav>
     <div class="nav-inner">
       <a href="#" class="nav-logo">
-        <div class="nav-logo-dot"></div>
+        <img src="../images/accuquote-logo.png" alt="" class="nav-logo-icon" width="26" height="26" />
         <div class="nav-logo-text">AccuQuote</div>
       </a>
       <a href="#get-started" class="nav-cta">Get Early Access</a>
@@ -1112,10 +1131,11 @@
   <!-- FOOTER -->
   <footer>
     <div class="footer-brand">
-      <div class="footer-dot"></div>
+      <img src="../images/accuquote-logo.png" alt="" class="footer-icon" width="26" height="26" />
       <div class="footer-name">AccuQuote</div>
     </div>
     <p>© 2025 AccuQuote · accuquote.app · beta@accuquote.app</p>
+    <p class="footer-built">Built by <a href="https://slickdigital.co.uk" target="_blank" rel="noopener">Slick Digital</a></p>
   </footer>
 
 </body>

@@ -63,19 +63,39 @@
        DESIGN TOKENS
     ===================== */
     :root {
-      --gold: #C8922A;
-      --gold-hover: #b07e22;
-      --dark: #1D1D1F;
-      --secondary: #6E6E73;
-      --navy: #0A0A1A;
-      --navy-mid: #0f0f2a;
-      --white: #FFFFFF;
+      /* Brand — matched to the AccuQuote / AccuScan iOS apps */
+      --blue: #007AFF;
+      --blue-hover: #0060d6;
+      --green: #21B86E;
+      --amber: #FFCC00;
+
+      /* Ink & surfaces — light-first, paper-document feel */
+      --ink: #121217;
+      --dark: #121217;
+      --secondary: #85858F;
+      --border: #E0E0E8;
+      --surface: #F5F5F7;
       --off-white: #F5F5F7;
-      --border: #E0E0E5;
-      --radius: 14px;
-      --radius-sm: 8px;
-      --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+      --white: #FFFFFF;
+
+      /* Dark band (hero / immersive sections) */
+      --night: #0B0B0F;
+      --night-mid: #141419;
+
+      /* Legacy aliases kept so older markup still resolves to the new palette */
+      --gold: #007AFF;
+      --gold-hover: #0060d6;
+      --navy: #0B0B0F;
+      --navy-mid: #141419;
+
+      --radius: 16px;
+      --radius-sm: 10px;
+      --radius-lg: 20px;
+      --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, 'Helvetica Neue', Arial, sans-serif;
+      --font-rounded: ui-rounded, 'SF Pro Rounded', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
       --transition: 0.2s ease;
+      --shadow-card: 0 1px 2px rgba(18,18,23,0.04), 0 8px 24px rgba(18,18,23,0.05);
+      --shadow-blue: 0 8px 28px rgba(0,122,255,0.28);
     }
 
     /* =====================
@@ -106,7 +126,8 @@
     h3 { font-size: 1.25rem; font-weight: 600; line-height: 1.3; }
     p { line-height: 1.7; }
 
-    .text-gold { color: var(--gold); }
+    .text-gold { color: var(--blue); }
+    .text-blue { color: var(--blue); }
     .text-secondary { color: var(--secondary); }
 
     /* =====================
@@ -142,7 +163,7 @@
       font-weight: 600;
       letter-spacing: 0.12em;
       text-transform: uppercase;
-      color: var(--gold);
+      color: var(--blue);
       margin-bottom: 12px;
     }
 
@@ -184,24 +205,29 @@
     .btn:active { transform: scale(0.97); }
 
     .btn-gold {
-      background: var(--gold);
+      background: var(--blue);
       color: var(--white);
     }
-    .btn-gold:hover { background: var(--gold-hover); box-shadow: 0 4px 20px rgba(200,146,42,0.35); }
+    .btn-gold:hover { background: var(--blue-hover); box-shadow: var(--shadow-blue); }
+
+    .btn-blue { background: var(--blue); color: var(--white); }
+    .btn-blue:hover { background: var(--blue-hover); box-shadow: var(--shadow-blue); }
 
     .btn-outline {
-      background: transparent;
+      background: rgba(255,255,255,0.06);
       color: var(--white);
-      border: 1.5px solid rgba(255,255,255,0.55);
+      border: 1.5px solid rgba(255,255,255,0.28);
+      backdrop-filter: saturate(140%) blur(8px);
+      -webkit-backdrop-filter: saturate(140%) blur(8px);
     }
-    .btn-outline:hover { border-color: var(--white); background: rgba(255,255,255,0.08); }
+    .btn-outline:hover { border-color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.12); }
 
     .btn-outline-dark {
-      background: transparent;
-      color: var(--dark);
-      border: 1.5px solid var(--border);
+      background: var(--white);
+      color: var(--ink);
+      border: 1px solid var(--border);
     }
-    .btn-outline-dark:hover { border-color: var(--dark); }
+    .btn-outline-dark:hover { border-color: var(--blue); color: var(--blue); }
 
     /* =====================
        NAV
@@ -210,72 +236,77 @@
       position: sticky;
       top: 0;
       z-index: 100;
-      background: var(--navy);
-      border-bottom: 1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.72);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      border-bottom: 1px solid rgba(0,0,0,0.06);
     }
 
     .nav__inner {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      height: 64px;
+      height: 60px;
     }
 
     .nav__logo {
       display: flex;
       align-items: center;
       gap: 10px;
-      font-size: 1.125rem;
+      font-size: 1.0625rem;
       font-weight: 700;
-      color: var(--white);
+      letter-spacing: -0.02em;
+      color: var(--ink);
       flex-shrink: 0;
     }
 
     .nav__logo-icon {
-      width: 34px;
-      height: 34px;
-      border-radius: 8px;
+      width: 30px;
+      height: 30px;
+      border-radius: 7px;
       overflow: hidden;
       flex-shrink: 0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.18);
     }
+    .nav__logo-icon img { width: 100%; height: 100%; object-fit: cover; }
 
     .nav__links {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 4px;
     }
 
     .nav__link {
       font-size: 0.9rem;
       font-weight: 500;
-      color: rgba(255,255,255,0.75);
+      color: var(--secondary);
       padding: 8px 14px;
       border-radius: 8px;
       transition: color var(--transition), background var(--transition);
     }
-    .nav__link:hover { color: var(--white); background: rgba(255,255,255,0.07); }
+    .nav__link:hover { color: var(--ink); background: rgba(0,0,0,0.04); }
 
     .nav__demo {
       font-size: 0.875rem;
       font-weight: 600;
-      color: var(--white);
-      border: 1.5px solid rgba(255,255,255,0.5);
+      color: var(--ink);
+      border: 1px solid var(--border);
       border-radius: 100px;
       padding: 8px 18px;
       transition: border-color var(--transition), background var(--transition);
     }
-    .nav__demo:hover { border-color: var(--white); background: rgba(255,255,255,0.08); }
+    .nav__demo:hover { border-color: var(--blue); color: var(--blue); }
 
     .nav__cta {
       font-size: 0.875rem;
       font-weight: 600;
-      background: var(--gold);
+      background: var(--blue);
       color: var(--white);
       border-radius: 100px;
       padding: 9px 20px;
       transition: background var(--transition), box-shadow var(--transition);
     }
-    .nav__cta:hover { background: var(--gold-hover); box-shadow: 0 4px 16px rgba(200,146,42,0.4); }
+    .nav__cta:hover { background: var(--blue-hover); box-shadow: var(--shadow-blue); }
 
     /* Hamburger */
     .nav__hamburger {
@@ -292,7 +323,7 @@
       display: block;
       width: 100%;
       height: 2px;
-      background: var(--white);
+      background: var(--ink);
       border-radius: 2px;
       transition: transform 0.3s ease, opacity 0.3s ease;
     }
@@ -303,8 +334,10 @@
     .nav__mobile {
       display: none;
       flex-direction: column;
-      background: var(--navy-mid);
-      border-top: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.96);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      border-top: 1px solid var(--border);
       padding: 16px 24px 24px;
       gap: 4px;
     }
@@ -312,14 +345,14 @@
     .nav__mobile a {
       font-size: 1rem;
       font-weight: 500;
-      color: rgba(255,255,255,0.8);
+      color: var(--ink);
       padding: 12px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
+      border-bottom: 1px solid var(--border);
     }
     .nav__mobile a:last-child { border-bottom: none; }
     .nav__mobile .mobile-cta {
       margin-top: 12px;
-      background: var(--gold);
+      background: var(--blue);
       color: var(--white);
       text-align: center;
       padding: 14px;
@@ -331,8 +364,10 @@
        HERO
     ===================== */
     .hero {
-      background: var(--navy);
-      padding: 100px 0 110px;
+      background:
+        radial-gradient(ellipse 70% 60% at 50% -10%, rgba(0,122,255,0.16) 0%, transparent 60%),
+        linear-gradient(180deg, #0B0B0F 0%, #141419 100%);
+      padding: 104px 0 112px;
       overflow: hidden;
       position: relative;
     }
@@ -340,12 +375,12 @@
     .hero::before {
       content: '';
       position: absolute;
-      top: -120px;
+      top: -160px;
       left: 50%;
       transform: translateX(-50%);
-      width: 800px;
-      height: 600px;
-      background: radial-gradient(ellipse at center, rgba(200,146,42,0.12) 0%, transparent 70%);
+      width: 900px;
+      height: 640px;
+      background: radial-gradient(ellipse at center, rgba(0,122,255,0.22) 0%, transparent 70%);
       pointer-events: none;
     }
 
@@ -362,15 +397,15 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      background: rgba(200,146,42,0.15);
-      border: 1px solid rgba(200,146,42,0.3);
+      background: rgba(0,122,255,0.15);
+      border: 1px solid rgba(0,122,255,0.35);
       border-radius: 100px;
       padding: 6px 16px;
       font-size: 0.8125rem;
       font-weight: 600;
-      color: var(--gold);
+      color: #5EAEFF;
       margin-bottom: 28px;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.02em;
     }
 
     .hero__badge::before {
@@ -378,7 +413,8 @@
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background: var(--gold);
+      background: #5EAEFF;
+      box-shadow: 0 0 8px rgba(0,122,255,0.8);
       flex-shrink: 0;
     }
 
@@ -426,9 +462,10 @@
     .hero__stat:last-child { border-right: none; }
 
     .hero__stat-num {
+      font-family: var(--font-rounded);
       font-size: 1.5rem;
       font-weight: 700;
-      color: var(--gold);
+      color: #5EAEFF;
       display: block;
     }
 
@@ -456,9 +493,9 @@
       width: 36px;
       height: 36px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #1a2a4a 0%, #2a4070 100%);
-      border: 2px solid rgba(200,146,42,0.6);
-      color: var(--gold);
+      background: linear-gradient(135deg, #1d2b46 0%, #25457a 100%);
+      border: 2px solid rgba(0,122,255,0.55);
+      color: #7CC0FF;
       font-size: 0.65rem;
       font-weight: 700;
       display: flex;
@@ -472,9 +509,9 @@
     .hero__avatar:first-child { margin-left: 0; }
 
     .hero__avatar--more {
-      background: rgba(200,146,42,0.15);
-      border-color: var(--gold);
-      color: var(--gold);
+      background: rgba(0,122,255,0.18);
+      border-color: var(--blue);
+      color: #7CC0FF;
       font-size: 0.6rem;
       font-weight: 800;
     }
@@ -494,12 +531,12 @@
       margin-top: 14px;
       font-size: 0.8125rem;
       font-weight: 500;
-      color: rgba(200,146,42,0.8);
-      border-bottom: 1px dashed rgba(200,146,42,0.35);
+      color: rgba(124,192,255,0.9);
+      border-bottom: 1px dashed rgba(0,122,255,0.4);
       padding-bottom: 1px;
       transition: color 0.15s, border-color 0.15s;
     }
-    .hero__calc-nudge:hover { color: var(--gold); border-color: rgba(200,146,42,0.7); }
+    .hero__calc-nudge:hover { color: #fff; border-color: rgba(0,122,255,0.8); }
 
     /* =====================
        HOW IT WORKS
@@ -531,7 +568,7 @@
       width: 44px;
       height: 44px;
       border-radius: 50%;
-      background: rgba(200,146,42,0.1);
+      background: rgba(0,122,255,0.1);
       color: var(--gold);
       font-size: 1rem;
       font-weight: 700;
@@ -630,8 +667,8 @@
     }
 
     .compare__col--new {
-      background: rgba(200,146,42,0.08);
-      border: 1px solid rgba(200,146,42,0.2);
+      background: rgba(0,122,255,0.08);
+      border: 1px solid rgba(0,122,255,0.2);
       border-radius: 0 var(--radius) var(--radius) 0;
     }
 
@@ -643,7 +680,7 @@
       border-bottom: 1px solid rgba(255,255,255,0.1);
     }
 
-    .compare__col--new h3 { color: var(--gold); border-color: rgba(200,146,42,0.25); }
+    .compare__col--new h3 { color: var(--gold); border-color: rgba(0,122,255,0.25); }
 
     .compare__list li {
       display: flex;
@@ -698,7 +735,7 @@
     .feature-card__icon {
       width: 44px;
       height: 44px;
-      background: rgba(200,146,42,0.1);
+      background: rgba(0,122,255,0.1);
       border-radius: 12px;
       display: flex;
       align-items: center;
@@ -768,7 +805,7 @@
       width: 40px;
       height: 40px;
       border-radius: 50%;
-      background: rgba(200,146,42,0.2);
+      background: rgba(0,122,255,0.2);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -858,7 +895,7 @@
 
     .pricing-card--featured {
       border-color: var(--gold);
-      box-shadow: 0 0 0 1px var(--gold), 0 16px 48px rgba(200,146,42,0.15);
+      box-shadow: 0 0 0 1px var(--gold), 0 16px 48px rgba(0,122,255,0.15);
     }
 
     .pricing-card__badge {
@@ -1029,7 +1066,7 @@
       transform: translateX(-50%);
       width: 700px;
       height: 400px;
-      background: radial-gradient(ellipse at center, rgba(200,146,42,0.14) 0%, transparent 70%);
+      background: radial-gradient(ellipse at center, rgba(0,122,255,0.14) 0%, transparent 70%);
       pointer-events: none;
     }
 
@@ -1069,10 +1106,10 @@
        FOOTER
     ===================== */
     .footer {
-      background: var(--navy-mid);
-      border-top: 1px solid rgba(255,255,255,0.07);
+      background: var(--surface);
+      border-top: 1px solid var(--border);
       padding: 48px 0 32px;
-      color: rgba(255,255,255,0.5);
+      color: var(--secondary);
     }
 
     .footer__inner {
@@ -1088,9 +1125,10 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      color: var(--white);
+      color: var(--ink);
       font-size: 1rem;
       font-weight: 700;
+      letter-spacing: -0.02em;
     }
 
     .footer__brand-icon {
@@ -1099,7 +1137,9 @@
       border-radius: 7px;
       overflow: hidden;
       flex-shrink: 0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.18);
     }
+    .footer__brand-icon img { width: 100%; height: 100%; object-fit: cover; }
 
     .footer__links {
       display: flex;
@@ -1110,16 +1150,32 @@
 
     .footer__links a {
       font-size: 0.875rem;
-      color: rgba(255,255,255,0.5);
+      color: var(--secondary);
       transition: color var(--transition);
     }
-    .footer__links a:hover { color: var(--white); }
+    .footer__links a:hover { color: var(--blue); }
 
     .footer__bottom {
-      border-top: 1px solid rgba(255,255,255,0.06);
+      border-top: 1px solid var(--border);
       padding-top: 24px;
       font-size: 0.8125rem;
-      color: rgba(255,255,255,0.3);
+      color: var(--secondary);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px 24px;
+    }
+
+    .footer__built a {
+      color: var(--ink);
+      font-weight: 600;
+      transition: color var(--transition);
+    }
+    .footer__built a:hover { color: var(--blue); }
+
+    @media (max-width: 640px) {
+      .footer__bottom { flex-direction: column; align-items: flex-start; }
     }
 
     /* =====================
@@ -1350,8 +1406,8 @@
        REFERRAL BANNER
     ===================== */
     .referral-banner {
-      background: linear-gradient(135deg, rgba(200,146,42,0.12) 0%, rgba(200,146,42,0.04) 100%);
-      border: 1px solid rgba(200,146,42,0.25);
+      background: linear-gradient(135deg, rgba(0,122,255,0.12) 0%, rgba(0,122,255,0.04) 100%);
+      border: 1px solid rgba(0,122,255,0.25);
       border-radius: var(--radius);
       padding: 20px 28px;
       display: flex;
@@ -1387,8 +1443,8 @@
     }
 
     .referral-banner__cta {
-      background: rgba(200,146,42,0.2);
-      border: 1px solid rgba(200,146,42,0.4);
+      background: rgba(0,122,255,0.2);
+      border: 1px solid rgba(0,122,255,0.4);
       color: var(--gold);
       font-size: 0.875rem;
       font-weight: 600;
@@ -1397,7 +1453,7 @@
       white-space: nowrap;
       transition: background 0.2s, border-color 0.2s;
     }
-    .referral-banner__cta:hover { background: rgba(200,146,42,0.3); border-color: var(--gold); }
+    .referral-banner__cta:hover { background: rgba(0,122,255,0.3); border-color: var(--gold); }
 
     /* =====================
        DIVIDER
@@ -1465,68 +1521,6 @@
 </head>
 <body>
 
-<!-- Hidden SVG symbol -->
-<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
-  <symbol id="aq-icon" viewBox="0 0 632 632">
-    <defs>
-      <linearGradient id="aq-gbg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#1A1200"/><stop offset="100%" stop-color="#0A0800"/></linearGradient>
-      <radialGradient id="aq-gbg-glow" cx="50%" cy="38%" r="52%"><stop offset="0%" stop-color="rgba(255,210,0,0.10)"/><stop offset="100%" stop-color="rgba(255,210,0,0)"/></radialGradient>
-      <linearGradient id="aq-gv" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFE566"/><stop offset="40%" stop-color="#C8920A"/><stop offset="100%" stop-color="#7A4800"/></linearGradient>
-      <linearGradient id="aq-gxL" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="rgba(255,255,255,0.22)"/><stop offset="100%" stop-color="rgba(0,0,0,0)"/></linearGradient>
-      <linearGradient id="aq-gxR" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="rgba(0,0,0,0)"/><stop offset="100%" stop-color="rgba(255,255,255,0.14)"/></linearGradient>
-      <linearGradient id="aq-gcb" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FFE566"/><stop offset="100%" stop-color="#A06800"/></linearGradient>
-      <radialGradient id="aq-grs" cx="38%" cy="35%" r="65%"><stop offset="0%" stop-color="#FFE566"/><stop offset="55%" stop-color="#C8920A"/><stop offset="100%" stop-color="#7A4800"/></radialGradient>
-      <radialGradient id="aq-grh" cx="38%" cy="32%" r="62%"><stop offset="0%" stop-color="#FFE566"/><stop offset="50%" stop-color="#C8920A"/><stop offset="100%" stop-color="#5A3000"/></radialGradient>
-      <linearGradient id="aq-gtip" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#C8920A"/><stop offset="100%" stop-color="#FFE566"/></linearGradient>
-      <linearGradient id="aq-gwood" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#E8C87A"/><stop offset="100%" stop-color="#C8A040"/></linearGradient>
-      <linearGradient id="aq-ggraph" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#E0E0E0"/><stop offset="100%" stop-color="#A0A0A0"/></linearGradient>
-      <radialGradient id="aq-gri" cx="38%" cy="35%" r="65%"><stop offset="0%" stop-color="#FFE566"/><stop offset="100%" stop-color="#C8920A"/></radialGradient>
-      <filter id="aq-glow"><feGaussianBlur stdDeviation="4.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-      <filter id="aq-hglow"><feGaussianBlur stdDeviation="9" result="b"/><feColorMatrix in="b" values="1 0.7 0 0 0  0.7 0.5 0 0 0  0 0 0 0 0  0 0 0 0.55 0" result="g"/><feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-      <filter id="aq-blur2"><feGaussianBlur stdDeviation="1.8"/></filter>
-      <filter id="aq-dshadow"><feDropShadow dx="3" dy="5" stdDeviation="8" flood-color="#000" flood-opacity="0.45"/></filter>
-    </defs>
-    <rect width="632" height="632" fill="url(#aq-gbg)" rx="126"/>
-    <rect width="632" height="632" fill="url(#aq-gbg-glow)" rx="126"/>
-    <g transform="translate(6,6)">
-      <g filter="url(#aq-dshadow)" opacity="0.75">
-        <polygon points="298.58,32.55 321.42,43.45 60.46,574.61 49.54,569.39" fill="#7A4800"/>
-        <polygon points="298.58,43.45 321.42,32.55 570.46,569.39 559.54,574.61" fill="#7A4800"/>
-        <line x1="203.0" y1="262" x2="417.0" y2="262" stroke="#7A4800" stroke-width="18.7" stroke-linecap="round"/>
-      </g>
-      <polygon points="298.58,32.55 321.42,43.45 60.46,574.61 49.54,569.39" fill="url(#aq-gv)" opacity="0.88"/>
-      <polygon points="298.58,32.55 321.42,43.45 60.46,574.61 49.54,569.39" fill="url(#aq-gxL)" opacity="0.68"/>
-      <polygon points="298.58,32.55 321.42,43.45 60.46,574.61 49.54,569.39" fill="none" stroke="rgba(70,35,0,0.52)" stroke-width="1.3"/>
-      <polygon points="298.58,43.45 321.42,32.55 570.46,569.39 559.54,574.61" fill="url(#aq-gv)" opacity="0.88"/>
-      <polygon points="298.58,43.45 321.42,32.55 570.46,569.39 559.54,574.61" fill="url(#aq-gxR)" opacity="0.68"/>
-      <polygon points="298.58,43.45 321.42,32.55 570.46,569.39 559.54,574.61" fill="none" stroke="rgba(70,35,0,0.52)" stroke-width="1.3"/>
-      <polygon points="45.3,510.4 64.7,510.4 60.3,564.3 49.7,564.3" fill="url(#aq-gtip)"/>
-      <polygon points="49.7,564.3 60.3,564.3 55,585.2" fill="url(#aq-gtip)"/>
-      <rect x="545.6" y="440.0" width="38.7" height="33.0" rx="4.8" fill="url(#aq-gri)"/>
-      <rect x="545.6" y="440.0" width="38.7" height="8.4" fill="rgba(0,0,0,0.28)" rx="3.3"/>
-      <rect x="548.7" y="473.0" width="32.6" height="55.0" fill="url(#aq-gwood)" rx="3.3"/>
-      <polygon points="548.7,528.0 581.3,528.0 576.0,572.0 554.0,572.0" fill="url(#aq-gwood)" opacity="0.88"/>
-      <polygon points="554.0,572.0 576.0,572.0 565,605.0" fill="url(#aq-ggraph)"/>
-      <rect x="203.0" y="251.0" width="213.9" height="22.0" fill="rgba(0,0,0,0.38)" rx="8.8" transform="translate(2.5,4)"/>
-      <rect x="203.0" y="251.0" width="213.9" height="22.0" fill="url(#aq-gcb)" rx="8.8" stroke="rgba(70,35,0,0.48)" stroke-width="0.9"/>
-      <rect x="205.0" y="253.2" width="209.9" height="6.6" fill="rgba(255,250,185,0.52)" rx="4.8"/>
-      <circle cx="310" cy="262" r="30.8" fill="rgba(0,0,0,0.62)" filter="url(#aq-glow)"/>
-      <circle cx="310" cy="262" r="27.3" fill="url(#aq-grs)"/>
-      <circle cx="310" cy="262" r="20.2" fill="rgba(8,4,0,0.90)" stroke="#FFE135" stroke-width="3.7"/>
-      <circle cx="310" cy="262" r="13.2" fill="url(#aq-grs)"/>
-      <circle cx="310" cy="262" r="5.5" fill="rgba(255,253,200,0.88)"/>
-      <circle cx="203.0" cy="262.0" r="19.8" fill="rgba(0,0,0,0.82)" stroke="#C8920A" stroke-width="4.4"/><circle cx="203.0" cy="262.0" r="11.9" fill="url(#aq-grs)"/><circle cx="203.0" cy="262.0" r="4.4" fill="rgba(255,250,170,0.82)"/>
-      <circle cx="417.0" cy="262.0" r="19.8" fill="rgba(0,0,0,0.82)" stroke="#C8920A" stroke-width="4.4"/><circle cx="417.0" cy="262.0" r="11.9" fill="url(#aq-grs)"/><circle cx="417.0" cy="262.0" r="4.4" fill="rgba(255,250,170,0.82)"/>
-      <circle cx="310" cy="38" r="72.6" fill="rgba(255,200,0,0.06)"/>
-      <circle cx="310" cy="38" r="46.6" fill="url(#aq-grh)" filter="url(#aq-hglow)"/>
-      <circle cx="310" cy="38" r="36.3" fill="rgba(8,4,0,0.90)" stroke="#C8920A" stroke-width="4.6"/>
-      <circle cx="310" cy="38" r="29.5" fill="url(#aq-grh)"/>
-      <circle cx="310" cy="38" r="19.8" fill="rgba(8,4,0,0.86)" stroke="#FFE135" stroke-width="3.3"/>
-      <circle cx="310" cy="38" r="12.1" fill="url(#aq-gri)"/>
-      <circle cx="310" cy="38" r="4.2" fill="rgba(255,255,220,0.92)"/>
-    </g>
-  </symbol>
-</svg>
 
 <!-- =====================
      NAV
@@ -1536,9 +1530,7 @@
     <nav class="nav__inner" aria-label="Main navigation">
       <a href="./" class="nav__logo" aria-label="AccuQuote home">
         <span class="nav__logo-icon" aria-hidden="true">
-          <svg viewBox="0 0 632 632" width="34" height="34">
-            <use href="#aq-icon"/>
-          </svg>
+          <img src="./images/accuquote-logo.png" alt="" width="30" height="30" />
         </span>
         AccuQuote
       </a>
@@ -1703,11 +1695,11 @@
       <div class="step fade-up fade-up-delay-1">
         <div class="step__num" aria-hidden="true">1</div>
         <svg class="step__icon" viewBox="0 0 56 56" fill="none" aria-hidden="true">
-          <rect width="56" height="56" rx="14" fill="rgba(200,146,42,0.1)"/>
-          <rect x="13" y="13" width="30" height="30" rx="3" stroke="#C8922A" stroke-width="2"/>
-          <line x1="13" y1="28" x2="43" y2="28" stroke="#C8922A" stroke-width="1.5" stroke-dasharray="3 2"/>
-          <line x1="28" y1="13" x2="28" y2="43" stroke="#C8922A" stroke-width="1.5" stroke-dasharray="3 2"/>
-          <circle cx="28" cy="28" r="3" fill="#C8922A"/>
+          <rect width="56" height="56" rx="14" fill="rgba(0,122,255,0.1)"/>
+          <rect x="13" y="13" width="30" height="30" rx="3" stroke="#007AFF" stroke-width="2"/>
+          <line x1="13" y1="28" x2="43" y2="28" stroke="#007AFF" stroke-width="1.5" stroke-dasharray="3 2"/>
+          <line x1="28" y1="13" x2="28" y2="43" stroke="#007AFF" stroke-width="1.5" stroke-dasharray="3 2"/>
+          <circle cx="28" cy="28" r="3" fill="#007AFF"/>
         </svg>
         <h3>Measure the room</h3>
         <p>Walk the room with your phone. AccuQuote captures every dimension automatically — floor area, ceiling height, wall lengths, openings. Done in minutes, accurate to the centimetre.</p>
@@ -1716,11 +1708,11 @@
       <div class="step fade-up fade-up-delay-2">
         <div class="step__num" aria-hidden="true">2</div>
         <svg class="step__icon" viewBox="0 0 56 56" fill="none" aria-hidden="true">
-          <rect width="56" height="56" rx="14" fill="rgba(200,146,42,0.1)"/>
-          <circle cx="28" cy="26" r="8" stroke="#C8922A" stroke-width="2"/>
-          <path d="M22 38 Q28 34 34 38" stroke="#C8922A" stroke-width="2" stroke-linecap="round" fill="none"/>
-          <path d="M28 34 L28 44" stroke="#C8922A" stroke-width="2" stroke-linecap="round"/>
-          <circle cx="28" cy="26" r="2.5" fill="#C8922A"/>
+          <rect width="56" height="56" rx="14" fill="rgba(0,122,255,0.1)"/>
+          <circle cx="28" cy="26" r="8" stroke="#007AFF" stroke-width="2"/>
+          <path d="M22 38 Q28 34 34 38" stroke="#007AFF" stroke-width="2" stroke-linecap="round" fill="none"/>
+          <path d="M28 34 L28 44" stroke="#007AFF" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="28" cy="26" r="2.5" fill="#007AFF"/>
         </svg>
         <h3>Describe the job</h3>
         <p>Speak or type what needs doing — full rewire, re-plaster, new bathroom, loft conversion, whatever the job is. AccuQuote understands trade language and builds the scope automatically.</p>
@@ -1729,13 +1721,13 @@
       <div class="step fade-up fade-up-delay-3">
         <div class="step__num" aria-hidden="true">3</div>
         <svg class="step__icon" viewBox="0 0 56 56" fill="none" aria-hidden="true">
-          <rect width="56" height="56" rx="14" fill="rgba(200,146,42,0.1)"/>
-          <rect x="14" y="12" width="20" height="26" rx="3" stroke="#C8922A" stroke-width="2"/>
-          <line x1="18" y1="19" x2="30" y2="19" stroke="#C8922A" stroke-width="1.5" stroke-linecap="round"/>
-          <line x1="18" y1="23" x2="30" y2="23" stroke="#C8922A" stroke-width="1.5" stroke-linecap="round"/>
-          <line x1="18" y1="27" x2="26" y2="27" stroke="#C8922A" stroke-width="1.5" stroke-linecap="round"/>
-          <path d="M30 32 L44 32" stroke="#C8922A" stroke-width="2" stroke-linecap="round"/>
-          <path d="M39 27 L44 32 L39 37" stroke="#C8922A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <rect width="56" height="56" rx="14" fill="rgba(0,122,255,0.1)"/>
+          <rect x="14" y="12" width="20" height="26" rx="3" stroke="#007AFF" stroke-width="2"/>
+          <line x1="18" y1="19" x2="30" y2="19" stroke="#007AFF" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="18" y1="23" x2="30" y2="23" stroke="#007AFF" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="18" y1="27" x2="26" y2="27" stroke="#007AFF" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M30 32 L44 32" stroke="#007AFF" stroke-width="2" stroke-linecap="round"/>
+          <path d="M39 27 L44 32 L39 37" stroke="#007AFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
         </svg>
         <h3>Send the quote</h3>
         <p>Get a full itemised quote with labour, materials, and live supplier prices from Screwfix, Toolstation, and CEF. Download as a branded PDF or share straight to WhatsApp — before you've left the drive.</p>
@@ -1762,8 +1754,8 @@
     <div class="trades__grid">
       <a href="./blog/quoting-software-for-electricians.html" class="trade-tile fade-up fade-up-delay-1" aria-label="Electricians — read more">
         <svg class="trade-tile__icon" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-          <rect width="48" height="48" rx="12" fill="rgba(200,146,42,0.08)"/>
-          <path d="M26 10 L18 26 H24 L22 38 L34 22 H28 L26 10Z" fill="none" stroke="#C8922A" stroke-width="2" stroke-linejoin="round"/>
+          <rect width="48" height="48" rx="12" fill="rgba(0,122,255,0.08)"/>
+          <path d="M26 10 L18 26 H24 L22 38 L34 22 H28 L26 10Z" fill="none" stroke="#007AFF" stroke-width="2" stroke-linejoin="round"/>
         </svg>
         <div class="trade-tile__name">Electricians</div>
         <div class="trade-tile__benefit">First-fix, second-fix, full rewires — scoped from room measurements and described work, with CEF pricing built in.</div>
@@ -1771,11 +1763,11 @@
 
       <a href="./blog/quoting-software-for-plasterers.html" class="trade-tile fade-up fade-up-delay-2" aria-label="Plasterers — read more">
         <svg class="trade-tile__icon" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-          <rect width="48" height="48" rx="12" fill="rgba(200,146,42,0.08)"/>
-          <rect x="12" y="14" width="24" height="20" rx="2" stroke="#C8922A" stroke-width="2"/>
-          <path d="M17 24 L23 18 L27 22 L31 18" stroke="#C8922A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          <line x1="12" y1="30" x2="36" y2="30" stroke="#C8922A" stroke-width="1.5"/>
-          <rect x="21" y="34" width="6" height="3" rx="1" fill="#C8922A"/>
+          <rect width="48" height="48" rx="12" fill="rgba(0,122,255,0.08)"/>
+          <rect x="12" y="14" width="24" height="20" rx="2" stroke="#007AFF" stroke-width="2"/>
+          <path d="M17 24 L23 18 L27 22 L31 18" stroke="#007AFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="12" y1="30" x2="36" y2="30" stroke="#007AFF" stroke-width="1.5"/>
+          <rect x="21" y="34" width="6" height="3" rx="1" fill="#007AFF"/>
         </svg>
         <div class="trade-tile__name">Plasterers</div>
         <div class="trade-tile__benefit">Calculates m² automatically from your room scan. Skim, board, render — priced per square metre including materials and coats.</div>
@@ -1783,11 +1775,11 @@
 
       <a href="./blog/quoting-software-for-builders.html" class="trade-tile fade-up fade-up-delay-3" aria-label="Builders — read more">
         <svg class="trade-tile__icon" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-          <rect width="48" height="48" rx="12" fill="rgba(200,146,42,0.08)"/>
-          <rect x="14" y="28" width="20" height="10" rx="1" stroke="#C8922A" stroke-width="2"/>
-          <path d="M20 28 L20 20 L28 20 L28 28" stroke="#C8922A" stroke-width="2" stroke-linejoin="round" fill="none"/>
-          <path d="M24 20 L24 16 L30 12 L30 20" stroke="#C8922A" stroke-width="1.5" stroke-linejoin="round" fill="none"/>
-          <line x1="10" y1="28" x2="38" y2="28" stroke="#C8922A" stroke-width="2" stroke-linecap="round"/>
+          <rect width="48" height="48" rx="12" fill="rgba(0,122,255,0.08)"/>
+          <rect x="14" y="28" width="20" height="10" rx="1" stroke="#007AFF" stroke-width="2"/>
+          <path d="M20 28 L20 20 L28 20 L28 28" stroke="#007AFF" stroke-width="2" stroke-linejoin="round" fill="none"/>
+          <path d="M24 20 L24 16 L30 12 L30 20" stroke="#007AFF" stroke-width="1.5" stroke-linejoin="round" fill="none"/>
+          <line x1="10" y1="28" x2="38" y2="28" stroke="#007AFF" stroke-width="2" stroke-linecap="round"/>
         </svg>
         <div class="trade-tile__name">Builders</div>
         <div class="trade-tile__benefit">Extensions, conversions, refurbs — handle complex multi-room jobs with itemised BOMs and accurate labour splits across trades.</div>
@@ -1795,10 +1787,10 @@
 
       <a href="./blog/quoting-software-for-plumbers.html" class="trade-tile fade-up fade-up-delay-1" aria-label="Plumbers — read more">
         <svg class="trade-tile__icon" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-          <rect width="48" height="48" rx="12" fill="rgba(200,146,42,0.08)"/>
-          <path d="M16 12 L16 20 Q16 24 20 24 L28 24 Q32 24 32 28 L32 36" stroke="#C8922A" stroke-width="2" stroke-linecap="round" fill="none"/>
-          <circle cx="16" cy="12" r="3" stroke="#C8922A" stroke-width="2" fill="none"/>
-          <circle cx="32" cy="36" r="3" stroke="#C8922A" stroke-width="2" fill="none"/>
+          <rect width="48" height="48" rx="12" fill="rgba(0,122,255,0.08)"/>
+          <path d="M16 12 L16 20 Q16 24 20 24 L28 24 Q32 24 32 28 L32 36" stroke="#007AFF" stroke-width="2" stroke-linecap="round" fill="none"/>
+          <circle cx="16" cy="12" r="3" stroke="#007AFF" stroke-width="2" fill="none"/>
+          <circle cx="32" cy="36" r="3" stroke="#007AFF" stroke-width="2" fill="none"/>
         </svg>
         <div class="trade-tile__name">Plumbers</div>
         <div class="trade-tile__benefit">Bathrooms, boiler swaps, full system installs — quoted with Toolstation pipework, fixtures and fittings at live trade prices.</div>
@@ -1806,11 +1798,11 @@
 
       <a href="./blog/quoting-software-for-painters-and-decorators.html" class="trade-tile fade-up fade-up-delay-2" aria-label="Painters and Decorators — read more">
         <svg class="trade-tile__icon" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-          <rect width="48" height="48" rx="12" fill="rgba(200,146,42,0.08)"/>
-          <path d="M20 36 L20 22 Q20 18 24 18 Q28 18 28 22 L28 24" stroke="#C8922A" stroke-width="2" stroke-linecap="round" fill="none"/>
-          <rect x="26" y="20" width="8" height="5" rx="2" stroke="#C8922A" stroke-width="1.5" fill="none"/>
-          <path d="M34 25 Q36 28 34 31 Q32 34 34 36" stroke="#C8922A" stroke-width="1.5" stroke-linecap="round" fill="none"/>
-          <line x1="16" y1="36" x2="32" y2="36" stroke="#C8922A" stroke-width="2" stroke-linecap="round"/>
+          <rect width="48" height="48" rx="12" fill="rgba(0,122,255,0.08)"/>
+          <path d="M20 36 L20 22 Q20 18 24 18 Q28 18 28 22 L28 24" stroke="#007AFF" stroke-width="2" stroke-linecap="round" fill="none"/>
+          <rect x="26" y="20" width="8" height="5" rx="2" stroke="#007AFF" stroke-width="1.5" fill="none"/>
+          <path d="M34 25 Q36 28 34 31 Q32 34 34 36" stroke="#007AFF" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+          <line x1="16" y1="36" x2="32" y2="36" stroke="#007AFF" stroke-width="2" stroke-linecap="round"/>
         </svg>
         <div class="trade-tile__name">Painters &amp; Decorators</div>
         <div class="trade-tile__benefit">Room scan calculates wall area, ceiling and woodwork. Paint quantities, undercoats and labour — all broken out per room.</div>
@@ -1818,11 +1810,11 @@
 
       <a href="./blog/quoting-software-for-general-traders.html" class="trade-tile fade-up fade-up-delay-3" aria-label="General Traders — read more">
         <svg class="trade-tile__icon" viewBox="0 0 48 48" fill="none" aria-hidden="true">
-          <rect width="48" height="48" rx="12" fill="rgba(200,146,42,0.08)"/>
-          <circle cx="24" cy="24" r="10" stroke="#C8922A" stroke-width="2" fill="none"/>
-          <path d="M24 14 L24 10 M24 38 L24 34 M14 24 L10 24 M38 24 L34 24" stroke="#C8922A" stroke-width="2" stroke-linecap="round"/>
-          <path d="M17 17 L14.5 14.5 M31 31 L33.5 33.5 M17 31 L14.5 33.5 M31 17 L33.5 14.5" stroke="#C8922A" stroke-width="1.5" stroke-linecap="round"/>
-          <circle cx="24" cy="24" r="3" fill="#C8922A"/>
+          <rect width="48" height="48" rx="12" fill="rgba(0,122,255,0.08)"/>
+          <circle cx="24" cy="24" r="10" stroke="#007AFF" stroke-width="2" fill="none"/>
+          <path d="M24 14 L24 10 M24 38 L24 34 M14 24 L10 24 M38 24 L34 24" stroke="#007AFF" stroke-width="2" stroke-linecap="round"/>
+          <path d="M17 17 L14.5 14.5 M31 31 L33.5 33.5 M17 31 L14.5 33.5 M31 17 L33.5 14.5" stroke="#007AFF" stroke-width="1.5" stroke-linecap="round"/>
+          <circle cx="24" cy="24" r="3" fill="#007AFF"/>
         </svg>
         <div class="trade-tile__name">General Traders</div>
         <div class="trade-tile__benefit">Take on any job type — handyman work, small repairs, multi-trade projects. AccuQuote adapts the scope to whatever the job needs.</div>
@@ -1882,7 +1874,7 @@
     </div>
 
     <!-- Materials inflation callout -->
-    <div class="fade-up" style="background:linear-gradient(135deg,rgba(200,146,42,0.08),rgba(200,146,42,0.02));border:1px solid rgba(200,146,42,0.2);border-radius:var(--radius);padding:24px 28px;margin-bottom:40px;display:flex;align-items:flex-start;gap:18px;">
+    <div class="fade-up" style="background:linear-gradient(135deg,rgba(0,122,255,0.08),rgba(0,122,255,0.02));border:1px solid rgba(0,122,255,0.2);border-radius:var(--radius);padding:24px 28px;margin-bottom:40px;display:flex;align-items:flex-start;gap:18px;">
       <div style="font-size:1.75rem;flex-shrink:0;margin-top:2px;">⚠️</div>
       <div>
         <div style="font-size:1rem;font-weight:700;color:var(--dark);margin-bottom:6px;">Materials prices have moved. A lot.</div>
@@ -1894,9 +1886,9 @@
       <div class="feature-card fade-up fade-up-delay-1">
         <div class="feature-card__icon" aria-hidden="true">
           <svg viewBox="0 0 22 22" fill="none">
-            <rect x="2" y="2" width="18" height="18" rx="2" stroke="#C8922A" stroke-width="1.75"/>
-            <path d="M6 11 L11 6 L16 11" stroke="#C8922A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            <line x1="11" y1="6" x2="11" y2="17" stroke="#C8922A" stroke-width="1.5" stroke-linecap="round"/>
+            <rect x="2" y="2" width="18" height="18" rx="2" stroke="#007AFF" stroke-width="1.75"/>
+            <path d="M6 11 L11 6 L16 11" stroke="#007AFF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="11" y1="6" x2="11" y2="17" stroke="#007AFF" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
         </div>
         <h3>Room scanning</h3>
@@ -1906,9 +1898,9 @@
       <div class="feature-card fade-up fade-up-delay-2">
         <div class="feature-card__icon" aria-hidden="true">
           <svg viewBox="0 0 22 22" fill="none">
-            <circle cx="11" cy="9" r="5" stroke="#C8922A" stroke-width="1.75"/>
-            <path d="M7 17 Q11 14 15 17" stroke="#C8922A" stroke-width="1.5" stroke-linecap="round" fill="none"/>
-            <circle cx="11" cy="9" r="1.5" fill="#C8922A"/>
+            <circle cx="11" cy="9" r="5" stroke="#007AFF" stroke-width="1.75"/>
+            <path d="M7 17 Q11 14 15 17" stroke="#007AFF" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+            <circle cx="11" cy="9" r="1.5" fill="#007AFF"/>
           </svg>
         </div>
         <h3>Voice job description</h3>
@@ -1918,7 +1910,7 @@
       <div class="feature-card fade-up fade-up-delay-3">
         <div class="feature-card__icon" aria-hidden="true">
           <svg viewBox="0 0 22 22" fill="none">
-            <path d="M4 17 L4 8 L8 12 L11 7 L14 14 L17 10 L17 17Z" fill="rgba(200,146,42,0.15)" stroke="#C8922A" stroke-width="1.5" stroke-linejoin="round"/>
+            <path d="M4 17 L4 8 L8 12 L11 7 L14 14 L17 10 L17 17Z" fill="rgba(0,122,255,0.15)" stroke="#007AFF" stroke-width="1.5" stroke-linejoin="round"/>
           </svg>
         </div>
         <h3>Real supplier prices</h3>
@@ -1928,10 +1920,10 @@
       <div class="feature-card fade-up fade-up-delay-1">
         <div class="feature-card__icon" aria-hidden="true">
           <svg viewBox="0 0 22 22" fill="none">
-            <rect x="4" y="3" width="14" height="16" rx="2" stroke="#C8922A" stroke-width="1.75"/>
-            <line x1="7" y1="8" x2="15" y2="8" stroke="#C8922A" stroke-width="1.5" stroke-linecap="round"/>
-            <line x1="7" y1="11" x2="15" y2="11" stroke="#C8922A" stroke-width="1.5" stroke-linecap="round"/>
-            <line x1="7" y1="14" x2="12" y2="14" stroke="#C8922A" stroke-width="1.5" stroke-linecap="round"/>
+            <rect x="4" y="3" width="14" height="16" rx="2" stroke="#007AFF" stroke-width="1.75"/>
+            <line x1="7" y1="8" x2="15" y2="8" stroke="#007AFF" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="7" y1="11" x2="15" y2="11" stroke="#007AFF" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="7" y1="14" x2="12" y2="14" stroke="#007AFF" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
         </div>
         <h3>Branded PDF quotes</h3>
@@ -1941,13 +1933,13 @@
       <div class="feature-card fade-up fade-up-delay-2">
         <div class="feature-card__icon" aria-hidden="true">
           <svg viewBox="0 0 22 22" fill="none">
-            <rect x="3" y="5" width="16" height="13" rx="2" stroke="#C8922A" stroke-width="1.75"/>
-            <line x1="3" y1="9" x2="19" y2="9" stroke="#C8922A" stroke-width="1.5"/>
-            <circle cx="7" cy="7" r="1" fill="#C8922A"/>
-            <circle cx="10" cy="7" r="1" fill="#C8922A"/>
-            <line x1="7" y1="13" x2="10" y2="13" stroke="#C8922A" stroke-width="1.5" stroke-linecap="round"/>
-            <line x1="12" y1="13" x2="15" y2="13" stroke="#C8922A" stroke-width="1.5" stroke-linecap="round"/>
-            <line x1="7" y1="16" x2="13" y2="16" stroke="#C8922A" stroke-width="1.5" stroke-linecap="round"/>
+            <rect x="3" y="5" width="16" height="13" rx="2" stroke="#007AFF" stroke-width="1.75"/>
+            <line x1="3" y1="9" x2="19" y2="9" stroke="#007AFF" stroke-width="1.5"/>
+            <circle cx="7" cy="7" r="1" fill="#007AFF"/>
+            <circle cx="10" cy="7" r="1" fill="#007AFF"/>
+            <line x1="7" y1="13" x2="10" y2="13" stroke="#007AFF" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="12" y1="13" x2="15" y2="13" stroke="#007AFF" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="7" y1="16" x2="13" y2="16" stroke="#007AFF" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
         </div>
         <h3>Quote history</h3>
@@ -1957,9 +1949,9 @@
       <div class="feature-card fade-up fade-up-delay-3">
         <div class="feature-card__icon" aria-hidden="true">
           <svg viewBox="0 0 22 22" fill="none">
-            <path d="M11 3 C11 3 4 6 4 11 C4 15 7 18 11 19 C15 18 18 15 18 11 C18 6 11 3 11 3Z" stroke="#C8922A" stroke-width="1.75" fill="none"/>
-            <line x1="11" y1="9" x2="11" y2="13" stroke="#C8922A" stroke-width="1.75" stroke-linecap="round"/>
-            <circle cx="11" cy="15.5" r="0.75" fill="#C8922A"/>
+            <path d="M11 3 C11 3 4 6 4 11 C4 15 7 18 11 19 C15 18 18 15 18 11 C18 6 11 3 11 3Z" stroke="#007AFF" stroke-width="1.75" fill="none"/>
+            <line x1="11" y1="9" x2="11" y2="13" stroke="#007AFF" stroke-width="1.75" stroke-linecap="round"/>
+            <circle cx="11" cy="15.5" r="0.75" fill="#007AFF"/>
           </svg>
         </div>
         <h3>Works offline</h3>
@@ -2324,9 +2316,7 @@
     <div class="footer__inner">
       <a href="./" class="footer__brand" aria-label="AccuQuote home">
         <span class="footer__brand-icon" aria-hidden="true">
-          <svg viewBox="0 0 632 632" width="30" height="30">
-            <use href="#aq-icon"/>
-          </svg>
+          <img src="./images/accuquote-logo.png" alt="" width="30" height="30" />
         </span>
         AccuQuote
       </a>
@@ -2337,13 +2327,14 @@
         <a href="./demo.html">Try Demo</a>
         <a href="./referral.html">Refer a Mate</a>
         <a href="./quote-cost-calculator.html">Cost Calculator</a>
-        <a href="./privacy.html">Privacy Policy</a>
+        <a href="./privacy-policy.html">Privacy Policy</a>
         <a href="mailto:hello@accuquote.app">Contact</a>
       </nav>
     </div>
 
     <div class="footer__bottom">
-      &copy; 2025 AccuQuote. All rights reserved. &middot; <a href="mailto:hello@accuquote.app" style="color:inherit">hello@accuquote.app</a>
+      <span>&copy; 2026 AccuQuote. All rights reserved. &middot; <a href="mailto:hello@accuquote.app" style="color:inherit">hello@accuquote.app</a></span>
+      <span class="footer__built">Built by <a href="https://slickdigital.co.uk" target="_blank" rel="noopener">Slick Digital</a></span>
     </div>
   </div>
 </footer>
