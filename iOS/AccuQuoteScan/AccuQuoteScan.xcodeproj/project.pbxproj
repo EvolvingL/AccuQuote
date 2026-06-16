@@ -30,6 +30,8 @@
 		A119 /* QuoteGenerationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A019 /* QuoteGenerationService.swift */; };
 		A120 /* ScanCoverageTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A020 /* ScanCoverageTracker.swift */; };
 		A121 /* CoverageRingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A021 /* CoverageRingView.swift */; };
+		A134 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A034 /* DesignSystem.swift */; };
+		A135 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A035 /* NotificationService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -59,6 +61,8 @@
 		A019 /* QuoteGenerationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuoteGenerationService.swift; sourceTree = "<group>"; };
 		A020 /* ScanCoverageTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanCoverageTracker.swift; sourceTree = "<group>"; };
 		A021 /* CoverageRingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoverageRingView.swift; sourceTree = "<group>"; };
+		A034 /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
+		A035 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -109,6 +113,8 @@
 				A031 /* EntitlementManager.swift */,
 				A032 /* AuthViews.swift */,
 				A033 /* AQBackend.swift */,
+				A034 /* DesignSystem.swift */,
+				A035 /* NotificationService.swift */,
 			);
 			path = AccuQuoteScan;
 			sourceTree = "<group>";
@@ -219,6 +225,8 @@
 				A131 /* EntitlementManager.swift in Sources */,
 				A132 /* AuthViews.swift in Sources */,
 				A133 /* AQBackend.swift in Sources */,
+				A134 /* DesignSystem.swift in Sources */,
+				A135 /* NotificationService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

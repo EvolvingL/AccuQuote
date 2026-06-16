@@ -152,7 +152,3 @@ struct ScanMetadata: Identifiable, Codable {
     // Fix #12 — floor plan thumbnail stored as PNG data
     var thumbnailData: Data?
 }
-
-// MARK: - UIDevice import for deviceInfo
-
-import UIKit
