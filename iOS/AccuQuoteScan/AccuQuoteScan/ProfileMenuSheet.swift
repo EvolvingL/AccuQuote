@@ -534,8 +534,15 @@ private struct AccountTab: View {
 
                     Button {
                         Task {
-                            await AuthManager.shared.sendPasswordReset(email: AuthManager.shared.userEmail)
-                            resetEmailSent = true
+                            // Only mark as sent if the request actually succeeds —
+                            // sendPasswordReset is throwing, so a network/Firebase
+                            // failure must not show a false "sent ✓".
+                            do {
+                                try await AuthManager.shared.sendPasswordReset(email: AuthManager.shared.userEmail)
+                                resetEmailSent = true
+                            } catch {
+                                resetEmailSent = false
+                            }
                         }
                     } label: {
                         HStack {
