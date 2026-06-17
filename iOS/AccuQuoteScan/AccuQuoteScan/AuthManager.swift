@@ -173,9 +173,12 @@ final class AuthManager: NSObject, ObservableObject {
     //   CFBundleURLSchemes: com.googleusercontent.apps.<CLIENT_ID_WITHOUT_APPS_PREFIX>
     // (Xcode: project → Signing & Capabilities → Info → URL Types)
 
-    // Replace with the CLIENT_ID from your GoogleService-Info.plist
-    // Format: XXXXXXXX-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX.apps.googleusercontent.com
-    private let googleClientID = "accuquote-246a3"  // placeholder — update with real CLIENT_ID
+    // CLIENT_ID from GoogleService-Info.plist, WITHOUT the trailing
+    // ".apps.googleusercontent.com" — the code appends that suffix where needed
+    // (see signInWithGoogle / the token exchange) and uses the reversed form
+    // "com.googleusercontent.apps.<id>" as the OAuth callback URL scheme, which
+    // is registered in Info.plist.
+    private let googleClientID = "674946089734-d5c2jov1fh02sejfhbph2ocsp2spbb8o"
 
     func signInWithGoogle() {
         authError = nil

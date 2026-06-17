@@ -68,15 +68,25 @@
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 	</array>
-	<!-- Deep link: accuquote://scan launches this app from AccuQuote web -->
 	<key>CFBundleURLTypes</key>
 	<array>
+		<!-- Deep link: accuquote://scan launches this app from AccuQuote web -->
 		<dict>
 			<key>CFBundleURLName</key>
 			<string>com.accuquote.scan</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>accuquote</string>
+			</array>
+		</dict>
+		<!-- Google Sign-In OAuth callback (reversed CLIENT_ID). Google returns the
+		     user to the app via this scheme after authentication. -->
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.googleusercontent.apps.674946089734-d5c2jov1fh02sejfhbph2ocsp2spbb8o</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.674946089734-d5c2jov1fh02sejfhbph2ocsp2spbb8o</string>
 			</array>
 		</dict>
 	</array>
