@@ -83,8 +83,6 @@
 		C000 = {
 			isa = PBXGroup;
 			children = (
-				71231D422FC5066600638750 /* ProfileMenuSheet.swift */,
-				71231D402FC5057E00638750 /* StripeService.swift */,
 				C001 /* AccuQuoteScan */,
 				C002 /* Frameworks */,
 				C003 /* Products */,
@@ -94,6 +92,8 @@
 		C001 /* AccuQuoteScan */ = {
 			isa = PBXGroup;
 			children = (
+				71231D402FC5057E00638750 /* StripeService.swift */,
+				71231D422FC5066600638750 /* ProfileMenuSheet.swift */,
 				A001 /* AccuQuoteScanApp.swift */,
 				A002 /* ContentView.swift */,
 				A003 /* ScanCoordinator.swift */,
