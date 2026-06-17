@@ -297,8 +297,9 @@ private struct QuoteHistoryRow: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline) {
                 Text(Money.gbp(quote.grandTotal))   // #24 keeps pence when present
-                    .font(.title2.weight(.bold))     // #1 (rounded design via modifier below)
-                    .fontDesign(.rounded)
+                    // .system(_:design:) folds in the rounded design without the
+                    // iOS 16.1-only .fontDesign() modifier (deploy target is 16.0).
+                    .font(.system(.title2, design: .rounded).weight(.bold))
                     .foregroundColor(AQ.ink)
                 Spacer()
                 Text(dateFormatter.string(from: quote.savedAt))
