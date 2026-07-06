@@ -19,6 +19,8 @@ final class EntitlementManager: ObservableObject {
 
     @Published private(set) var tier: SubscriptionTier = .free
     @Published private(set) var isLoading: Bool = false
+    // Only meaningful when tier == .free; nil until the first successful refresh().
+    @Published private(set) var freeQuotesRemaining: Int?
 
     var isPaid: Bool { tier != .free }
 
@@ -115,6 +117,7 @@ final class EntitlementManager: ObservableObject {
                let tierStr = json["tier"] as? String,
                let fetched = SubscriptionTier(rawValue: tierStr) {
                 tier = fetched
+                freeQuotesRemaining = json["freeQuotesRemaining"] as? Int
                 SecureTokenStore.write(key: cacheKey, value: fetched.rawValue)
                 // Fix #21: record cache time so TTL check in init() can expire stale entries
                 SecureTokenStore.write(key: cacheAgeKey, value: String(Date().timeIntervalSince1970))

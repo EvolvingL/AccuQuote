@@ -1,5 +1,6 @@
 import SwiftUI
 import AuthenticationServices
+import StoreKit
 
 // MARK: - Auth Gate
 
@@ -415,6 +416,7 @@ struct PasswordResetView: View {
 struct PaywallSheet: View {
     @EnvironmentObject var entitlement: EntitlementManager
     @EnvironmentObject var auth: AuthManager
+    @ObservedObject private var storeKit = StoreKitManager.shared
     @Environment(\.dismiss) private var dismiss
     @State private var selectedInterval: PayInterval = .monthly
     @State private var isLoading = false
@@ -487,11 +489,21 @@ struct PaywallSheet: View {
                             TierCard(
                                 tier: item.tier, icon: item.icon,
                                 interval: selectedInterval,
-                                isCurrentTier: entitlement.tier == item.tier
+                                isCurrentTier: entitlement.tier == item.tier,
+                                storeProduct: storeKit.product(tier: item.tier, interval: selectedInterval)
                             ) { subscribe(tier: item.tier) }
                         }
                     }
                     .padding(.horizontal, 24)
+
+                    Button("Restore Purchases") {
+                        Task {
+                            do { try await storeKit.restorePurchases() }
+                            catch { self.error = "Could not restore purchases." }
+                        }
+                    }
+                    .font(.system(size: 13))
+                    .foregroundColor(AQ.secondary)
 
                     // Free tier note
                     VStack(spacing: 6) {
@@ -514,7 +526,16 @@ struct PaywallSheet: View {
                             .padding(.horizontal, 24)
                     }
 
-                    Color.clear.frame(height: 20)
+                    // Required subscription disclosure (App Store guideline 3.1.1):
+                    // must explain billing terms, renewal, and how to cancel.
+                    Text("Payment is charged to your Apple ID account at confirmation. Subscriptions renew automatically unless cancelled at least 24 hours before the end of the current period. Manage or cancel in Settings → Apple ID → Subscriptions. First 3 quotes are free — no card required.")
+                        .font(.system(size: 11))
+                        .foregroundColor(AQ.secondary.opacity(0.7))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 8)
+
+                    Color.clear.frame(height: 8)
                 }
             }
             .navigationTitle("Plans")
@@ -524,50 +545,31 @@ struct PaywallSheet: View {
                     Button("Close") { dismiss() }.foregroundColor(AQ.secondary)
                 }
             }
+            .task { await storeKit.loadProducts() }
         }
     }
 
     private func subscribe(tier: EntitlementManager.SubscriptionTier) {
-        // Fix #1: removed the dead `auth.userId.isEmpty ? nil : auth.userId` guard
-        // which was tautological. We rely solely on currentIdToken() below.
         guard !isLoading else { return }
+        guard let product = storeKit.product(tier: tier, interval: selectedInterval) else {
+            error = "This plan is temporarily unavailable. Please try again shortly."
+            return
+        }
         isLoading = true
         error = nil
         Task {
             defer { isLoading = false }
-            guard let idToken = await AuthManager.shared.currentIdToken() else {
-                error = "Authentication error. Please sign in again."
-                return
+            do {
+                try await storeKit.purchase(product)
+                dismiss()
+            } catch let err as StoreKitManager.PurchaseError {
+                // userCancelled has no description — user backed out, not an error to show.
+                if let message = err.errorDescription {
+                    error = message
+                }
+            } catch {
+                self.error = "Something went wrong. Please try again."
             }
-            guard let url = URL(string: "\(AQBackend.baseURL)/api/stripe/create-checkout") else {
-                error = "Invalid server URL."
-                return
-            }
-            var req = URLRequest(url: url)
-            req.httpMethod = "POST"
-            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            req.setValue("Bearer \(idToken)", forHTTPHeaderField: "Authorization")
-            req.httpBody = try? JSONSerialization.data(withJSONObject: [
-                "tier": tier.rawValue,
-                "interval": selectedInterval == .monthly ? "month" : "year",
-            ])
-
-            guard let (data, response) = try? await URLSession.shared.data(for: req) else {
-                error = "Network error. Please check your connection."
-                return
-            }
-            let json = (try? JSONSerialization.jsonObject(with: data) as? [String: Any]) ?? [:]
-            if let http = response as? HTTPURLResponse, http.statusCode != 200 {
-                error = json["error"] as? String ?? "Could not create checkout session (\(http.statusCode))."
-                return
-            }
-            guard let checkoutURL = json["url"] as? String,
-                  let openURL = URL(string: checkoutURL)
-            else {
-                error = "Could not create checkout session. Please try again."
-                return
-            }
-            await UIApplication.shared.open(openURL)
         }
     }
 }
@@ -579,9 +581,15 @@ private struct TierCard: View {
     let icon: String
     let interval: PaywallSheet.PayInterval
     let isCurrentTier: Bool
+    let storeProduct: Product?
     let onSubscribe: () -> Void
 
-    var price: String { interval == .monthly ? tier.monthlyPrice : tier.annualPrice }
+    // Prefer StoreKit's localized, tax-inclusive price (always correct across
+    // storefronts and after price changes on App Store Connect); fall back to
+    // the hardcoded string only while products are still loading.
+    var price: String {
+        storeProduct?.displayPrice ?? (interval == .monthly ? tier.monthlyPrice : tier.annualPrice)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {

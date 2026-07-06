@@ -444,10 +444,19 @@ private struct AIUpdateTab: View {
 private struct AccountTab: View {
     @EnvironmentObject var engine: QuestionEngine
     @EnvironmentObject var entitlement: EntitlementManager
-    @State private var showSignOutConfirm  = false
-    @State private var showResetConfirm    = false
-    @State private var showPaywall         = false
-    @State private var resetEmailSent      = false
+    @State private var showSignOutConfirm       = false
+    @State private var showResetConfirm         = false
+    @State private var showPaywall              = false
+    @State private var showManageSubscriptions  = false
+    @State private var resetEmailSent           = false
+
+    private var freeQuotesCaption: String {
+        guard let remaining = entitlement.freeQuotesRemaining else {
+            return "Upgrade to unlock quote generation"
+        }
+        if remaining <= 0 { return "Free quotes used — upgrade to keep quoting" }
+        return remaining == 1 ? "1 free quote left" : "\(remaining) free quotes left"
+    }
 
     var body: some View {
         ScrollView {
@@ -498,7 +507,16 @@ private struct AccountTab: View {
                 VStack(alignment: .leading, spacing: 0) {
                     sectionLabel("Subscription")
 
-                    Button { showPaywall = true } label: {
+                    Button {
+                        if entitlement.isPaid {
+                            // Paid users: open Apple's native subscription management
+                            // so they can cancel, upgrade, or change billing — required
+                            // by App Store guideline 3.1.1.
+                            showManageSubscriptions = true
+                        } else {
+                            showPaywall = true
+                        }
+                    } label: {
                         HStack {
                             Image(systemName: entitlement.isPaid ? "checkmark.seal.fill" : "lock.fill")
                                 .font(.system(size: 15))
@@ -508,7 +526,7 @@ private struct AccountTab: View {
                                 Text(entitlement.isPaid ? "\(entitlement.tier.displayName) plan" : "Free plan")
                                     .font(.system(size: 15))
                                     .foregroundColor(AQ.ink)
-                                Text(entitlement.isPaid ? entitlement.tier.tagline : "Upgrade to unlock quote generation")
+                                Text(entitlement.isPaid ? entitlement.tier.tagline : freeQuotesCaption)
                                     .font(.system(size: 12))
                                     .foregroundColor(AQ.secondary)
                             }
@@ -523,6 +541,7 @@ private struct AccountTab: View {
                         .padding(.horizontal, 16)
                         .padding(.vertical, 14)
                     }
+                    .manageSubscriptionsSheet(isPresented: $showManageSubscriptions)
                 }
                 .background(Color.white)
                 .cornerRadius(14)

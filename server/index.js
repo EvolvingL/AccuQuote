@@ -4,13 +4,18 @@
  *
  * Required environment variables:
  *   ANTHROPIC_API_KEY          — Anthropic API key (never sent to device)
- *   STRIPE_SECRET_KEY          — Stripe secret key
+ *   STRIPE_SECRET_KEY          — Stripe secret key (legacy/grandfathered subscribers + deposit links)
  *   STRIPE_WEBHOOK_SECRET      — Stripe webhook signing secret
  *   FIREBASE_SERVICE_ACCOUNT   — JSON string of Firebase service account credentials
  *                                 (also grants FCM access — no extra credential needed)
  *   BEEHIIV_API_KEY            — Beehiiv newsletter key
  *   BEEHIIV_PUBLICATION_ID     — Beehiiv publication ID
  *   ADMIN_SECRET               — Long random string protecting /admin/* endpoints
+ *   APPLE_ISSUER_ID            — App Store Connect API issuer ID (Users and Access > Integrations)
+ *   APPLE_KEY_ID               — App Store Server API key ID
+ *   APPLE_PRIVATE_KEY          — Contents of the .p8 private key file for the above key
+ *   APPLE_BUNDLE_ID            — com.accuquote.scan
+ *   APPLE_ENVIRONMENT          — "Sandbox" while testing, "Production" once live
  *
  * Endpoints:
  *   POST /api/claude                        — proxies Claude requests (auth required)
@@ -18,8 +23,10 @@
  *   POST /api/quote/section                 — per-section Sonnet streaming (auth + entitlement)
  *   GET  /api/entitlement                   — returns user's current tier (auth required)
  *   POST /api/stripe/payment-link           — deposit payment link for customers
- *   POST /api/stripe/create-checkout        — subscription checkout session
+ *   POST /api/stripe/create-checkout        — legacy Stripe subscription checkout (grandfathered)
  *   POST /api/stripe/webhook                — Stripe webhook (entitlement fulfilment)
+ *   POST /api/iap/verify                    — verify an Apple IAP transaction (auth required)
+ *   POST /api/apple/notifications           — App Store Server Notifications V2 receiver
  *   GET  /api/health                        — health check
  *   POST /api/push/register                 — device registers APNs token (auth required)
  *   POST /api/admin/broadcast               — push to segment + A/B test (admin)
@@ -85,6 +92,55 @@ const firebaseReady = (async () => {
   }
 })();
 
+// ── Apple App Store Server API ────────────────────────────────────────────────
+// Used to independently re-verify IAP transactions reported by the client
+// (/api/iap/verify) and to decode App Store Server Notifications V2
+// (/api/apple/notifications). Never trust productId/tier claims from the
+// client — always look them up from Apple via this client.
+
+let appleClient = null;
+
+const appleReady = (async () => {
+  const { APPLE_ISSUER_ID, APPLE_KEY_ID, APPLE_PRIVATE_KEY, APPLE_BUNDLE_ID } = process.env;
+  if (!APPLE_ISSUER_ID || !APPLE_KEY_ID || !APPLE_PRIVATE_KEY || !APPLE_BUNDLE_ID) {
+    console.warn('[Apple IAP] Apple env vars not fully set — IAP verification disabled');
+    return false;
+  }
+  try {
+    const jose = await import('jose');
+    // AppStoreServerAPI's constructor calls jose.importPKCS8(key, "ES256") and
+    // stores the returned promise directly on `this.key` without awaiting it —
+    // if the key is malformed, that promise rejects asynchronously as an
+    // *unhandled* rejection (not a catchable throw from `new AppStoreServerAPI(...)`),
+    // which would crash the whole process. Validate the key ourselves first so a
+    // bad APPLE_PRIVATE_KEY only disables IAP instead of taking down the server.
+    await jose.importPKCS8(APPLE_PRIVATE_KEY, 'ES256');
+
+    const { AppStoreServerAPI, Environment } = await import('app-store-server-api');
+    const environment = process.env.APPLE_ENVIRONMENT === 'Production'
+      ? Environment.Production
+      : Environment.Sandbox;
+    appleClient = new AppStoreServerAPI(
+      APPLE_PRIVATE_KEY, APPLE_KEY_ID, APPLE_ISSUER_ID, APPLE_BUNDLE_ID, environment
+    );
+    console.log(`[Apple IAP] Initialised (${environment})`);
+    return true;
+  } catch (e) {
+    console.error('[Apple IAP] Init failed:', e.message);
+    return false;
+  }
+})();
+
+// Maps a StoreKit product ID (e.g. "com.accuquote.scan.solo.monthly") back to
+// our internal tier name. Returns null for anything unrecognised.
+function tierFromProductId(productId) {
+  if (!productId) return null;
+  if (productId.includes('.solo.'))  return 'solo';
+  if (productId.includes('.team.'))  return 'team';
+  if (productId.includes('.crew.'))  return 'crew';
+  return null;
+}
+
 // ── Auth middleware ───────────────────────────────────────────────────────────
 
 async function requireAuth(req, res, next) {
@@ -126,7 +182,8 @@ async function getUserTier(uid) {
   }
 }
 
-// Middleware: requires an active paid tier to proceed
+// Middleware: requires an active paid tier to proceed (no free allowance —
+// used for features like deposit links that are a paid-only business feature).
 async function requirePaidTier(req, res, next) {
   const tier = await getUserTier(req.user.uid);
   if (tier === 'free') {
@@ -134,6 +191,91 @@ async function requirePaidTier(req, res, next) {
   }
   req.userTier = tier;
   next();
+}
+
+// Free quotes marketing allowance: how many quotes a free-tier user gets
+// before requiring a subscription. "One quote" = one successful /api/quote/discover
+// call (the entry point of the two-phase discover→section flow).
+const FREE_QUOTE_LIMIT = 3;
+
+// Shared read used by both /api/entitlement (display) and requireEntitlement
+// (enforcement uses its own transaction — see below — this is for reads only).
+async function getFreeQuotesUsed(uid) {
+  if (!adminFirestore) return 0;
+  try {
+    const doc = await adminFirestore.doc(`users/${uid}`).get();
+    return doc.exists ? (doc.data().freeQuotesUsed || 0) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+// Middleware: allows paid tiers through unconditionally, and free-tier users
+// through as long as their FREE_QUOTE_LIMIT allowance isn't already exhausted.
+// This is a read-only check — it does NOT consume quota. Safe to use on both
+// /api/quote/discover and /api/quote/section, since a single quote spans one
+// discover call plus N section calls and none of them should double-charge it.
+// Only reserveFreeQuote() (called explicitly by /api/quote/discover) consumes
+// a slot, exactly once per quote.
+async function requireEntitlement(req, res, next) {
+  const tier = await getUserTier(req.user.uid);
+  if (tier !== 'free') {
+    req.userTier = tier;
+    return next();
+  }
+
+  const used = await getFreeQuotesUsed(req.user.uid);
+  if (used >= FREE_QUOTE_LIMIT) {
+    return res.status(403).json({ error: 'subscription_required', tier, freeQuotesUsed: used });
+  }
+
+  req.userTier = 'free';
+  req.freeQuotesUsed = used;
+  next();
+}
+
+// Atomically reserves one free-quote slot for a free-tier user, called by
+// /api/quote/discover only (never by /api/quote/section — a quote is "used"
+// once discovery succeeds, regardless of how many sections follow).
+//
+// Done inside a Firestore transaction so two concurrent discover calls at
+// freeQuotesUsed == FREE_QUOTE_LIMIT - 1 can't both read "2 used" and both
+// pass — the transaction serializes them and the loser correctly gets
+// rejected here even though requireEntitlement already let it through.
+// Returns true if the slot was reserved, false if quota was already exhausted
+// by a race that requireEntitlement's read couldn't see.
+async function reserveFreeQuote(uid) {
+  if (!adminFirestore) return false;
+  const userRef = adminFirestore.doc(`users/${uid}`);
+  try {
+    return await adminFirestore.runTransaction(async (txn) => {
+      const doc = await txn.get(userRef);
+      const used = doc.exists ? (doc.data().freeQuotesUsed || 0) : 0;
+      if (used >= FREE_QUOTE_LIMIT) return false;
+      txn.set(userRef, { freeQuotesUsed: used + 1 }, { merge: true });
+      return true;
+    });
+  } catch (err) {
+    console.error('[reserveFreeQuote]', err.message);
+    return false;
+  }
+}
+
+// Gives back a provisionally-reserved free quote when the AI call that would
+// have consumed it fails, so a transient error doesn't cost the user part of
+// their marketing allowance. Clamped at 0 — never goes negative.
+async function releaseFreeQuoteReservation(uid) {
+  if (!adminFirestore) return;
+  try {
+    const userRef = adminFirestore.doc(`users/${uid}`);
+    await adminFirestore.runTransaction(async (txn) => {
+      const doc = await txn.get(userRef);
+      const used = doc.exists ? (doc.data().freeQuotesUsed || 0) : 0;
+      txn.set(userRef, { freeQuotesUsed: Math.max(0, used - 1) }, { merge: true });
+    });
+  } catch (err) {
+    console.error('[releaseFreeQuoteReservation]', err.message);
+  }
 }
 
 // ── Raw body for Stripe webhooks ──────────────────────────────────────────────
@@ -226,13 +368,16 @@ app.get('/api/health', (req, res) => {
 // iOS app polls this on launch to hydrate EntitlementManager.
 app.get('/api/entitlement', requireAuth, async (req, res) => {
   const tier = await getUserTier(req.user.uid);
-  res.json({ uid: req.user.uid, tier });
+  const freeQuotesRemaining = tier === 'free'
+    ? Math.max(0, FREE_QUOTE_LIMIT - await getFreeQuotesUsed(req.user.uid))
+    : null;
+  res.json({ uid: req.user.uid, tier, freeQuotesRemaining });
 });
 
 // ── Quote section discovery (Phase 1 — Haiku, fast) ──────────────────────────
 // Auth + paid tier required. iOS QuoteGenerationService calls this instead of
 // hitting Anthropic directly.
-app.post('/api/quote/discover', requireAuth, requirePaidTier, aiLimiter, async (req, res) => {
+app.post('/api/quote/discover', requireAuth, requireEntitlement, aiLimiter, async (req, res) => {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'API key not configured' });
 
@@ -277,21 +422,28 @@ app.post('/api/quote/discover', requireAuth, requirePaidTier, aiLimiter, async (
 
     if (!response.ok) {
       console.error('[quote/discover] Anthropic', response.status);
+      // requireEntitlement already reserved a free quote for this attempt —
+      // give it back since the call didn't actually produce a quote.
+      if (req.userTier === 'free') await req.releaseFreeQuoteReservation();
       return res.status(response.status).json({ error: 'AI request failed. Please try again.' });
     }
 
     const data = await response.json();
     const text = data.content?.[0]?.text || '';
+
     res.json({ text });
   } catch (err) {
     console.error('[quote/discover]', err);
+    if (req.userTier === 'free') await req.releaseFreeQuoteReservation();
     res.status(500).json({ error: 'Internal server error.' });
   }
 });
 
 // ── Per-section quote generation (Phase 2 — Sonnet, streaming) ───────────────
-// Auth + paid tier required. Streams SSE back to the iOS app.
-app.post('/api/quote/section', requireAuth, requirePaidTier, aiLimiter, async (req, res) => {
+// Auth + entitlement required (paid tier, or free-tier with quota remaining —
+// the free-quote counter is incremented once per quote at /api/quote/discover,
+// not per section, so this just re-checks the same gate). Streams SSE back to iOS.
+app.post('/api/quote/section', requireAuth, requireEntitlement, aiLimiter, async (req, res) => {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'API key not configured' });
 
@@ -578,6 +730,114 @@ app.post('/api/stripe/webhook', async (req, res) => {
   }
 
   res.json({ received: true });
+});
+
+// ── Apple IAP: verify a transaction reported by the client ───────────────────
+// Called by StoreKitManager immediately after a purchase (or a restored/renewed
+// transaction) completes on-device. We re-verify the transaction ID directly
+// against Apple's servers — the client's local receipt is never trusted as-is —
+// then write the entitlement to the same Firestore doc the Stripe webhook uses,
+// so every downstream check (requirePaidTier, requireEntitlement, /api/entitlement)
+// keeps working unmodified regardless of which payment provider was used.
+app.post('/api/iap/verify', requireAuth, stripeLimiter, async (req, res) => {
+  const ready = await appleReady;
+  if (!ready || !appleClient) return res.status(500).json({ error: 'Apple IAP not configured' });
+
+  const { transactionId } = req.body || {};
+  if (!transactionId || typeof transactionId !== 'string') {
+    return res.status(400).json({ error: 'transactionId required' });
+  }
+
+  try {
+    const { decodeTransaction } = await import('app-store-server-api');
+    const info = await appleClient.getTransactionInfo(transactionId);
+    const decoded = await decodeTransaction(info.signedTransactionInfo);
+
+    const tier = tierFromProductId(decoded.productId);
+    if (!tier) return res.status(400).json({ error: 'Unrecognised product' });
+
+    // revocationDate/expiresDate in the past means Apple already considers this
+    // transaction inactive (refunded or expired) — don't grant entitlement for it.
+    const now = Date.now();
+    const isActive = !decoded.revocationDate && (!decoded.expiresDate || decoded.expiresDate > now);
+
+    const uid = req.user.uid;
+    await adminFirestore.doc(`users/${uid}/entitlement/subscription`).set({
+      tier: isActive ? tier : 'free',
+      status: isActive ? 'active' : 'inactive',
+      provider: 'apple',
+      appleOriginalTransactionId: decoded.originalTransactionId,
+      updatedAt: Date.now(),
+    }, { merge: true });
+
+    res.json({ ok: true, tier: isActive ? tier : 'free' });
+  } catch (err) {
+    console.error('[IAP verify]', err.message);
+    res.status(500).json({ error: 'Verification failed' });
+  }
+});
+
+// ── Apple: App Store Server Notifications V2 ─────────────────────────────────
+// Apple calls this whenever a subscription renews, is cancelled, refunded, or
+// enters a billing retry/grace period — independent of whether the app is open.
+// Register this URL in App Store Connect > App Information > App Store Server
+// Notifications (Version 2), for both the Sandbox and Production URLs.
+app.post('/api/apple/notifications', express.json({ limit: '256kb' }), async (req, res) => {
+  const ready = await appleReady;
+  if (!ready) return res.status(503).json({ error: 'Apple IAP not configured' });
+  if (!adminFirestore) return res.json({ received: true });
+
+  try {
+    const { decodeNotificationPayload, decodeTransaction } = await import('app-store-server-api');
+    const signedPayload = req.body?.signedPayload;
+    if (!signedPayload) return res.status(400).json({ error: 'Missing signedPayload' });
+
+    // decodeNotificationPayload verifies the JWS signature against Apple's root
+    // certificate chain before returning decoded data — a forged payload throws.
+    const notification = await decodeNotificationPayload(signedPayload);
+    const data = notification.data;
+    if (!data?.signedTransactionInfo) return res.json({ received: true });
+
+    const decoded = await decodeTransaction(data.signedTransactionInfo);
+    const tier = tierFromProductId(decoded.productId);
+    if (!tier) return res.json({ received: true });
+
+    const statusMap = {
+      SUBSCRIBED:       'active',
+      DID_RENEW:        'active',
+      GRACE_PERIOD:     'active',
+      EXPIRED:          'inactive',
+      REFUND:           'inactive',
+      REVOKE:           'inactive',
+      DID_FAIL_TO_RENEW: 'inactive',
+    };
+    const status = statusMap[notification.notificationType] || null;
+    if (!status) return res.json({ received: true }); // unhandled type — no-op, not an error
+
+    // Find the user this transaction belongs to via the originalTransactionId we
+    // stored at verification time. Requires a Firestore composite index on
+    // "entitlement" collection-group queries filtered by appleOriginalTransactionId —
+    // Firestore's error message links directly to auto-create it the first time
+    // this runs, if it hasn't been created yet.
+    const query = await adminFirestore
+      .collectionGroup('entitlement')
+      .where('appleOriginalTransactionId', '==', decoded.originalTransactionId)
+      .limit(1)
+      .get();
+
+    if (!query.empty) {
+      await query.docs[0].ref.set({
+        tier: status === 'inactive' ? 'free' : tier,
+        status,
+        updatedAt: Date.now(),
+      }, { merge: true });
+    }
+
+    res.json({ received: true });
+  } catch (err) {
+    console.error('[Apple notification]', err.message);
+    res.status(400).json({ error: 'Invalid notification' });
+  }
 });
 
 // ── Stripe: deposit payment link (existing, now auth-protected) ───────────────

@@ -11,7 +11,9 @@
   "dependencies": {
     "express": "^4.18.2",
     "firebase-admin": "^12.0.0",
-    "express-rate-limit": "^7.3.1"
+    "express-rate-limit": "^7.3.1",
+    "app-store-server-api": "^1.0.0",
+    "jose": "^6.2.3"
   },
   "engines": {
     "node": ">=18"

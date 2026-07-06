@@ -1,0 +1,199 @@
+{
+  "identifier" : "8A3D1F2C-0000-4000-8000-000000000001",
+  "nonRenewingSubscriptions" : [],
+  "products" : [],
+  "settings" : {
+    "_applicationInternalID" : "0",
+    "_developerTeamID" : "ZDKG9W6N5V",
+    "_failTransactionsEnabled" : false,
+    "_lastSynchronizedDate" : 0,
+    "_locale" : "en_GB",
+    "_storefront" : "GBR",
+    "_storeKitErrors" : [
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Load Products"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Purchase"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Verification"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Store Sync"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Subscription Status"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Transaction"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Manage Subscriptions Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Refund Request Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Offer Code Redeem Sheet"
+      }
+    ]
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "8A3D1F2C-0000-4000-8000-000000000010",
+      "localizations" : [],
+      "name" : "AccuQuote Pro",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "99.00",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "8A3D1F2C-0000-4000-8000-000000000101",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Unlimited quotes for one user",
+              "displayName" : "AccuQuote Solo (Monthly)",
+              "locale" : "en_GB"
+            }
+          ],
+          "productID" : "com.accuquote.scan.solo.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Solo Monthly",
+          "subscriptionGroupID" : "8A3D1F2C-0000-4000-8000-000000000010",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "990.00",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "8A3D1F2C-0000-4000-8000-000000000102",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Unlimited quotes for one user, billed yearly",
+              "displayName" : "AccuQuote Solo (Annual)",
+              "locale" : "en_GB"
+            }
+          ],
+          "productID" : "com.accuquote.scan.solo.annual",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Solo Annual",
+          "subscriptionGroupID" : "8A3D1F2C-0000-4000-8000-000000000010",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "199.00",
+          "familyShareable" : false,
+          "groupNumber" : 2,
+          "internalID" : "8A3D1F2C-0000-4000-8000-000000000103",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "2–5 users, shared customer database",
+              "displayName" : "AccuQuote Team (Monthly)",
+              "locale" : "en_GB"
+            }
+          ],
+          "productID" : "com.accuquote.scan.team.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Team Monthly",
+          "subscriptionGroupID" : "8A3D1F2C-0000-4000-8000-000000000010",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "1990.00",
+          "familyShareable" : false,
+          "groupNumber" : 2,
+          "internalID" : "8A3D1F2C-0000-4000-8000-000000000104",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "2–5 users, billed yearly",
+              "displayName" : "AccuQuote Team (Annual)",
+              "locale" : "en_GB"
+            }
+          ],
+          "productID" : "com.accuquote.scan.team.annual",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Team Annual",
+          "subscriptionGroupID" : "8A3D1F2C-0000-4000-8000-000000000010",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "349.00",
+          "familyShareable" : false,
+          "groupNumber" : 3,
+          "internalID" : "8A3D1F2C-0000-4000-8000-000000000105",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "6+ users, multi-branch",
+              "displayName" : "AccuQuote Crew (Monthly)",
+              "locale" : "en_GB"
+            }
+          ],
+          "productID" : "com.accuquote.scan.crew.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Crew Monthly",
+          "subscriptionGroupID" : "8A3D1F2C-0000-4000-8000-000000000010",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "3490.00",
+          "familyShareable" : false,
+          "groupNumber" : 3,
+          "internalID" : "8A3D1F2C-0000-4000-8000-000000000106",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "6+ users, multi-branch, billed yearly",
+              "displayName" : "AccuQuote Crew (Annual)",
+              "locale" : "en_GB"
+            }
+          ],
+          "productID" : "com.accuquote.scan.crew.annual",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Crew Annual",
+          "subscriptionGroupID" : "8A3D1F2C-0000-4000-8000-000000000010",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}

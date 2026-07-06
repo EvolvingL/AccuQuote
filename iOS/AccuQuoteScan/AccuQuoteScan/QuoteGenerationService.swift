@@ -90,6 +90,12 @@ final class QuoteGenerationService: ObservableObject {
             return
         }
 
+        // Server increments the free-quote counter on a successful discover call —
+        // refresh so a free-tier user's "X free quotes left" UI updates immediately.
+        if !EntitlementManager.shared.isPaid {
+            Task { await EntitlementManager.shared.refresh() }
+        }
+
         guard !descriptors.isEmpty else {
             state = .failed("No trade sections identified for this job.")
             return
@@ -220,8 +226,14 @@ final class QuoteGenerationService: ObservableObject {
                 throw NSError(domain: "QuoteGen", code: 401,
                               userInfo: [NSLocalizedDescriptionKey: "Your session has expired. Please sign in again."])
             case 403:
+                // Once EntitlementManager's cache refreshes after this rejection it will
+                // read freeQuotesRemaining == 0, so we don't need the response body here —
+                // just distinguish "used up the free allowance" from "always required".
+                let message = (EntitlementManager.shared.freeQuotesRemaining ?? 0) > 0
+                    ? "A Pro subscription is required to generate quotes."
+                    : "You've used all 3 free quotes. Subscribe to keep generating quotes."
                 throw NSError(domain: "QuoteGen", code: 403,
-                              userInfo: [NSLocalizedDescriptionKey: "A Pro subscription is required to generate quotes."])
+                              userInfo: [NSLocalizedDescriptionKey: message])
             default:
                 let msg = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["error"] as? String
                     ?? "Server error (\(http.statusCode)). Please try again."
