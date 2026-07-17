@@ -505,6 +505,26 @@ struct PaywallSheet: View {
                     .font(.system(size: 13))
                     .foregroundColor(AQ.secondary)
 
+                    #if DEBUG
+                    // Dev-only: unlocks quote generation without a real purchase,
+                    // so IAP/quote flows can be tested without buying a real sandbox
+                    // subscription every time. Compiled out of Release/App Store
+                    // builds entirely. Server-side, this only works for one hardcoded
+                    // developer UID — a no-op for every other account regardless of
+                    // build configuration (see /api/debug/entitlement).
+                    Button {
+                        Task { await setDebugTier(.solo) }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "flask")
+                            Text(isLoading ? "Unlocking…" : "Debug: Unlock Solo (test only)")
+                        }
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.orange)
+                    }
+                    .disabled(isLoading)
+                    #endif
+
                     // Free tier note
                     VStack(spacing: 6) {
                         Text("Free tier includes")
@@ -551,7 +571,13 @@ struct PaywallSheet: View {
 
     private func subscribe(tier: EntitlementManager.SubscriptionTier) {
         guard !isLoading else { return }
-        guard let product = storeKit.product(tier: tier, interval: selectedInterval) else {
+        // Team/Crew have no annual product — if annual is selected but this tier
+        // only offers monthly, subscribe to monthly rather than failing outright.
+        // TierCard already relabels the card "Monthly only" in that case, so this
+        // matches what the user was shown, not a silent bait-and-switch.
+        let effectiveInterval = storeKit.product(tier: tier, interval: selectedInterval) != nil
+            ? selectedInterval : .monthly
+        guard let product = storeKit.product(tier: tier, interval: effectiveInterval) else {
             error = "This plan is temporarily unavailable. Please try again shortly."
             return
         }
@@ -572,6 +598,37 @@ struct PaywallSheet: View {
             }
         }
     }
+
+    #if DEBUG
+    private func setDebugTier(_ tier: EntitlementManager.SubscriptionTier) async {
+        guard !isLoading else { return }
+        isLoading = true
+        error = nil
+        defer { isLoading = false }
+
+        guard let idToken = await AuthManager.shared.currentIdToken(),
+              let url = URL(string: "\(AQBackend.baseURL)/api/debug/entitlement") else {
+            error = "Not signed in."
+            return
+        }
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue("Bearer \(idToken)", forHTTPHeaderField: "Authorization")
+        req.httpBody = try? JSONSerialization.data(withJSONObject: ["tier": tier.rawValue])
+
+        guard let (_, response) = try? await URLSession.shared.data(for: req),
+              let http = response as? HTTPURLResponse,
+              (200...299).contains(http.statusCode)
+        else {
+            error = "Debug unlock failed — check you're signed in as the test account."
+            return
+        }
+
+        await entitlement.refresh()
+        dismiss()
+    }
+    #endif
 }
 
 // MARK: - Tier Card
@@ -584,11 +641,22 @@ private struct TierCard: View {
     let storeProduct: Product?
     let onSubscribe: () -> Void
 
+    // Team/Crew have no annual product (App Store Connect's GBP price tiers
+    // don't reach £1,990/£3,490) — if the selected interval is annual and this
+    // tier has no matching product, fall through to showing it as monthly-only
+    // rather than a stale hardcoded annual price that would fail on tap.
+    private var isUnavailableForInterval: Bool {
+        interval == .annual && storeProduct == nil
+    }
+
     // Prefer StoreKit's localized, tax-inclusive price (always correct across
     // storefronts and after price changes on App Store Connect); fall back to
     // the hardcoded string only while products are still loading.
     var price: String {
-        storeProduct?.displayPrice ?? (interval == .monthly ? tier.monthlyPrice : tier.annualPrice)
+        if isUnavailableForInterval {
+            return storeProduct?.displayPrice ?? tier.monthlyPrice
+        }
+        return storeProduct?.displayPrice ?? (interval == .monthly ? tier.monthlyPrice : tier.annualPrice)
     }
 
     var body: some View {
@@ -603,7 +671,7 @@ private struct TierCard: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(tier.displayName)
                         .font(.system(size: 16, weight: .semibold)).foregroundColor(AQ.ink)
-                    Text(tier.tagline)
+                    Text(isUnavailableForInterval ? "Monthly only" : tier.tagline)
                         .font(.system(size: 13)).foregroundColor(AQ.secondary)
                 }
                 Spacer()

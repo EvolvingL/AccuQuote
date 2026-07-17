@@ -24,7 +24,7 @@
 	<true/>
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
-		<string>com.accuquote.scan.asset-download</string>
+		<string>com.accuquote1.scan.asset-download</string>
 	</array>
 	<key>UIBackgroundModes</key>
 	<array>
@@ -73,7 +73,7 @@
 		<!-- Deep link: accuquote://scan launches this app from AccuQuote web -->
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>com.accuquote.scan</string>
+			<string>com.accuquote1.scan</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>accuquote</string>

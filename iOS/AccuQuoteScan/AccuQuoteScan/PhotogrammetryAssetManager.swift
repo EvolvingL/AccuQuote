@@ -27,7 +27,7 @@ final class PhotogrammetryAssetManager: ObservableObject {
     /// 0.0 – 1.0 download progress, derived from MobileAsset cache directory size.
     @Published var downloadProgress: Double = 0.0
 
-    nonisolated static let bgTaskID         = "com.accuquote.scan.asset-download"
+    nonisolated static let bgTaskID         = "com.accuquote1.scan.asset-download"
     nonisolated private static let readyKey = "aq_photogrammetry_asset_ready"
     /// Approximate total size of the RealityKit photogrammetry ML asset in bytes.
     /// Measured empirically; used only to compute a progress fraction.

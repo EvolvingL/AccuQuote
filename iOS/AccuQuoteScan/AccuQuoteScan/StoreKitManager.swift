@@ -28,13 +28,20 @@ final class StoreKitManager: ObservableObject {
 
     // Must exactly match the Product IDs created in App Store Connect and in
     // Products.storekit (the local testing configuration).
+    //
+    // Prefix is "com.accuquote1.scan" (with the "1") to match the app's actual
+    // bundle ID — com.accuquote.scan was unavailable to (re)register, so the
+    // app ships as com.accuquote1.scan instead.
+    //
+    // Team/Crew have no annual product — App Store Connect's GBP price tier
+    // picker doesn't offer a tier anywhere near £1,990/£3,490 (confirmed by
+    // searching "1990" and only finding £19.90 / £199.00), so those two tiers
+    // are monthly-only. Solo annual (£990) is within the available tiers.
     static let productIDs: [String] = [
-        "com.accuquote.scan.solo.monthly",
-        "com.accuquote.scan.solo.annual",
-        "com.accuquote.scan.team.monthly",
-        "com.accuquote.scan.team.annual",
-        "com.accuquote.scan.crew.monthly",
-        "com.accuquote.scan.crew.annual",
+        "com.accuquote1.scan.solo.monthly",
+        "com.accuquote1.scan.solo.annual",
+        "com.accuquote1.scan.team.monthly",
+        "com.accuquote1.scan.crew.monthly",
     ]
 
     private var updateListenerTask: Task<Void, Never>?
@@ -60,7 +67,7 @@ final class StoreKitManager: ObservableObject {
 
     func product(tier: EntitlementManager.SubscriptionTier, interval: PaywallSheet.PayInterval) -> Product? {
         let suffix = interval == .monthly ? "monthly" : "annual"
-        let id = "com.accuquote.scan.\(tier.rawValue).\(suffix)"
+        let id = "com.accuquote1.scan.\(tier.rawValue).\(suffix)"
         return products.first(where: { $0.id == id })
     }
 

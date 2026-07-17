@@ -2,12 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- APNs: "development" for TestFlight/debug; Automatic Signing
-	     promotes this to "production" when archiving for App Store. -->
 	<key>aps-environment</key>
 	<string>development</string>
-	<!-- Sign in with Apple — required because the app presents SignInWithAppleButton.
-	     Without this entitlement Xcode refuses to archive. -->
 	<key>com.apple.developer.applesignin</key>
 	<array>
 		<string>Default</string>

@@ -14,7 +14,7 @@
  *   APPLE_ISSUER_ID            — App Store Connect API issuer ID (Users and Access > Integrations)
  *   APPLE_KEY_ID               — App Store Server API key ID
  *   APPLE_PRIVATE_KEY          — Contents of the .p8 private key file for the above key
- *   APPLE_BUNDLE_ID            — com.accuquote.scan
+ *   APPLE_BUNDLE_ID            — com.accuquote1.scan
  *   APPLE_ENVIRONMENT          — "Sandbox" while testing, "Production" once live
  *
  * Endpoints:
@@ -27,6 +27,7 @@
  *   POST /api/stripe/webhook                — Stripe webhook (entitlement fulfilment)
  *   POST /api/iap/verify                    — verify an Apple IAP transaction (auth required)
  *   POST /api/apple/notifications           — App Store Server Notifications V2 receiver
+ *   POST /api/debug/entitlement             — dev-only entitlement override (single hardcoded UID)
  *   GET  /api/health                        — health check
  *   POST /api/push/register                 — device registers APNs token (auth required)
  *   POST /api/admin/broadcast               — push to segment + A/B test (admin)
@@ -131,7 +132,7 @@ const appleReady = (async () => {
   }
 })();
 
-// Maps a StoreKit product ID (e.g. "com.accuquote.scan.solo.monthly") back to
+// Maps a StoreKit product ID (e.g. "com.accuquote1.scan.solo.monthly") back to
 // our internal tier name. Returns null for anything unrecognised.
 function tierFromProductId(productId) {
   if (!productId) return null;
@@ -364,6 +365,38 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// ── Debug: developer-only entitlement bypass ──────────────────────────────────
+// Grants (or revokes) a paid tier for exactly one hardcoded Firebase UID — the
+// developer's own test account — so App Store IAP testing doesn't require
+// completing a real sandbox purchase every time. Gated on auth (a real,
+// verified Firebase ID token is required) AND a hardcoded UID match, so this
+// is a no-op for every other account even if the endpoint URL leaks. Not
+// gated by NODE_ENV since it needs to work against the real deployed backend
+// during device testing, not just a local server.
+const DEBUG_TEST_UID = 'HIobAhqy9MMygpjPPrj7nuQrGLi2';
+
+app.post('/api/debug/entitlement', requireAuth, stripeLimiter, async (req, res) => {
+  if (req.user.uid !== DEBUG_TEST_UID) {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  if (!adminFirestore) return res.status(503).json({ error: 'Database unavailable' });
+
+  const { tier } = req.body || {};
+  const validTiers = ['free', 'solo', 'team', 'crew'];
+  if (!validTiers.includes(tier)) {
+    return res.status(400).json({ error: `tier must be one of: ${validTiers.join(', ')}` });
+  }
+
+  await adminFirestore.doc(`users/${req.user.uid}/entitlement/subscription`).set({
+    tier,
+    status: tier === 'free' ? 'inactive' : 'active',
+    provider: 'debug',
+    updatedAt: Date.now(),
+  }, { merge: true });
+
+  res.json({ ok: true, tier });
+});
+
 // ── Entitlement check ─────────────────────────────────────────────────────────
 // iOS app polls this on launch to hydrate EntitlementManager.
 app.get('/api/entitlement', requireAuth, async (req, res) => {
@@ -383,6 +416,18 @@ app.post('/api/quote/discover', requireAuth, requireEntitlement, aiLimiter, asyn
 
   const { jobDescription, claudeContext } = req.body || {};
   if (!jobDescription) return res.status(400).json({ error: 'Missing jobDescription' });
+
+  // A successful discover call is what "one free quote" means for the
+  // marketing allowance. Reserved atomically here (not in requireEntitlement,
+  // which only performs a non-consuming check so it can also gate
+  // /api/quote/section without double-charging the same quote).
+  const isFree = req.userTier === 'free';
+  if (isFree) {
+    const reserved = await reserveFreeQuote(req.user.uid);
+    if (!reserved) {
+      return res.status(403).json({ error: 'subscription_required', tier: 'free', freeQuotesUsed: FREE_QUOTE_LIMIT });
+    }
+  }
 
   // Fix #5: claudeContext and jobDescription are wrapped in clearly delimited blocks.
   // A system-level instruction explicitly forbids following instructions in <JOB> tags,
@@ -422,9 +467,7 @@ app.post('/api/quote/discover', requireAuth, requireEntitlement, aiLimiter, asyn
 
     if (!response.ok) {
       console.error('[quote/discover] Anthropic', response.status);
-      // requireEntitlement already reserved a free quote for this attempt —
-      // give it back since the call didn't actually produce a quote.
-      if (req.userTier === 'free') await req.releaseFreeQuoteReservation();
+      if (isFree) await releaseFreeQuoteReservation(req.user.uid);
       return res.status(response.status).json({ error: 'AI request failed. Please try again.' });
     }
 
@@ -434,7 +477,7 @@ app.post('/api/quote/discover', requireAuth, requireEntitlement, aiLimiter, asyn
     res.json({ text });
   } catch (err) {
     console.error('[quote/discover]', err);
-    if (req.userTier === 'free') await req.releaseFreeQuoteReservation();
+    if (isFree) await releaseFreeQuoteReservation(req.user.uid);
     res.status(500).json({ error: 'Internal server error.' });
   }
 });

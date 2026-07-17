@@ -8,6 +8,9 @@ struct ProfileMenuSheet: View {
     @EnvironmentObject var engine: QuestionEngine
     @Environment(\.dismiss) private var dismiss
     @State private var selectedTab: ProfileTab = .quotes
+    // Set by AccountTab's sign-out confirmation, consumed in onDisappear below —
+    // see the comment there for why the notification isn't posted immediately.
+    @State private var signOutRequested = false
 
     enum ProfileTab { case quotes, update, account }
 
@@ -31,7 +34,10 @@ struct ProfileMenuSheet: View {
                 switch selectedTab {
                 case .quotes:  QuoteHistoryTab()
                 case .update:  AIUpdateTab().environmentObject(engine)
-                case .account: AccountTab().environmentObject(engine).environmentObject(EntitlementManager.shared)
+                case .account:
+                    AccountTab(signOutRequested: $signOutRequested)
+                        .environmentObject(engine)
+                        .environmentObject(EntitlementManager.shared)
                 }
             }
             .navigationTitle(tabTitle)
@@ -41,6 +47,18 @@ struct ProfileMenuSheet: View {
                     Button("Done") { dismiss() }
                         .foregroundColor(AQ.secondary)
                 }
+            }
+        }
+        .onDisappear {
+            // Fires only once this sheet has actually finished closing — posting
+            // .aqSignOut here (rather than from the confirmation button while the
+            // sheet is still visible/animating out) avoids racing this sheet's own
+            // dismissal against AuthGateView's swap back to LoginView. Without this,
+            // auth.signOut() ran and isSignedIn really was false, but the view
+            // silently failed to repaint until the app was relaunched.
+            if signOutRequested {
+                signOutRequested = false
+                NotificationCenter.default.post(name: .aqSignOut, object: nil)
             }
         }
     }
@@ -444,6 +462,8 @@ private struct AIUpdateTab: View {
 private struct AccountTab: View {
     @EnvironmentObject var engine: QuestionEngine
     @EnvironmentObject var entitlement: EntitlementManager
+    @Environment(\.dismiss) private var dismiss
+    @Binding var signOutRequested: Bool
     @State private var showSignOutConfirm       = false
     @State private var showResetConfirm         = false
     @State private var showPaywall              = false
@@ -644,7 +664,14 @@ private struct AccountTab: View {
         }
         .confirmationDialog("Sign out of AccuQuote?", isPresented: $showSignOutConfirm, titleVisibility: .visible) {
             Button("Sign out", role: .destructive) {
-                NotificationCenter.default.post(name: .aqSignOut, object: nil)
+                // Don't post .aqSignOut here directly — posting it while this sheet
+                // is still visible races its own dismissal against AuthGateView's
+                // content swap, and the swap silently failed to repaint until the
+                // app was relaunched. Just dismiss; ProfileMenuSheet's onDisappear
+                // (fired only once the sheet has actually finished closing) posts
+                // the real sign-out notification.
+                signOutRequested = true
+                dismiss()
             }
             Button("Cancel", role: .cancel) {}
         } message: {
