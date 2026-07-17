@@ -1481,7 +1481,11 @@ app.get('/sw.js', (req, res) => {
 const ROOT = join(__dirname, '..');
 
 app.get('/', (req, res) => res.sendFile(join(ROOT, 'website.html')));
-app.get('/favicon.ico', (req, res) => res.sendFile(join(ROOT, 'favicon.ico')));
+app.get('/favicon.ico', (req, res) => {
+  res.setHeader('Content-Type', 'image/x-icon');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.sendFile(join(ROOT, 'favicon.ico'));
+});
 app.get('/prelaunch', (req, res) => res.sendFile(join(ROOT, 'prelaunch.html')));
 
 const pages = ['demo', 'blog', 'how-it-works', 'referral', 'quote-cost-calculator', 'privacy-policy'];
