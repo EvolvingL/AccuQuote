@@ -625,15 +625,14 @@
       <button class="pricing__toggle-btn" id="toggle-annual" onclick="setPricing('annual')">Annual <span class="pricing__toggle-save">Save 16%</span></button>
     </div>
 
-    <div class="pricing__grid fade-up">
+    <!-- MONTHLY view: Solo + Team + Crew -->
+    <div class="pricing__grid fade-up" id="pricing-monthly">
 
-      <!-- Solo -->
       <div class="pricing-card pricing-card--featured">
         <div class="pricing-card__badge">Most popular</div>
         <div class="pricing-card__tier">AccuQuote Solo</div>
-        <div class="pricing-card__price" id="solo-price"><sup>£</sup>99<span style="font-size:1.1rem;font-weight:500;color:var(--secondary)">/mo</span></div>
-        <div class="pricing-card__annual-note" id="solo-annual-note">£990/yr — 2 months free</div>
-        <div class="pricing-card__period" id="solo-period">Billed monthly · cancel in 2 taps</div>
+        <div class="pricing-card__price"><sup>£</sup>99<span style="font-size:1.1rem;font-weight:500;color:var(--secondary)">/mo</span></div>
+        <div class="pricing-card__period">Billed monthly · cancel in 2 taps</div>
         <p class="pricing-card__desc">For sole traders quoting regularly who want to look professional and win more jobs.</p>
         <ul class="pricing-card__features">
           <li>Unlimited quotes</li>
@@ -649,7 +648,6 @@
         <p class="pricing-card__no-call">No card · No call · No salesperson</p>
       </div>
 
-      <!-- Team -->
       <div class="pricing-card">
         <div class="pricing-card__tier">AccuQuote Team</div>
         <div class="pricing-card__price"><sup>£</sup>199<span style="font-size:1.1rem;font-weight:500;color:var(--secondary)">/mo</span></div>
@@ -667,7 +665,6 @@
         <p class="pricing-card__no-call">No card · No call · No salesperson</p>
       </div>
 
-      <!-- Crew -->
       <div class="pricing-card">
         <div class="pricing-card__tier">AccuQuote Crew</div>
         <div class="pricing-card__price"><sup>£</sup>349<span style="font-size:1.1rem;font-weight:500;color:var(--secondary)">/mo</span></div>
@@ -682,6 +679,30 @@
           <li>Volume supplier pricing</li>
         </ul>
         <a href="#" class="btn btn-outline-dark">Start your 3 free quotes</a>
+        <p class="pricing-card__no-call">No card · No call · No salesperson</p>
+      </div>
+    </div>
+
+    <!-- ANNUAL view: Solo Annual only, centred -->
+    <div id="pricing-annual" style="display:none; max-width:420px; margin:24px auto 0;">
+      <div class="pricing-card pricing-card--featured">
+        <div class="pricing-card__badge">Best value</div>
+        <div class="pricing-card__tier">AccuQuote Solo Annual</div>
+        <div class="pricing-card__price"><sup>£</sup>82.50<span style="font-size:1.1rem;font-weight:500;color:var(--secondary)">/mo</span></div>
+        <div style="font-size:0.8125rem;color:var(--green);font-weight:600;margin-bottom:4px;">£990 billed yearly — 2 months free</div>
+        <div class="pricing-card__period">Billed annually · cancel any time</div>
+        <p class="pricing-card__desc">All the power of Solo, paid yearly — the best value for a tradesman who knows AccuQuote is part of the kit.</p>
+        <ul class="pricing-card__features">
+          <li>Unlimited quotes</li>
+          <li>Branded PDF export</li>
+          <li>Live prices — Screwfix, Toolstation, CEF</li>
+          <li>Customer approval &amp; deposit collection</li>
+          <li>Branded Stripe payment links</li>
+          <li>Quote history &amp; search</li>
+          <li>Works offline</li>
+          <li>WhatsApp share</li>
+        </ul>
+        <a href="#" class="btn btn-blue">Get Solo Annual</a>
         <p class="pricing-card__no-call">No card · No call · No salesperson</p>
       </div>
     </div>
@@ -840,13 +861,8 @@
     const isAnnual = period === 'annual';
     document.getElementById('toggle-monthly').classList.toggle('active', !isAnnual);
     document.getElementById('toggle-annual').classList.toggle('active', isAnnual);
-    document.getElementById('solo-price').innerHTML = isAnnual
-      ? '<sup>£</sup>82.50<span style="font-size:1.1rem;font-weight:500;color:var(--secondary)">/mo</span>'
-      : '<sup>£</sup>99<span style="font-size:1.1rem;font-weight:500;color:var(--secondary)">/mo</span>';
-    document.getElementById('solo-annual-note').style.display = isAnnual ? 'block' : 'none';
-    document.getElementById('solo-period').textContent = isAnnual
-      ? 'Billed £990/yr · cancel any time'
-      : 'Billed monthly · cancel in 2 taps';
+    document.getElementById('pricing-monthly').style.display = isAnnual ? 'none' : '';
+    document.getElementById('pricing-annual').style.display = isAnnual ? 'block' : 'none';
   }
 
   // FAQ accordion
