@@ -620,7 +620,7 @@
     </div>
 
     <!-- Monthly / Annual toggle -->
-    <div class="pricing__toggle fade-up" role="group" aria-label="Billing period">
+    <div class="pricing__toggle fade-up" id="pricing-toggle-bar" role="group" aria-label="Billing period">
       <button class="pricing__toggle-btn active" id="toggle-monthly" onclick="setPricing('monthly')">Monthly</button>
       <button class="pricing__toggle-btn" id="toggle-annual" onclick="setPricing('annual')">Annual <span class="pricing__toggle-save">Save 16%</span></button>
     </div>
@@ -688,9 +688,9 @@
       <div class="pricing-card pricing-card--featured">
         <div class="pricing-card__badge">Best value</div>
         <div class="pricing-card__tier">AccuQuote Solo Annual</div>
-        <div class="pricing-card__price"><sup>£</sup>82.50<span style="font-size:1.1rem;font-weight:500;color:var(--secondary)">/mo</span></div>
-        <div style="font-size:0.8125rem;color:var(--green);font-weight:600;margin-bottom:4px;">£990 billed yearly — 2 months free</div>
-        <div class="pricing-card__period">Billed annually · cancel any time</div>
+        <div class="pricing-card__price"><sup>£</sup>990<span style="font-size:1.1rem;font-weight:500;color:var(--secondary)">/yr</span></div>
+        <div style="font-size:0.9rem;color:var(--green);font-weight:700;margin-bottom:2px;">Save £198 — 2 months free</div>
+        <div class="pricing-card__period">£82.50/mo equivalent · cancel any time</div>
         <p class="pricing-card__desc">All the power of Solo, paid yearly — the best value for a tradesman who knows AccuQuote is part of the kit.</p>
         <ul class="pricing-card__features">
           <li>Unlimited quotes</li>
@@ -705,6 +705,9 @@
         <a href="#" class="btn btn-blue">Get Solo Annual</a>
         <p class="pricing-card__no-call">No card · No call · No salesperson</p>
       </div>
+      <p style="text-align:center;margin-top:16px;font-size:0.875rem;color:var(--secondary);">
+        Want monthly billing or a team plan? <a href="#" onclick="setPricing('monthly');return false;" style="color:var(--blue);font-weight:600;">See all plans</a>
+      </p>
     </div>
 
     <div class="pricing__guarantee fade-up">
@@ -863,6 +866,7 @@
     document.getElementById('toggle-annual').classList.toggle('active', isAnnual);
     document.getElementById('pricing-monthly').style.display = isAnnual ? 'none' : '';
     document.getElementById('pricing-annual').style.display = isAnnual ? 'block' : 'none';
+    document.getElementById('pricing-toggle-bar').style.display = isAnnual ? 'none' : '';
   }
 
   // FAQ accordion
