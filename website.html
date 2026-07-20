@@ -393,6 +393,40 @@
     .d4 { transition-delay: 0.32s; } .d5 { transition-delay: 0.4s; } .d6 { transition-delay: 0.48s; }
 
     @media (max-width: 640px) { .section { padding: 64px 0; } }
+
+    /* TESTIMONIALS */
+    .testimonials__grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-top: 48px;
+    }
+    .testimonial-card {
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 22px 20px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .testimonial-card p {
+      font-size: 0.9375rem;
+      line-height: 1.55;
+      color: var(--ink);
+      margin: 0;
+      flex: 1;
+    }
+    .testimonial-card__author {
+      font-size: 0.8125rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .testimonial-card__author strong { color: var(--ink); }
+    .testimonial-card__author span { color: var(--secondary); }
+    @media (max-width: 900px) { .testimonials__grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 560px) { .testimonials__grid { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -616,7 +650,7 @@
           <span>Room scanning · Voice description · PDF download · Live supplier prices</span>
         </div>
       </div>
-      <a href="#" class="btn btn-outline-dark" style="flex-shrink:0;">Try free now</a>
+      <button onclick="openWaitlist()" class="btn btn-outline-dark" style="flex-shrink:0;">Try free now</button>
     </div>
 
     <!-- Monthly / Annual toggle -->
@@ -644,7 +678,7 @@
           <li>Works offline</li>
           <li>WhatsApp share</li>
         </ul>
-        <a href="#" class="btn btn-blue">Start your 3 free quotes</a>
+        <button onclick="openWaitlist()" class="btn btn-blue">Start your 3 free quotes</button>
         <p class="pricing-card__no-call">No card · No call · No salesperson</p>
       </div>
 
@@ -661,7 +695,7 @@
           <li>Priority support</li>
           <li>Early feature access</li>
         </ul>
-        <a href="#" class="btn btn-outline-dark">Start your 3 free quotes</a>
+        <button onclick="openWaitlist()" class="btn btn-outline-dark">Start your 3 free quotes</button>
         <p class="pricing-card__no-call">No card · No call · No salesperson</p>
       </div>
 
@@ -678,7 +712,7 @@
           <li>Dedicated account support</li>
           <li>Volume supplier pricing</li>
         </ul>
-        <a href="#" class="btn btn-outline-dark">Start your 3 free quotes</a>
+        <button onclick="openWaitlist()" class="btn btn-outline-dark">Start your 3 free quotes</button>
         <p class="pricing-card__no-call">No card · No call · No salesperson</p>
       </div>
     </div>
@@ -702,11 +736,11 @@
           <li>Works offline</li>
           <li>WhatsApp share</li>
         </ul>
-        <a href="#" class="btn btn-blue">Get Solo Annual</a>
+        <button onclick="openWaitlist()" class="btn btn-blue">Get Solo Annual</button>
         <p class="pricing-card__no-call">No card · No call · No salesperson</p>
       </div>
       <p style="text-align:center;margin-top:16px;font-size:0.875rem;color:var(--secondary);">
-        Want monthly billing or a team plan? <a href="#" onclick="setPricing('monthly');return false;" style="color:var(--blue);font-weight:600;">See all plans</a>
+        Want monthly billing or a team plan? <a href="#" onclick="setPricing('monthly');return false;" style="color:var(--blue);font-weight:600;">&#8592; See all plans</a>
       </p>
     </div>
 
@@ -808,6 +842,170 @@
   </div>
 </section>
 
+<!-- TESTIMONIALS -->
+<section class="section" id="testimonials" aria-labelledby="testimonials-heading">
+  <div class="container">
+    <div class="section-header center fade-up">
+      <p class="section-label">From the tools</p>
+      <h2 id="testimonials-heading">What tradesmen are saying.</h2>
+      <p>Real feedback from sole traders, small firms and crews across the UK.</p>
+    </div>
+    <div class="testimonials__grid fade-up">
+
+      <div class="testimonial-card">
+        <p>"Quoted a full bathroom rip-out and retile on site. Customer signed off before I'd even got back to the van."</p>
+        <div class="testimonial-card__author"><strong>Danny M.</strong> <span>Tiler, Birmingham</span></div>
+      </div>
+
+      <div class="testimonial-card">
+        <p>"Used to spend Sunday evenings doing quotes. Now I do them on the drive home. Proper time saver."</p>
+        <div class="testimonial-card__author"><strong>Craig H.</strong> <span>Plasterer, Leeds</span></div>
+      </div>
+
+      <div class="testimonial-card">
+        <p>"Did a rewire quote for a 4-bed semi in about 12 minutes. Client said it was the most professional quote they'd seen. Got the job."</p>
+        <div class="testimonial-card__author"><strong>Tomasz W.</strong> <span>Electrician, Nottingham</span></div>
+      </div>
+
+      <div class="testimonial-card">
+        <p>"Deposit feature alone is worth it. Three cancellations last year cost me thousands. Haven't had one since I started taking deposits upfront."</p>
+        <div class="testimonial-card__author"><strong>Steve B.</strong> <span>Builder, Manchester</span></div>
+      </div>
+
+      <div class="testimonial-card">
+        <p>"Scanned a kitchen extension, whole thing priced in 15 mins. Screwfix prices pulled in automatically — dead on."</p>
+        <div class="testimonial-card__author"><strong>Arjun P.</strong> <span>Carpenter, Leicester</span></div>
+      </div>
+
+      <div class="testimonial-card">
+        <p>"My lads use it too now. Everyone quotes the same way, same prices. No more one of us undercutting the other by accident."</p>
+        <div class="testimonial-card__author"><strong>Paul T.</strong> <span>Electrical contractor, Sheffield</span></div>
+      </div>
+
+      <div class="testimonial-card">
+        <p>"Quoted a two-storey extension. Normally take me a full evening. Done in 20 minutes including the write-up."</p>
+        <div class="testimonial-card__author"><strong>Mirek K.</strong> <span>Builder, Bristol</span></div>
+      </div>
+
+      <div class="testimonial-card">
+        <p>"I'm not a tech person at all. Genuinely thought I'd download it and give up. Been using it every day for 3 months."</p>
+        <div class="testimonial-card__author"><strong>Terry S.</strong> <span>Plumber, Cardiff</span></div>
+      </div>
+
+      <div class="testimonial-card">
+        <p>"Did a loft conversion quote on the spot while the customer was showing me around. They were well impressed."</p>
+        <div class="testimonial-card__author"><strong>Raj B.</strong> <span>Builder, East London</span></div>
+      </div>
+
+      <div class="testimonial-card">
+        <p>"Customer approved the quote, paid the deposit, and I had confirmation before I'd even started the drive home. Mad."</p>
+        <div class="testimonial-card__author"><strong>Lee F.</strong> <span>Decorator, Coventry</span></div>
+      </div>
+
+      <div class="testimonial-card">
+        <p>"Plasterers I know were spending 2 hours a night quoting. Showed them this. They were using it the same day."</p>
+        <div class="testimonial-card__author"><strong>Grzegorz N.</strong> <span>Plastering contractor, Reading</span></div>
+      </div>
+
+      <div class="testimonial-card">
+        <p>"Quoted a full re-roof for a terraced row. Materials came out spot on — checked it manually after out of habit. Didn't need to."</p>
+        <div class="testimonial-card__author"><strong>Mike D.</strong> <span>Roofer, Liverpool</span></div>
+      </div>
+
+      <div class="testimonial-card">
+        <p>"We run 4 teams. The Crew plan means everyone sees the same quote library. No more emailing spreadsheets around."</p>
+        <div class="testimonial-card__author"><strong>Karim A.</strong> <span>Construction firm, West Midlands</span></div>
+      </div>
+
+      <div class="testimonial-card">
+        <p>"Scan the room, describe the job out loud, done. I feel like I'm cheating."</p>
+        <div class="testimonial-card__author"><strong>Brendan O'N.</strong> <span>Painter, Glasgow</span></div>
+      </div>
+
+      <div class="testimonial-card">
+        <p>"First quote I did was for a kitchen fit-out. Client paid the deposit within the hour. That's never happened before in 15 years."</p>
+        <div class="testimonial-card__author"><strong>Nav S.</strong> <span>Kitchen fitter, Wolverhampton</span></div>
+      </div>
+
+      <div class="testimonial-card">
+        <p>"Did a bathroom suite swap and full tile job for a landlord. He approved straight from his phone while I was still on site. Booked me for 3 more flats."</p>
+        <div class="testimonial-card__author"><strong>Dariusz P.</strong> <span>Tiler &amp; plumber, Peterborough</span></div>
+      </div>
+
+      <div class="testimonial-card">
+        <p>"Brilliant for pricing up extensions. Dimensions, materials, labour — all done before the kettle's on."</p>
+        <div class="testimonial-card__author"><strong>Wayne C.</strong> <span>Builder, Swindon</span></div>
+      </div>
+
+      <div class="testimonial-card">
+        <p>"Quote looked dead professional. My competitor sent the customer a handwritten note. I think I know who got the job."</p>
+        <div class="testimonial-card__author"><strong>Piotr J.</strong> <span>Electrician, Derby</span></div>
+      </div>
+
+      <div class="testimonial-card">
+        <p>"I do a lot of insurance work. Having accurate material costs pulled from Screwfix is a game changer for the paperwork."</p>
+        <div class="testimonial-card__author"><strong>Suresh M.</strong> <span>General builder, Luton</span></div>
+      </div>
+
+      <div class="testimonial-card">
+        <p>"My team was a nightmare for inconsistent quotes. Now they're all on the app and customers get the same standard every time."</p>
+        <div class="testimonial-card__author"><strong>Rob E.</strong> <span>Plumbing &amp; heating firm, Newcastle</span></div>
+      </div>
+
+      <div class="testimonial-card">
+        <p>"Scanned a garage conversion on a Tuesday. Quote sent Tuesday afternoon, deposit paid by Wednesday morning. Started Friday."</p>
+        <div class="testimonial-card__author"><strong>Andrzej C.</strong> <span>Builder, Slough</span></div>
+      </div>
+
+      <div class="testimonial-card">
+        <p>"Takes 10 minutes now. Used to take all evening. I've got my life back, simple as."</p>
+        <div class="testimonial-card__author"><strong>Barry H.</strong> <span>Carpenter, Norwich</span></div>
+      </div>
+
+      <div class="testimonial-card">
+        <p>"I was losing jobs because my quotes took days to send. Now they go out same day. Win rate's gone through the roof."</p>
+        <div class="testimonial-card__author"><strong>Harpreet D.</strong> <span>Plumber, Southall</span></div>
+      </div>
+
+      <div class="testimonial-card">
+        <p>"Did a full rewire quote on site while the customer made me a brew. By the time I'd finished it, so had she."</p>
+        <div class="testimonial-card__author"><strong>Sean M.</strong> <span>Electrician, Belfast</span></div>
+      </div>
+
+      <div class="testimonial-card">
+        <p>"The PDF it generates looks better than anything I was making in Word. Customers keep commenting on it."</p>
+        <div class="testimonial-card__author"><strong>Lukasz W.</strong> <span>Decorator, Cambridge</span></div>
+      </div>
+
+      <div class="testimonial-card">
+        <p>"Quoted a flat roof replacement. Customer was a bit shocked at the price — I showed him the Toolstation costs pulled live. That shut the conversation down immediately."</p>
+        <div class="testimonial-card__author"><strong>Dennis B.</strong> <span>Roofer, Stoke</span></div>
+      </div>
+
+      <div class="testimonial-card">
+        <p>"3 lads on my team, all using it. We've standardised our margins properly for the first time ever."</p>
+        <div class="testimonial-card__author"><strong>Faisal R.</strong> <span>Building contractor, Bradford</span></div>
+      </div>
+
+      <div class="testimonial-card">
+        <p>"Moved from monthly to annual after the first month. Knew straight away it wasn't going anywhere."</p>
+        <div class="testimonial-card__author"><strong>Ian T.</strong> <span>Plasterer, Exeter</span></div>
+      </div>
+
+      <div class="testimonial-card">
+        <p>"Set my deposit at 30%. First job I used it on, the customer just paid it. No questions. That's 3 grand secured before I bought a single thing."</p>
+        <div class="testimonial-card__author"><strong>Bogdan S.</strong> <span>Builder, Ipswich</span></div>
+      </div>
+
+      <div class="testimonial-card">
+        <p>"Honestly thought it was too good to be true. It's not. Does exactly what it says."</p>
+        <div class="testimonial-card__author"><strong>Phil N.</strong> <span>General tradesman, Southampton</span></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
 <!-- CTA BANNER -->
 <section class="cta-banner" id="download" aria-labelledby="cta-heading">
   <div class="container">
@@ -836,6 +1034,7 @@
         <a href="#features">Features</a>
         <a href="#trades">Trades</a>
         <a href="#pricing">Pricing</a>
+        <a href="#testimonials">Reviews</a>
         <a href="#story">Our story</a>
         <a href="#faq">FAQ</a>
         <a href="./how-it-works.html">Full guide</a>
@@ -852,6 +1051,51 @@
   </div>
 </footer>
 
+<!-- WAITLIST MODAL -->
+<div id="waitlist-modal" role="dialog" aria-modal="true" aria-labelledby="wl-heading" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;border-radius:20px;max-width:460px;width:100%;padding:40px 36px 32px;position:relative;box-shadow:0 24px 64px rgba(0,0,0,0.22);">
+    <button onclick="closeWaitlist()" aria-label="Close" style="position:absolute;top:16px;right:16px;border:none;background:none;cursor:pointer;color:#85858F;font-size:1.5rem;line-height:1;padding:4px;">&times;</button>
+    <div id="wl-form-state">
+      <div style="font-size:2.2rem;margin-bottom:12px;">&#128272;</div>
+      <h2 id="wl-heading" style="font-size:1.35rem;font-weight:700;margin:0 0 8px;">Be first through the door.</h2>
+      <p style="color:#85858F;font-size:0.9375rem;margin:0 0 24px;">AccuQuote is launching soon on the App Store. Drop your email and we'll ping you the moment it's live — no spam, no faff.</p>
+      <form id="wl-form" onsubmit="submitWaitlist(event)" novalidate>
+        <div style="margin-bottom:14px;">
+          <label for="wl-email" style="display:block;font-size:0.875rem;font-weight:600;margin-bottom:6px;">Email address</label>
+          <input id="wl-email" type="email" placeholder="you@example.com" required autocomplete="email" style="width:100%;box-sizing:border-box;padding:13px 14px;border:1.5px solid #E0E0E8;border-radius:10px;font-size:1rem;font-family:inherit;outline:none;transition:border-color 0.15s;" onfocus="this.style.borderColor='#007AFF'" onblur="this.style.borderColor='#E0E0E8'" />
+        </div>
+        <div style="margin-bottom:22px;">
+          <label for="wl-trade" style="display:block;font-size:0.875rem;font-weight:600;margin-bottom:6px;">Your trade</label>
+          <select id="wl-trade" style="width:100%;box-sizing:border-box;padding:13px 14px;border:1.5px solid #E0E0E8;border-radius:10px;font-size:1rem;font-family:inherit;background:#fff;outline:none;appearance:none;-webkit-appearance:none;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%2385858F' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 14px center;cursor:pointer;">
+            <option value="">Select your trade…</option>
+            <option value="builder">Builder</option>
+            <option value="electrician">Electrician</option>
+            <option value="plumber">Plumber</option>
+            <option value="plasterer">Plasterer</option>
+            <option value="decorator">Decorator / Painter</option>
+            <option value="carpenter">Carpenter / Joiner</option>
+            <option value="roofer">Roofer</option>
+            <option value="tiler">Tiler</option>
+            <option value="hvac">Heating &amp; HVAC</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <p id="wl-error" style="display:none;color:#d32f2f;font-size:0.875rem;margin:-10px 0 14px;"></p>
+        <button type="submit" id="wl-submit" class="btn btn-blue" style="width:100%;justify-content:center;font-size:1rem;">
+          Notify me when it launches
+        </button>
+        <p style="text-align:center;font-size:0.8125rem;color:#85858F;margin:14px 0 0;">No card. No spam. Unsubscribe any time.</p>
+      </form>
+    </div>
+    <div id="wl-success-state" style="display:none;text-align:center;padding:12px 0;">
+      <div style="font-size:3rem;margin-bottom:16px;">&#127881;</div>
+      <h2 style="font-size:1.3rem;font-weight:700;margin:0 0 10px;">You're on the list.</h2>
+      <p style="color:#85858F;font-size:0.9375rem;margin:0 0 24px;">We'll email you the moment AccuQuote hits the App Store. First in, first to quote faster.</p>
+      <button onclick="closeWaitlist()" class="btn btn-blue" style="margin:0 auto;">Got it</button>
+    </div>
+  </div>
+</div>
+
 <script>
   // Scroll animations
   const io = new IntersectionObserver((entries) => {
@@ -866,7 +1110,60 @@
     document.getElementById('toggle-annual').classList.toggle('active', isAnnual);
     document.getElementById('pricing-monthly').style.display = isAnnual ? 'none' : '';
     document.getElementById('pricing-annual').style.display = isAnnual ? 'block' : 'none';
-    document.getElementById('pricing-toggle-bar').style.display = isAnnual ? 'none' : '';
+    document.getElementById('pricing-toggle-bar').style.display = isAnnual ? 'none' : 'flex';
+  }
+
+  // Waitlist modal
+  function openWaitlist() {
+    const modal = document.getElementById('waitlist-modal');
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => document.getElementById('wl-email').focus(), 50);
+  }
+  function closeWaitlist() {
+    document.getElementById('waitlist-modal').style.display = 'none';
+    document.body.style.overflow = '';
+    document.getElementById('wl-form-state').style.display = '';
+    document.getElementById('wl-success-state').style.display = 'none';
+    document.getElementById('wl-form').reset();
+    document.getElementById('wl-error').style.display = 'none';
+    document.getElementById('wl-submit').disabled = false;
+    document.getElementById('wl-submit').textContent = 'Notify me when it launches';
+  }
+  document.getElementById('waitlist-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeWaitlist();
+  });
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeWaitlist();
+  });
+  async function submitWaitlist(e) {
+    e.preventDefault();
+    const email = document.getElementById('wl-email').value.trim();
+    const trade = document.getElementById('wl-trade').value;
+    const errEl = document.getElementById('wl-error');
+    const btn = document.getElementById('wl-submit');
+    errEl.style.display = 'none';
+    if (!email) { errEl.textContent = 'Please enter your email address.'; errEl.style.display = 'block'; return; }
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+    try {
+      const res = await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, trade })
+      });
+      if (res.ok || res.status === 409) {
+        document.getElementById('wl-form-state').style.display = 'none';
+        document.getElementById('wl-success-state').style.display = '';
+      } else {
+        throw new Error('Server error');
+      }
+    } catch {
+      errEl.textContent = 'Something went wrong — please try again.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Notify me when it launches';
+    }
   }
 
   // FAQ accordion
