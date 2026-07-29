@@ -39,12 +39,12 @@ struct AccuQuoteScanApp: App {
                         }
                     }
                 }
-                // Request push permission once after the user signs in
-                .onChange(of: authManager.isSignedIn) { signedIn in
-                    if signedIn {
-                        NotificationService.shared.requestPermission()
-                    }
-                }
+                // Fix #14 — push permission is no longer requested here at
+                // sign-in (a cold ask with no context yet). It now fires from
+                // QuoteGenerationService after the user's first successful
+                // quote generation, via NotificationService.
+                // requestPermissionAfterFirstQuote(), which shows a primer
+                // sheet first — see ContentView's showPrimerRequested handling.
                 // #22: refresh entitlement when the app returns to the foreground so a
                 // subscription change made elsewhere (webhook, another device) is picked
                 // up without requiring a cold launch.

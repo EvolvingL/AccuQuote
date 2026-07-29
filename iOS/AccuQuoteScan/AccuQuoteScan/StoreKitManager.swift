@@ -98,8 +98,21 @@ final class StoreKitManager: ObservableObject {
         switch result {
         case .success(let verification):
             let transaction = try checkVerified(verification)
-            await reportTransactionToServer(transaction)
-            await transaction.finish()
+            // Only finish the transaction once our server has confirmed it
+            // independently re-verified the purchase with Apple and written the
+            // entitlement to Firestore. Finishing early (the old behaviour)
+            // meant StoreKit stopped redelivering the transaction on the next
+            // app launch even if our server call had silently failed — so a
+            // user could pay Apple and never actually receive the entitlement,
+            // with no way to recover short of contacting support.
+            let verified = await reportTransactionToServer(transaction)
+            if verified {
+                await transaction.finish()
+            }
+            // If verification failed, transaction is left unfinished — StoreKit
+            // will redeliver it via Transaction.updates / on next launch, so
+            // listenForTransactions() gets another chance to report it.
+            guard verified else { throw PurchaseError.verificationFailed }
 
         case .userCancelled:
             throw PurchaseError.userCancelled
@@ -138,8 +151,12 @@ final class StoreKitManager: ObservableObject {
                 guard let self else { continue }
                 do {
                     let transaction = try await self.checkVerified(update)
-                    await self.reportTransactionToServer(transaction)
-                    await transaction.finish()
+                    let verified = await self.reportTransactionToServer(transaction)
+                    if verified {
+                        await transaction.finish()
+                    }
+                    // Unverified: leave unfinished so it's redelivered and retried
+                    // later, same reasoning as in purchase() above.
                 } catch {
                     print("[StoreKit] Transaction update verification failed: \(error)")
                 }
@@ -152,10 +169,16 @@ final class StoreKitManager: ObservableObject {
     // We send only IDs, never the client's claim of what tier/price was paid —
     // the server independently re-verifies the transaction with Apple's App
     // Store Server API before writing anything to Firestore.
-
-    private func reportTransactionToServer(_ transaction: Transaction) async {
+    //
+    // Returns whether the server actually confirmed and applied the entitlement.
+    // Previously this discarded the response entirely (`_ = try? await ...`),
+    // so a failed/rejected verification looked identical to a successful one to
+    // every caller — the transaction got finished either way and the user saw
+    // no error, even though they may not have actually received their entitlement.
+    @discardableResult
+    private func reportTransactionToServer(_ transaction: Transaction) async -> Bool {
         guard let idToken = await AuthManager.shared.currentIdToken(),
-              let url = URL(string: "\(AQBackend.baseURL)/api/iap/verify") else { return }
+              let url = URL(string: "\(AQBackend.baseURL)/api/iap/verify") else { return false }
 
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
@@ -165,8 +188,14 @@ final class StoreKitManager: ObservableObject {
             "transactionId": String(transaction.id),
         ])
 
-        _ = try? await URLSession.shared.data(for: req)
+        guard let (_, response) = try? await URLSession.shared.data(for: req),
+              let http = response as? HTTPURLResponse,
+              (200...299).contains(http.statusCode) else {
+            return false
+        }
+
         await refreshEntitlementFromServer()
+        return true
     }
 
     private func refreshEntitlementFromServer() async {

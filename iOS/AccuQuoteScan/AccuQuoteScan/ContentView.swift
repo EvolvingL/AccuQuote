@@ -8,9 +8,15 @@ struct ContentView: View {
     @EnvironmentObject var questionEngine: QuestionEngine
     @EnvironmentObject var auth: AuthManager
     @EnvironmentObject var entitlement: EntitlementManager
+    @ObservedObject private var notifications = NotificationService.shared
 
     // Guest mode: bypasses profile, goes straight to scan-only flow
     @State private var showGuest = false
+    // True while ModeLandingView is showing Space mode or Full Works —
+    // both are full-screen dark/AR flows with their own chrome, so the
+    // light-themed SlickFooter (and its white background bar) must not
+    // overlay them the way it correctly does over the light Room-mode screens.
+    @State private var isInFullScreenScanMode = false
 
     var body: some View {
         ZStack {
@@ -23,7 +29,8 @@ struct ContentView: View {
                 // ── Main app flow ───────────────────────────────────────
                 switch coordinator.state {
                 case .ready:
-                    ReadyView(coordinator: coordinator, onGuestTap: { showGuest = true })
+                    ModeLandingView(coordinator: coordinator, onGuestTap: { showGuest = true },
+                                     isInFullScreenScanMode: $isInFullScreenScanMode)
                 case .scanning:
                     ScanningView(coordinator: coordinator)
                 case .processing:
@@ -35,6 +42,8 @@ struct ContentView: View {
                     } else {
                         LockedResultView(result: result, coordinator: coordinator)
                     }
+                case .needsReview(let room, let result, let confidence):
+                    ScanNeedsReviewView(coordinator: coordinator, room: room, result: result, confidence: confidence)
                 case .error(let message):
                     ErrorView(message: message, coordinator: coordinator)
                 }
@@ -48,11 +57,28 @@ struct ContentView: View {
         .preferredColorScheme(.light)
         .tint(AQ.blue)   // #global consistent accent for all system controls
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            if case .scanning = coordinator.state { EmptyView() } else { SlickFooter() }
+            if case .scanning = coordinator.state {
+                EmptyView()
+            } else if isInFullScreenScanMode {
+                EmptyView()
+            } else {
+                SlickFooter()
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .aqSignOut)) { _ in
             auth.signOut()
             entitlement.clear()
+        }
+        // Fix #14 — one-time primer sheet shown before the real notification
+        // permission prompt, triggered after the user's first successful
+        // quote generation (see QuoteGenerationService.persistToHistory /
+        // NotificationService.requestPermissionAfterFirstQuote).
+        .sheet(isPresented: $notifications.showPrimerRequested) {
+            NotificationPrimerSheet {
+                NotificationService.shared.primerContinueTapped()
+            }
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
         }
     }
 }

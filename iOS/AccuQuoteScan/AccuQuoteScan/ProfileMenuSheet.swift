@@ -1,4 +1,6 @@
 import SwiftUI
+import UIKit
+import UserNotifications
 
 // MARK: - Profile Menu Sheet
 // Persistent profile icon in top-right opens this sheet.
@@ -99,74 +101,19 @@ struct ProfileMenuSheet: View {
 
 // MARK: - Quote History Tab
 
+// Fix #5/#6 — this used to be a separate hand-rolled reimplementation that
+// deleted on swipe with no confirmation and hardcoded a pence-dropping
+// "£\(Int(...))" format. It now just embeds QuoteHistoryContent (defined in
+// QuoteHistory.swift), the same list/search/confirm-delete content the
+// standalone "Quote History" sheet uses — one implementation, no drift.
+// QuoteHistoryContent has no NavigationStack/toolbar of its own, so it drops
+// straight into ProfileMenuSheet's existing NavigationStack without any
+// nested-nav-bar conflict.
 private struct QuoteHistoryTab: View {
     @ObservedObject private var store = QuoteHistoryStore.shared
 
-    private let dateFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateStyle = .medium
-        f.timeStyle = .short
-        return f
-    }()
-
     var body: some View {
-        Group {
-            if store.quotes.isEmpty {
-                VStack(spacing: 16) {
-                    Spacer()
-                    Image(systemName: "doc.text.magnifyingglass")
-                        .font(.system(size: 44, weight: .light))
-                        .foregroundColor(AQ.secondary.opacity(0.4))
-                    Text("No quotes yet")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(AQ.ink)
-                    Text("Quotes you generate will appear here.")
-                        .font(.system(size: 14))
-                        .foregroundColor(AQ.secondary)
-                    Spacer()
-                }
-            } else {
-                List {
-                    ForEach(store.quotes) { quote in
-                        VStack(alignment: .leading, spacing: 6) {
-                            HStack(alignment: .firstTextBaseline) {
-                                Text("£\(Int(quote.grandTotal).formatted())")
-                                    .font(.system(size: 22, weight: .bold, design: .rounded))
-                                    .foregroundColor(AQ.ink)
-                                Spacer()
-                                Text(dateFormatter.string(from: quote.savedAt))
-                                    .font(.system(size: 12))
-                                    .foregroundColor(AQ.secondary)
-                            }
-                            if !quote.customerName.isEmpty {
-                                Text(quote.customerName)
-                                    .font(.system(size: 13, weight: .medium))
-                                    .foregroundColor(AQ.label)
-                                    .lineLimit(1)
-                            }
-                            Text(quote.jobDescription)
-                                .font(.system(size: 13))
-                                .foregroundColor(AQ.secondary)
-                                .lineLimit(2)
-                            HStack(spacing: 8) {
-                                Label(quote.roomType.capitalized, systemImage: "cube.transparent")
-                                    .font(.system(size: 11, weight: .medium))
-                                    .foregroundColor(AQ.blue)
-                                Text("·").foregroundColor(AQ.rule)
-                                Text(String(format: "%.1fm²", quote.floorArea))
-                                    .font(.system(size: 11, weight: .medium))
-                                    .foregroundColor(AQ.secondary)
-                            }
-                        }
-                        .padding(.vertical, 6)
-                    }
-                    .onDelete { offsets in
-                        for i in offsets { store.delete(id: store.quotes[i].id) }
-                    }
-                }
-                .listStyle(.insetGrouped)
-            }
-        }
+        QuoteHistoryContent(store: store)
     }
 }
 
@@ -469,6 +416,17 @@ private struct AccountTab: View {
     @State private var showPaywall              = false
     @State private var showManageSubscriptions  = false
     @State private var resetEmailSent           = false
+    @State private var showStorageConfirm       = false
+    @State private var storageCleanupResult: String?
+    @State private var showDeleteAccountConfirm  = false
+    @State private var deleteAccountError: String?
+    // Fix #14 — surfaces a "Turn on notifications" row only when the system
+    // setting is actually .denied (not .notDetermined — that case is handled
+    // by the first-quote primer sheet elsewhere, not this settings row).
+    @State private var notificationsDenied = false
+    #if DEBUG
+    @State private var showDevTools             = false
+    #endif
 
     private var freeQuotesCaption: String {
         guard let remaining = entitlement.freeQuotesRemaining else {
@@ -511,7 +469,7 @@ private struct AccountTab: View {
                                     .font(.system(size: 13))
                                     .foregroundColor(AQ.secondary)
                             }
-                            Text("\(engine.personalisation)% profile accuracy")
+                            Text("\(engine.personalisation)% profile complete")
                                 .font(.system(size: 12, weight: .medium))
                                 .foregroundColor(AQ.green)
                         }
@@ -617,6 +575,41 @@ private struct AccountTab: View {
                 .cornerRadius(14)
                 .overlay(RoundedRectangle(cornerRadius: 14).stroke(AQ.rule, lineWidth: 1))
 
+                // ── Notifications (Fix #14) ───────────────────────────────
+                // Only shown when the system permission is actually .denied —
+                // .notDetermined is handled by the first-quote primer sheet,
+                // and .authorized needs no action row at all.
+                if notificationsDenied {
+                    VStack(alignment: .leading, spacing: 0) {
+                        sectionLabel("Notifications")
+
+                        Button {
+                            if let url = URL(string: UIApplication.openSettingsURLString) {
+                                UIApplication.shared.open(url)
+                            }
+                        } label: {
+                            HStack {
+                                Image(systemName: "bell.slash")
+                                    .font(.system(size: 15))
+                                    .foregroundColor(AQ.ink)
+                                    .frame(width: 24)
+                                Text("Turn on notifications")
+                                    .font(.system(size: 15))
+                                    .foregroundColor(AQ.ink)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(AQ.secondary)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 14)
+                        }
+                    }
+                    .background(Color.white)
+                    .cornerRadius(14)
+                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(AQ.rule, lineWidth: 1))
+                }
+
                 // ── Account actions ───────────────────────────────────────
                 VStack(alignment: .leading, spacing: 0) {
                     sectionLabel("Account")
@@ -652,6 +645,89 @@ private struct AccountTab: View {
                         .padding(.horizontal, 16)
                         .padding(.vertical, 14)
                     }
+
+                    Divider().background(AQ.rule).padding(.leading, 16)
+
+                    Button { showDeleteAccountConfirm = true } label: {
+                        HStack {
+                            Image(systemName: "trash.fill")
+                                .font(.system(size: 15))
+                                .foregroundColor(.red)
+                                .frame(width: 24)
+                            Text("Delete account")
+                                .font(.system(size: 15))
+                                .foregroundColor(.red)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 14)
+                    }
+
+                    if let deleteAccountError {
+                        Divider().background(AQ.rule).padding(.leading, 16)
+                        Text(deleteAccountError)
+                            .font(.system(size: 13))
+                            .foregroundColor(.red)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                    }
+
+                    Divider().background(AQ.rule).padding(.leading, 16)
+
+                    // §7 — storage row. Dimensions/quote data are never
+                    // touched by this; only the 3D artifact files
+                    // (USDZ/mesh/thumbnail/PDF/CSV) under aq_scans/ are
+                    // eligible for removal.
+                    Button { showStorageConfirm = true } label: {
+                        HStack {
+                            Image(systemName: "externaldrive")
+                                .font(.system(size: 15))
+                                .foregroundColor(AQ.secondary)
+                                .frame(width: 24)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("3D scan storage")
+                                    .font(.system(size: 15))
+                                    .foregroundColor(AQ.ink)
+                                Text(ScanStorageManager.formattedSize(ScanStorageManager.currentStorageInfo().totalBytes))
+                                    .font(.system(size: 12))
+                                    .foregroundColor(AQ.secondary)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12))
+                                .foregroundColor(AQ.secondary)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 14)
+                    }
+
+                    if let storageCleanupResult {
+                        Divider().background(AQ.rule).padding(.leading, 16)
+                        Text(storageCleanupResult)
+                            .font(.system(size: 13))
+                            .foregroundColor(AQ.secondary)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                    }
+
+                    #if DEBUG
+                    Divider().background(AQ.rule).padding(.leading, 16)
+
+                    Button { showDevTools = true } label: {
+                        HStack {
+                            Image(systemName: "flask")
+                                .font(.system(size: 15))
+                                .foregroundColor(.orange)
+                                .frame(width: 24)
+                            Text("Dev Tools")
+                                .font(.system(size: 15))
+                                .foregroundColor(.orange)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 14)
+                    }
+                    #endif
                 }
                 .background(Color.white)
                 .cornerRadius(14)
@@ -680,11 +756,62 @@ private struct AccountTab: View {
         .confirmationDialog("Reset all profile data?", isPresented: $showResetConfirm, titleVisibility: .visible) {
             Button("Reset", role: .destructive) { engine.resetProfile() }
             Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This deletes all your AI profile answers and cannot be undone. Your saved quotes are not affected.")
+        }
+        .confirmationDialog(
+            "Remove 3D models older than \(ScanStorageManager.defaultRetentionDays) days?",
+            isPresented: $showStorageConfirm, titleVisibility: .visible
+        ) {
+            Button("Remove", role: .destructive) {
+                let result = ScanStorageManager.removeArtifactsOlderThan()
+                storageCleanupResult = result.removedCount == 0
+                    ? "Nothing to remove — no 3D models older than \(ScanStorageManager.defaultRetentionDays) days."
+                    : "Removed \(result.removedCount) model\(result.removedCount == 1 ? "" : "s"), freed \(ScanStorageManager.formattedSize(result.bytesFreed))."
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Dimensions and quote history are kept forever — only the 3D preview/export files are deleted.")
+        }
+        .confirmationDialog(
+            "Delete your account?", isPresented: $showDeleteAccountConfirm, titleVisibility: .visible
+        ) {
+            Button("Delete Account", role: .destructive) {
+                Task {
+                    do {
+                        try await AuthManager.shared.deleteAccount { msg in
+                            deleteAccountError = msg
+                        }
+                        // Deletion succeeded — behave like a sign-out so the app
+                        // returns to the auth gate. clearLocalSession() inside
+                        // deleteAccount() already cleared the stored session.
+                        signOutRequested = true
+                        dismiss()
+                    } catch {
+                        // deleteAccountError was already set via the onError callback above.
+                    }
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This permanently deletes your AccuQuote account and cannot be undone. This is different from signing out — your login itself will no longer exist.")
         }
         .sheet(isPresented: $showPaywall) {
             PaywallSheet()
                 .environmentObject(entitlement)
                 .environmentObject(AuthManager.shared)
+        }
+        #if DEBUG
+        .sheet(isPresented: $showDevTools) {
+            DevToolsView()
+        }
+        #endif
+        // Fix #14 — check current system notification status each time this
+        // tab appears, so the row reflects a permission change made in
+        // Settings without requiring the app to relaunch.
+        .task {
+            let settings = await UNUserNotificationCenter.current().notificationSettings()
+            notificationsDenied = settings.authorizationStatus == .denied
         }
     }
 

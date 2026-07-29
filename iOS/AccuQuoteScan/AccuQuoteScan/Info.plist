@@ -83,10 +83,10 @@
 		     user to the app via this scheme after authentication. -->
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>com.googleusercontent.apps.674946089734-d5c2jov1fh02sejfhbph2ocsp2spbb8o</string>
+			<string>com.googleusercontent.apps.912087276302-6b5fgur3mm2a0gkrs7ok38dfdc2egd9k</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.googleusercontent.apps.674946089734-d5c2jov1fh02sejfhbph2ocsp2spbb8o</string>
+				<string>com.googleusercontent.apps.912087276302-6b5fgur3mm2a0gkrs7ok38dfdc2egd9k</string>
 			</array>
 		</dict>
 	</array>

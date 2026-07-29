@@ -35,9 +35,13 @@ private struct SplashView: View {
         ZStack {
             Color.white.ignoresSafeArea()
             VStack(spacing: 16) {
-                Image(systemName: "pencil.and.ruler.fill")
-                    .font(.system(size: 48, weight: .light))
-                    .foregroundColor(AQ.blue)
+                // Same "AppLogo" asset as everywhere else — the literal app icon PNG,
+                // not an SF Symbol approximation.
+                Image("AppLogo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 56, height: 56)
+                    .clipShape(RoundedRectangle(cornerRadius: 56 * 0.2))
                 Text("AccuQuote")
                     .font(AQ.display(28))
                     .foregroundColor(AQ.ink)
@@ -65,9 +69,11 @@ struct LoginView: View {
 
                     // Header
                     VStack(spacing: 8) {
-                        Image(systemName: "pencil.and.ruler.fill")
-                            .font(.system(size: 44, weight: .light))
-                            .foregroundColor(AQ.blue)
+                        Image("AppLogo")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 52, height: 52)
+                            .clipShape(RoundedRectangle(cornerRadius: 52 * 0.2))
                         Text("AccuQuote")
                             .font(AQ.display(30))
                             .foregroundColor(AQ.ink)
@@ -219,6 +225,7 @@ struct SignUpView: View {
     @State private var password = ""
     @State private var confirm = ""
     @State private var didDismiss = false   // Fix #6: guard against double-dismiss
+    @State private var showDiscardConfirm = false   // Fix #20
     @FocusState private var focusedField: Field?
 
     enum Field { case email, password, confirm }
@@ -298,13 +305,28 @@ struct SignUpView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
+                    // Fix #20 — previously dismissed unconditionally, silently
+                    // discarding whatever the user had typed with no
+                    // confirmation. Now only dismisses immediately if the form
+                    // is actually empty; otherwise confirms first.
                     Button("Cancel") {
-                        didDismiss = true
-                        dismiss()
+                        if email.isEmpty && password.isEmpty && confirm.isEmpty {
+                            didDismiss = true
+                            dismiss()
+                        } else {
+                            showDiscardConfirm = true
+                        }
                     }
                     .foregroundColor(AQ.secondary)
                 }
             }
+        }
+        .confirmationDialog("Discard this account setup?", isPresented: $showDiscardConfirm, titleVisibility: .visible) {
+            Button("Discard", role: .destructive) {
+                didDismiss = true
+                dismiss()
+            }
+            Button("Keep Editing", role: .cancel) {}
         }
         // Fix #6: guard prevents double-dismiss when isSignedIn flips while Cancel is mid-animation
         .onChange(of: auth.isSignedIn) { signed in
@@ -420,6 +442,7 @@ struct PaywallSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var selectedInterval: PayInterval = .monthly
     @State private var isLoading = false
+    @State private var isActivating = false
     @State private var error: String?
 
     enum PayInterval: String, CaseIterable {
@@ -436,6 +459,7 @@ struct PaywallSheet: View {
 
     var body: some View {
         NavigationStack {
+            ZStack {
             ScrollView {
                 VStack(spacing: 28) {
 
@@ -566,6 +590,27 @@ struct PaywallSheet: View {
                 }
             }
             .task { await storeKit.loadProducts() }
+
+            // Purchase succeeds with Apple immediately, but our server still
+            // needs to independently re-verify with Apple and write the
+            // entitlement to Firestore before EntitlementManager reflects it.
+            // Dismissing unconditionally right after purchase() returned used
+            // to race that write — the paywall would close before isPaid ever
+            // flipped true, so the very next screen still looked locked.
+            if isActivating {
+                Color.black.opacity(0.35).ignoresSafeArea()
+                VStack(spacing: 16) {
+                    ProgressView()
+                        .tint(.white)
+                    Text("Activating your plan…")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(.white)
+                }
+                .padding(28)
+                .background(Color.black.opacity(0.6))
+                .cornerRadius(16)
+            }
+            }
         }
     }
 
@@ -587,7 +632,7 @@ struct PaywallSheet: View {
             defer { isLoading = false }
             do {
                 try await storeKit.purchase(product)
-                dismiss()
+                await waitForEntitlementThenDismiss()
             } catch let err as StoreKitManager.PurchaseError {
                 // userCancelled has no description — user backed out, not an error to show.
                 if let message = err.errorDescription {
@@ -597,6 +642,27 @@ struct PaywallSheet: View {
                 self.error = "Something went wrong. Please try again."
             }
         }
+    }
+
+    /// Polls EntitlementManager after a successful purchase() call instead of
+    /// dismissing immediately — purchase() only guarantees Apple accepted the
+    /// payment and our server accepted the verification call; entitlement.tier
+    /// updating is a separate, slightly-later step. Poll briefly rather than
+    /// block forever: if the entitlement still hasn't flipped after ~8s
+    /// (server hiccup, slow network), dismiss anyway rather than trap the user
+    /// behind a spinner — EntitlementManager will pick it up on its own next
+    /// refresh.
+    private func waitForEntitlementThenDismiss() async {
+        isActivating = true
+        defer { isActivating = false }
+
+        let deadline = Date().addingTimeInterval(8)
+        while !entitlement.isPaid && Date() < deadline {
+            await entitlement.refresh()
+            if entitlement.isPaid { break }
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+        }
+        dismiss()
     }
 
     #if DEBUG

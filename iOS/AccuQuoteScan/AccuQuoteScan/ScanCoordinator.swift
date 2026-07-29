@@ -8,7 +8,13 @@ import simd
 
 // MARK: - Scan Method
 
-enum ScanMethod {
+// Codable added for SpaceDimensions (SpaceMeasurement.swift) — Space mode's
+// canonical geometry model persists as JSON per §5.1, so every field it
+// carries, including scanMethod, needs to round-trip. Purely additive:
+// RoomDimensions (which also has a scanMethod field) has never needed this
+// since it's persisted indirectly via SavedQuote's own separate fields, not
+// encoded directly.
+enum ScanMethod: Codable {
     case lidar          // RoomPlan — iPhone 12 Pro+ (LiDAR)
     case poseFusion     // ARKit world tracking + point cloud bounding box — any ARKit device
     case manual         // User entered dimensions with tape measure
@@ -65,6 +71,20 @@ enum ScanState {
     case scanning
     case processing
     case complete(RoomDimensions)
+    // Tri-Mode Scanning build spec §5.4: entered instead of .complete when
+    // ScanQualityGate finds a blocking issue on a LiDAR scan (manual entry,
+    // custom shape, and poseFusion have no CapturedRoom to gate — see
+    // ScanQualityGate.swift's header comment). Carries the raw CapturedRoom
+    // (so a re-scan/patch has real geometry to work with) alongside the
+    // already-extracted RoomDimensions and the confidence report driving the
+    // Review & Guided Re-scan screen.
+    //
+    // ⚠️ Phase-ordering marker: ScanNeedsReviewView (AccuQuoteScan) is
+    // currently text/list-only — no partial 3D model preview, unlike
+    // AccuScan's version which uses ModelViewer3D. AccuQuoteScan has no 3D
+    // viewer yet (that's Phase 3 — ScanViewer3D). Once Phase 3 lands, revisit
+    // ScanNeedsReviewView.swift and add the model preview to match AccuScan.
+    case needsReview(CapturedRoom, RoomDimensions, ScanConfidence)
     case error(String)
 }
 
@@ -102,6 +122,16 @@ final class ScanCoordinator: ObservableObject {
     @Published var instructionText: String = ""
     @Published var scanProgress: Float = 0.0
     @Published var frameCount: Int = 0
+
+    // Tri-Mode Scanning build spec §6 — ScanViewer3D needs the raw geometry,
+    // not just the extracted RoomDimensions. Kept as a side-channel property
+    // rather than added to ScanState.complete's associated value so the two
+    // existing `case .complete(let result):` call sites (ContentView,
+    // GuestScanView) don't all need updating for a value most of them never
+    // use. nil for poseFusion/manual/custom-shape completions (no CapturedRoom
+    // exists for those methods) — ResultView falls back to a dimensions-only
+    // view when this is nil, same as it always has.
+    @Published var lastCapturedRoom: CapturedRoom?
 
     let coverageTracker = ScanCoverageTracker()
 
@@ -215,6 +245,15 @@ final class ScanCoordinator: ObservableObject {
         state = .complete(result)
     }
 
+    /// Accepts a .needsReview scan with only warning-level issues (never
+    /// reachable with a blocking issue present — see ScanNeedsReviewView's
+    /// "Use anyway" button, only shown when hasBlockingIssues is false).
+    /// Completes the scan exactly as if it had passed the gate outright.
+    func acceptWithWarnings(room: CapturedRoom, result: RoomDimensions) {
+        lastCapturedRoom = room
+        state = .complete(result)
+    }
+
     func reset() {
         NotificationCenter.default.removeObserver(self)
         lidarSession?.stop(); lidarSession = nil; bridge = nil; captureView = nil
@@ -222,6 +261,7 @@ final class ScanCoordinator: ObservableObject {
         arSession?.pause(); arSession = nil
         worldPoints = []; lastCameraPos = nil; distanceTravelled = 0
         frameCount = 0; state = .ready; scanProgress = 0
+        lastCapturedRoom = nil
         coverageTracker.reset()
         instructionText = scanMethod == .lidar
             ? "Walk slowly around the room"
@@ -229,6 +269,52 @@ final class ScanCoordinator: ObservableObject {
     }
 
     // MARK: - LiDAR path
+
+    // Set only during a patch-mode re-scan (startPatchScan) — the room/
+    // confidence being fixed, kept so bridge.onEnd can pick the better of the
+    // pre-patch and post-patch results (see ScanCoordinator.shouldPreferNew).
+    // nil outside patch mode.
+    private var priorRoomForPatch: CapturedRoom?
+    private var priorConfidenceForPatch: ScanConfidence?
+
+    /// True when the existing RoomCaptureSession is still alive and can be
+    /// resumed for patch-mode re-scan. AccuQuoteScan (unlike AccuScan) never
+    /// tears down lidarSession/bridge on view disappearance — only reset()
+    /// does, and nothing calls reset() automatically when navigating from
+    /// .scanning to .needsReview — so this is normally true right after a
+    /// scan completes into review.
+    var canResumeForPatchMode: Bool { lidarSession != nil && bridge != nil }
+
+    /// Tri-Mode Scanning build spec §5.4 step 3 — re-enters live scanning to
+    /// fix flagged areas. Resumes the SAME RoomCaptureSession (does not
+    /// create a fresh one) so the new capture is intended to land in the same
+    /// coordinate space as `priorRoom`, avoiding a full re-scan.
+    ///
+    /// This codebase has never previously exercised "call run() again on a
+    /// session that already ran" — AccuQuoteScan's normal startLiDAR() always
+    /// constructs a fresh RoomCaptureSession per scan, and RoomPlan's resume
+    /// behaviour on an existing session is undocumented at the public API
+    /// level. Rather than assume it resumes cleanly, completion always picks
+    /// whichever result is actually better (see shouldPreferNew) — if resume
+    /// behaves oddly, the user just sees the review screen again instead of
+    /// silently losing their original scan.
+    func startPatchScan(priorRoom: CapturedRoom, priorConfidence: ScanConfidence) {
+        guard canResumeForPatchMode else {
+            state = .error("Scan session ended — starting a fresh scan instead.")
+            return
+        }
+        priorRoomForPatch = priorRoom
+        priorConfidenceForPatch = priorConfidence
+        coverageTracker.reset()
+        scanProgress = 0
+        state = .scanning
+        instructionText = "Re-scan the flagged areas — walk back and cover them again"
+        // Re-run the existing session directly (not startLiDAR(), which always
+        // builds a fresh RoomCaptureSession) — beginLiDARSession(), triggered
+        // by the new LiDARHostVC's viewDidAppear once the scanning view
+        // re-renders, calls runLiDARSession() which does session.run(...) on
+        // this same lidarSession.
+    }
 
     private func startLiDAR() {
         guard RoomCaptureSession.isSupported else {
@@ -256,17 +342,61 @@ final class ScanCoordinator: ObservableObject {
         bridge.onEnd = { [weak self] data, error in
             guard let self else { return }
             if let error {
-                Task { @MainActor in self.state = .error(error.localizedDescription) }
+                let friendly = ScanErrorClassifier.friendlyMessage(for: error.localizedDescription)
+                Task { @MainActor in self.state = .error(friendly) }
                 return
             }
             Task { @MainActor in self.state = .processing }
             Task {
                 do {
-                    let room   = try await RoomBuilder(options: []).capturedRoom(from: data)
+                    let room = try await RoomBuilder(options: []).capturedRoom(from: data)
+
+                    // Patch mode: compare against the prior result rather than
+                    // unconditionally accepting the new one — see
+                    // startPatchScan's doc comment for why. Read both
+                    // MainActor-isolated properties in one hop instead of two
+                    // separate `await self.x` reads (which the compiler
+                    // correctly flags as not actually needing a suspension
+                    // each, since they're plain stored-property reads).
+                    let patchState: (room: CapturedRoom, confidence: ScanConfidence)? = await MainActor.run {
+                        guard let priorRoom = self.priorRoomForPatch,
+                              let priorConfidence = self.priorConfidenceForPatch else { return nil }
+                        self.priorRoomForPatch = nil
+                        self.priorConfidenceForPatch = nil
+                        return (priorRoom, priorConfidence)
+                    }
+                    if let priorRoom = patchState?.room, let priorConfidence = patchState?.confidence {
+                        let newConfidence = ScanQualityGate.evaluate(capturedRoom: room)
+                        let preferNew = ScanCoordinator.shouldPreferNew(
+                            priorIsPassing: priorConfidence.isPassing, priorWallCount: priorRoom.walls.count, priorScore: priorConfidence.overallScore,
+                            newIsPassing: newConfidence.isPassing, newWallCount: room.walls.count, newScore: newConfidence.overallScore
+                        )
+                        let (finalRoom, finalConfidence) = preferNew ? (room, newConfidence) : (priorRoom, priorConfidence)
+                        let result = ScanCoordinator.resultFromLiDAR(finalRoom)
+                        await MainActor.run {
+                            if finalConfidence.isPassing {
+                                self.lastCapturedRoom = finalRoom
+                                self.state = .complete(result)
+                            } else {
+                                self.state = .needsReview(finalRoom, result, finalConfidence)
+                            }
+                        }
+                        return
+                    }
+
                     let result = ScanCoordinator.resultFromLiDAR(room)
-                    await MainActor.run { self.state = .complete(result) }
+                    let confidence = ScanQualityGate.evaluate(capturedRoom: room)
+                    await MainActor.run {
+                        if confidence.isPassing {
+                            self.lastCapturedRoom = room
+                            self.state = .complete(result)
+                        } else {
+                            self.state = .needsReview(room, result, confidence)
+                        }
+                    }
                 } catch {
-                    await MainActor.run { self.state = .error(error.localizedDescription) }
+                    let friendly = ScanErrorClassifier.friendlyMessage(for: error.localizedDescription)
+                    await MainActor.run { self.state = .error(friendly) }
                 }
             }
         }
@@ -462,6 +592,22 @@ final class ScanCoordinator: ObservableObject {
         }
     }
 
+    // MARK: - Patch-mode result resolution
+
+    // Pure decision logic (fixture-testable, no RoomPlan types) — see
+    // DevToolsChecks.patchResolutionPrefersPassingResult. "Better" = passes
+    // the gate; if both or neither pass, prefer more walls (a proxy for
+    // "more complete capture"); if still tied, prefer the higher confidence
+    // score. Ported from AccuScan's identical ScanSessionManager.shouldPreferNew.
+    nonisolated static func shouldPreferNew(
+        priorIsPassing: Bool, priorWallCount: Int, priorScore: Float,
+        newIsPassing: Bool, newWallCount: Int, newScore: Float
+    ) -> Bool {
+        if newIsPassing != priorIsPassing { return newIsPassing }
+        if newWallCount != priorWallCount { return newWallCount > priorWallCount }
+        return newScore >= priorScore
+    }
+
     // MARK: - Dimension extraction: LiDAR
 
     private static func resultFromLiDAR(_ room: CapturedRoom) -> RoomDimensions {
@@ -563,5 +709,50 @@ extension Double {
     func rounded(to places: Int) -> Double {
         let factor = pow(10.0, Double(places))
         return (self * factor).rounded() / factor
+    }
+}
+
+// MARK: - Scan Error Classifier (Fix #11)
+//
+// Single shared place for two things every scan-error screen needs and
+// previously duplicated or lacked entirely:
+//   1. isRetryable — is "Try Again" even meaningful, or is this an error a
+//      retry can never fix (needs a subscription, needs sign-in)? Originally
+//      only QuoteErrorView had this distinction (Fix #34); ErrorView,
+//      SpaceErrorView, and FullWorksErrorView all unconditionally showed
+//      "Try Again" regardless of cause.
+//   2. friendlyMessage — translates raw ARKit/RoomPlan error strings (e.g.
+//      NSError descriptions like "Session was interrupted" or
+//      "World tracking failure") into plain-English copy, so
+//      ScanCoordinator's catch blocks don't leak framework internals
+//      straight into the UI.
+enum ScanErrorClassifier {
+
+    static func isRetryable(_ message: String) -> Bool {
+        !message.localizedCaseInsensitiveContains("subscription_required") &&
+        !message.localizedCaseInsensitiveContains("subscription required") &&
+        !message.localizedCaseInsensitiveContains("not authenticated") &&
+        !message.localizedCaseInsensitiveContains("sign in")
+    }
+
+    /// Maps a raw error description (typically `error.localizedDescription`
+    /// from an ARKit/RoomPlan failure) to plain-English copy. Falls through
+    /// to a generic message for anything not specifically recognised, rather
+    /// than showing the user a framework's internal wording.
+    static func friendlyMessage(for rawDescription: String) -> String {
+        let lower = rawDescription.lowercased()
+        if lower.contains("interrupt") {
+            return "Scanning was interrupted. Please try again."
+        }
+        if lower.contains("tracking") || lower.contains("relocaliz") {
+            return "Lost track of the room. Try scanning again in a well-lit space."
+        }
+        if lower.contains("unsupported") || lower.contains("not supported") || lower.contains("not available") {
+            return "This scan type isn't supported on this device."
+        }
+        if lower.contains("world map") || lower.contains("worldmap") {
+            return "Couldn't reconstruct the room. Please try scanning again."
+        }
+        return "Something went wrong while scanning. Please try again."
     }
 }

@@ -26,6 +26,11 @@ struct GuestLandingView: View {
                 ProcessingView()
             case .complete(let result):
                 GuestResultView(result: result, coordinator: coordinator, showGuest: $showGuest)
+            case .needsReview(let room, let result, let confidence):
+                // Reused as-is from the main flow — ScanNeedsReviewView only
+                // depends on coordinator/room/result/confidence, nothing
+                // paywall-specific, so no guest-only variant is needed.
+                ScanNeedsReviewView(coordinator: coordinator, room: room, result: result, confidence: confidence)
             case .error(let message):
                 GuestErrorView(message: message, coordinator: coordinator)
             }
@@ -39,6 +44,12 @@ struct GuestLandingView: View {
 struct GuestReadyView: View {
     @ObservedObject var coordinator: ScanCoordinator
     @Binding var showGuest: Bool
+    // Fix #8 — guest mode is a separate entry point from ModeLandingView's
+    // main flow, so it needs its own gate on the same one-time
+    // "aq_camera_primer_seen" flag rather than assuming the user already saw
+    // it (a guest scanning first, before ever creating a profile, is a very
+    // plausible first-ever-launch path).
+    @State private var showCameraPrimer = false
 
     private let navy = Color(red: 0.06, green: 0.07, blue: 0.13)
     private let gold = Color(red: 0.784, green: 0.573, blue: 0.165)
@@ -116,7 +127,11 @@ struct GuestReadyView: View {
                 VStack(spacing: 12) {
                     // Primary CTA
                     Button {
-                        coordinator.startScan()
+                        if UserDefaults.standard.bool(forKey: "aq_camera_primer_seen") {
+                            coordinator.startScan()
+                        } else {
+                            showCameraPrimer = true
+                        }
                     } label: {
                         HStack(spacing: 10) {
                             Image(systemName: isLiDAR ? "dot.scope" : "camera.viewfinder")
@@ -138,6 +153,15 @@ struct GuestReadyView: View {
                 .padding(.horizontal, 24)
                 .padding(.bottom, 36)
             }
+        }
+        .sheet(isPresented: $showCameraPrimer) {
+            CameraPrimingSheet {
+                showCameraPrimer = false
+                UserDefaults.standard.set(true, forKey: "aq_camera_primer_seen")
+                coordinator.startScan()
+            }
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
         }
     }
 }
@@ -613,6 +637,7 @@ extension ScanCoordinator {
         case .processing:  return 2
         case .complete:    return 3
         case .error:       return 4
+        case .needsReview: return 5
         }
     }
 }

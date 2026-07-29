@@ -31,8 +31,14 @@ final class AuthManager: NSObject, ObservableObject {
     @Published var authError: String? = nil
 
     // MARK: - Firebase REST config
-    // Web API key — safe to include in the app (identifies project, not a secret)
-    private let firebaseApiKey = "AIzaSyDKafeB_gQUi24DMDsqqvNoOPvFjmcxDVA"
+    // Web API key — safe to include in the app (identifies project, not a secret).
+    // Must match the "accuquoteprod" Firebase project (com.accuquote1.scan) —
+    // see GoogleService-Info (1).plist's API_KEY. The old key here belonged to
+    // the pre-rename Firebase project and silently sent every Auth REST call
+    // (signInWithPassword/signUp/signInWithIdp/token refresh) to the wrong
+    // project, which correctly rejected the new Google OAuth client as
+    // unauthorized (INVALID_IDP_RESPONSE).
+    private let firebaseApiKey = "AIzaSyDXG5NMqjZzC4mI2MYtgLclxEBBbY55kRM"
     private var idToken: String? = nil
     private var refreshToken: String? = nil
     private var tokenExpiry: Date = .distantPast
@@ -145,6 +151,37 @@ final class AuthManager: NSObject, ObservableObject {
         }
     }
 
+    // MARK: - Delete account
+    //
+    // Permanently deletes the Firebase Auth user via accounts:delete. Firebase
+    // requires a *recent* login for this — a token that's still valid but was
+    // issued a while ago gets rejected with CREDENTIAL_TOO_OLD_LOGIN_AGAIN.
+    // Rather than building a full re-auth UI here, surface a friendly message
+    // via friendlyError() directing the user to sign out and back in, then retry.
+    //
+    // Note: this only deletes the Firebase Auth account. Any server-side data
+    // AQBackend holds for this user (quotes, profile, etc.) is NOT deleted by
+    // this call — there is no existing authenticated-DELETE endpoint on the
+    // backend for that today, so this is scoped to the Auth account only.
+    // Backend data cleanup would need its own API surface designed separately.
+    func deleteAccount(onError: ((String) -> Void)? = nil) async throws {
+        guard let token = await currentIdToken() else {
+            let msg = "Please sign in again before deleting your account."
+            onError?(msg)
+            throw AuthError.invalidResponse
+        }
+        let url = URL(string: "https://identitytoolkit.googleapis.com/v1/accounts:delete?key=\(firebaseApiKey)")!
+        let body: [String: Any] = ["idToken": token]
+        do {
+            _ = try await postFirebase(url: url, body: body)
+            clearLocalSession()
+        } catch {
+            let msg = friendlyError(error)
+            onError?(msg)
+            throw error
+        }
+    }
+
     // MARK: - Sign in with Apple
 
     func signInWithApple() {
@@ -178,7 +215,7 @@ final class AuthManager: NSObject, ObservableObject {
     // (see signInWithGoogle / the token exchange) and uses the reversed form
     // "com.googleusercontent.apps.<id>" as the OAuth callback URL scheme, which
     // is registered in Info.plist.
-    private let googleClientID = "674946089734-d5c2jov1fh02sejfhbph2ocsp2spbb8o"
+    private let googleClientID = "912087276302-6b5fgur3mm2a0gkrs7ok38dfdc2egd9k"
 
     func signInWithGoogle() {
         authError = nil
@@ -284,9 +321,13 @@ final class AuthManager: NSObject, ObservableObject {
 
     // MARK: - Sign out
 
+    // Does NOT post .aqSignOut — this is only ever called *in response* to
+    // that notification (ContentView's .onReceive(.aqSignOut) below calls
+    // this). Posting it here too was an infinite loop: post → ContentView's
+    // handler calls signOut() → signOut() posts again → forever, which froze
+    // the app on sign-out. The notification is the trigger; this is the effect.
     func signOut() {
         clearLocalSession()
-        NotificationCenter.default.post(name: .aqSignOut, object: nil)
     }
 
     // MARK: - Private helpers
@@ -413,12 +454,23 @@ final class AuthManager: NSObject, ObservableObject {
                                                  return "Password must be at least 6 characters."
                 case "INVALID_EMAIL":            return "Please enter a valid email address."
                 case "TOO_MANY_ATTEMPTS_TRY_LATER": return "Too many attempts. Please try again later."
-                default:                         return msg
+                case "CREDENTIAL_TOO_OLD_LOGIN_AGAIN", "TOKEN_EXPIRED":
+                                                 return "For your security, please sign out and sign back in before doing this."
+                // Fix #11 — previously fell through to `msg`, i.e. Firebase's raw
+                // internal error code (e.g. "OPERATION_NOT_ALLOWED",
+                // "USER_DISABLED") shown verbatim to the user. Any code not
+                // explicitly recognised above now gets a generic, still-actionable
+                // message instead of framework internals.
+                default:                         return "Something went wrong. Please try again."
                 }
             case .invalidResponse: return "Unexpected response. Please try again."
             }
         }
-        return error.localizedDescription
+        // Fix #11 — same reasoning as the switch's default case above: a raw
+        // NSError.localizedDescription (from network/URLSession failures, not
+        // Firebase's own error JSON) is a developer-facing string, not
+        // something to show the user as-is.
+        return "Something went wrong. Please try again."
     }
 
     // MARK: - Apple nonce helpers

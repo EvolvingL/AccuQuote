@@ -49,6 +49,16 @@ final class QuoteGenerationService: ObservableObject {
     @Published var state: GenerationState = .idle
     @Published var vatRate: Double = 20.0
 
+    // Test-only seam: defaults to .shared for every real call site (Views.swift's
+    // startGeneration, unchanged), letting XCTest inject a URLSession configured
+    // with a URLProtocol stub instead of hitting the real network. Never changed
+    // by app code — only ever set via the test-only initializer below.
+    private let urlSession: URLSession
+
+    init(urlSession: URLSession = .shared) {
+        self.urlSession = urlSession
+    }
+
     // Computed from completed sections
     var labourTotal: Double { sections.reduce(0) { $0 + $1.labourTotal } }
     var materialsTotal: Double { sections.reduce(0) { $0 + $1.materialsTotal } }
@@ -67,7 +77,9 @@ final class QuoteGenerationService: ObservableObject {
         roomDimensions: RoomDimensions,
         claudeContext: String,
         preferredSupplier: String,
-        usualItems: String
+        usualItems: String,
+        scanMode: ScanMode = .room,
+        scanArtifactURL: URL? = nil
     ) async {
         // R5: re-entrancy guard — if a generation is already running, ignore the
         // new request rather than letting two runs clobber the shared sections array.
@@ -153,12 +165,15 @@ final class QuoteGenerationService: ObservableObject {
         persistToHistory(
             jobDescription: jobDescription,
             customerName: customerName,
-            roomDimensions: roomDimensions
+            roomDimensions: roomDimensions,
+            scanMode: scanMode,
+            scanArtifactURL: scanArtifactURL
         )
     }
 
     private func persistToHistory(
-        jobDescription: String, customerName: String, roomDimensions: RoomDimensions
+        jobDescription: String, customerName: String, roomDimensions: RoomDimensions,
+        scanMode: ScanMode, scanArtifactURL: URL?
     ) {
         let savedSections = sections.map { sec in
             SavedQuoteSection(
@@ -182,9 +197,21 @@ final class QuoteGenerationService: ObservableObject {
             labourDays: totalLabourDays, labourRate: representativeLabourRate,
             labourTotal: labourTotal, items: allItems,
             subtotal: subtotal, vatRate: vatRate, vatAmount: vatAmount, grandTotal: grandTotal,
-            notes: notes, sections: savedSections
+            notes: notes, sections: savedSections,
+            scanMode: scanMode.rawValue, scanArtifactURL: scanArtifactURL?.absoluteString
         )
+        // Fix #14 — was the user signing in (AccuQuoteScanApp's
+        // .onChange(of: authManager.isSignedIn)); moved to the first
+        // successful quote generation instead, since that's the moment
+        // "you'll want to know when things happen" actually becomes true —
+        // asking for notification permission immediately at sign-in, before
+        // the user has done anything push notifications would even be about,
+        // is a cold ask with no context.
+        let isFirstQuoteEver = QuoteHistoryStore.shared.quotes.isEmpty
         QuoteHistoryStore.shared.save(saved)
+        if isFirstQuoteEver {
+            NotificationService.shared.requestPermissionAfterFirstQuote()
+        }
     }
 
     func reset() {
@@ -216,7 +243,7 @@ final class QuoteGenerationService: ObservableObject {
         ]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await urlSession.data(for: request)
 
         // Fix #17/#18/#19: handle HTTP status codes explicitly before parsing
         if let http = response as? HTTPURLResponse {
@@ -315,7 +342,7 @@ final class QuoteGenerationService: ObservableObject {
         request.httpBody = bodyData
 
         do {
-            let (byteStream, response) = try await URLSession.shared.bytes(for: request)
+            let (byteStream, response) = try await urlSession.bytes(for: request)
             let httpStatus = (response as? HTTPURLResponse)?.statusCode ?? 0
             guard httpStatus == 200 else {
                 return failedSection(descriptor: descriptor, reason: "HTTP \(httpStatus)")
@@ -371,7 +398,10 @@ final class QuoteGenerationService: ObservableObject {
 
     // MARK: - Parse section JSON
 
-    private func parseSection(descriptor: QuoteSectionDescriptor, text: String) -> QuoteSection? {
+    // internal (not private) so XCTest can exercise this pure parsing/sanitisation
+    // layer directly without going through the full networked generate() flow,
+    // which also requires a signed-in AuthManager session.
+    func parseSection(descriptor: QuoteSectionDescriptor, text: String) -> QuoteSection? {
         var cleaned = text
         if let fs = cleaned.range(of: "```"),
            let fe = cleaned.range(of: "```", options: .backwards),
@@ -430,7 +460,7 @@ final class QuoteGenerationService: ObservableObject {
     // Fix #23/#24: use balanced brace/bracket matching instead of lastIndex(of:)
     // so trailing content with extra } or ] doesn't corrupt the extracted JSON.
 
-    private func extractJSONObject(from text: String) -> [String: Any]? {
+    func extractJSONObject(from text: String) -> [String: Any]? {
         guard let start = text.firstIndex(of: "{") else { return nil }
         var depth = 0
         var inString = false
@@ -460,7 +490,7 @@ final class QuoteGenerationService: ObservableObject {
         return nil
     }
 
-    private func extractJSONArray(from text: String) -> [[String: Any]]? {
+    func extractJSONArray(from text: String) -> [[String: Any]]? {
         guard let start = text.firstIndex(of: "[") else { return nil }
         var depth = 0
         var inString = false

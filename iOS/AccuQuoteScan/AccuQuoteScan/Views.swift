@@ -35,27 +35,28 @@ enum AQ {
 }
 
 // MARK: - Logo component
-// Displays the AccuQuote horizontal logo on a dark pill so the JPEG renders correctly
-// against the app's white background.
+// "AppLogo" is the exact same 1024×1024 PNG used as the app icon (Assets.xcassets/
+// AppIcon.appiconset/icon-1024.png, duplicated into AppLogo.imageset) — the icon
+// shown throughout the app must be pixel-identical to the App Store icon, not a
+// separate approximation like an SF Symbol.
 
 struct AQLogoView: View {
     var height: CGFloat = 22
     var body: some View {
-        if let uiImage = UIImage(named: "accuquote-logo") {
-            Image(uiImage: uiImage)
+        HStack(spacing: height * 0.28) {
+            Image("AppLogo")
                 .resizable()
                 .scaledToFit()
-                .frame(height: height)
-                .clipShape(RoundedRectangle(cornerRadius: height * 0.2))
-                .padding(.horizontal, 6)
-                .padding(.vertical, 3)
-                .background(Color(red: 0.06, green: 0.07, blue: 0.13))
-                .clipShape(RoundedRectangle(cornerRadius: height * 0.3))
-        } else {
+                .frame(width: height * 0.8, height: height * 0.8)
+                .clipShape(RoundedRectangle(cornerRadius: height * 0.8 * 0.2))
             Text("AccuQuote")
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundColor(AQ.ink)
+                .font(.system(size: height * 0.68, weight: .semibold))
+                .foregroundColor(.white)
         }
+        .padding(.horizontal, height * 0.4)
+        .padding(.vertical, height * 0.18)
+        .background(Color(red: 0.06, green: 0.07, blue: 0.13))
+        .clipShape(RoundedRectangle(cornerRadius: height * 0.3))
     }
 }
 
@@ -406,6 +407,11 @@ struct ReadyView: View {
     @ObservedObject var coordinator: ScanCoordinator
     @EnvironmentObject var questionEngine: QuestionEngine
     var onGuestTap: (() -> Void)? = nil
+    /// Set only when reached via ModePickerView (§1) — shows a back chevron
+    /// so the user can return to the picker instead of being stuck in Room
+    /// mode. nil for GuestLandingView's own use of ReadyView, which has no
+    /// picker to go back to.
+    var onBackToModePicker: (() -> Void)? = nil
     @State private var showOnboarding = false
     @State private var showManualEntry = false
     @State private var showHistory = false
@@ -420,6 +426,17 @@ struct ReadyView: View {
 
             // ── Navigation bar ──────────────────────────────────────────────
             HStack(alignment: .center) {
+                if let onBackToModePicker {
+                    Button(action: onBackToModePicker) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(AQ.ink)
+                            .frame(width: 32, height: 32)
+                            .background(AQ.fill)
+                            .clipShape(Circle())
+                    }
+                    .padding(.trailing, 4)
+                }
                 VStack(alignment: .leading, spacing: 4) {
                     AQLogoView()
                     Text("Room Scanner")
@@ -1361,7 +1378,7 @@ struct AIProfileButton: View {
                 .onAppear { pulse = true }
 
                 if answered > 0 {
-                    Text("\(pct)% accurate")
+                    Text("\(pct)% complete")
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(AQ.green)
                         .contentTransition(.numericText())
@@ -1380,7 +1397,7 @@ struct AIProfileButton: View {
                     .stroke(answered > 0 ? AQ.green.opacity(0.3) : AQ.blue.opacity(0.3), lineWidth: 1)
             )
         }
-        .accessibilityLabel(answered > 0 ? "AI profile, \(pct) percent accurate. Tap to edit."
+        .accessibilityLabel(answered > 0 ? "AI profile, \(pct) percent complete. Tap to edit."
                                          : "Set up AI profile")   // #8
     }
 }
@@ -1405,7 +1422,7 @@ struct AccuracyPill: View {
             }
             .onAppear { pulse = true }
 
-            Text(pct > 0 ? "\(pct)% quote accuracy" : "Not set up")
+            Text(pct > 0 ? "\(pct)% profile complete" : "Not set up")
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundColor(pct > 0 ? AQ.green : AQ.secondary)
                 .contentTransition(.numericText())
@@ -2509,6 +2526,8 @@ struct ResultView: View {
     @ObservedObject var coordinator: ScanCoordinator
     @State private var showJobDescription = false
     @State private var roomTypeOverride = ""
+    @State private var show3DViewer = false
+    @State private var showFloorPlan = false
 
     private func isSelected(_ type: String) -> Bool {
         if roomTypeOverride.isEmpty {
@@ -2609,6 +2628,50 @@ struct ResultView: View {
                     StatCell(label: "Windows",  value: "\(result.windowCount)")
                 }
                 .padding(.vertical, 4).padding(.bottom, 8)
+
+                // §6 — 3D preview entry point. Only available when the scan
+                // actually produced a CapturedRoom (LiDAR path); poseFusion/
+                // manual/custom-shape completions have no mesh to show, same
+                // as AR Quick Look never worked for those methods either.
+                if coordinator.lastCapturedRoom != nil {
+                    Divider().background(AQ.rule).padding(.horizontal, 20)
+                    Button { show3DViewer = true } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "cube.transparent")
+                                .font(.system(size: 13, weight: .medium))
+                            Text("View in 3D")
+                                .font(.system(size: 13, weight: .medium))
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 11, weight: .semibold))
+                        }
+                        .foregroundColor(AQ.blue)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 14)
+                    }
+
+                    // §5.2 — 2D floor plan entry point. Same CapturedRoom
+                    // availability gate as "View in 3D": poseFusion/manual/
+                    // custom-shape completions have no CapturedRoom to
+                    // project a plan from (FloorPlan2DBuilder.build(from:)
+                    // needs real wall/door/window/object geometry, not just
+                    // the extracted RoomDimensions numbers).
+                    Divider().background(AQ.rule).padding(.horizontal, 20)
+                    Button { showFloorPlan = true } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "doc.plaintext")
+                                .font(.system(size: 13, weight: .medium))
+                            Text("Floor Plan")
+                                .font(.system(size: 13, weight: .medium))
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 11, weight: .semibold))
+                        }
+                        .foregroundColor(AQ.blue)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 14)
+                    }
+                }
             }
             .background(Color.white)
             .cornerRadius(16)
@@ -2649,6 +2712,78 @@ struct ResultView: View {
         .fullScreenCover(isPresented: $showJobDescription) {
             JobDescriptionView(result: result, coordinator: coordinator, roomTypeOverride: effectiveRoomType)
         }
+        .fullScreenCover(isPresented: $show3DViewer) {
+            if let room = coordinator.lastCapturedRoom {
+                NavigationStack {
+                    ScanViewer3D(content: .room(room))
+                        .navigationTitle("3D Model")
+                        .navigationBarTitleDisplayMode(.inline)
+                        .toolbar {
+                            ToolbarItem(placement: .navigationBarTrailing) {
+                                Button("Done") { show3DViewer = false }
+                            }
+                        }
+                }
+            }
+        }
+        .fullScreenCover(isPresented: $showFloorPlan) {
+            if let room = coordinator.lastCapturedRoom {
+                RoomFloorPlanScreen(room: room, roomName: effectiveRoomType.capitalized, onDone: { showFloorPlan = false })
+            }
+        }
+    }
+}
+
+// MARK: - Room mode floor plan screen (§5.2)
+//
+// Single-room equivalent of what FullWorksOutput already does per-room for
+// Full Works — same FloorPlan2DBuilder.build(from:roomName:) projection and
+// FloorPlan2DExport.exportPDF/exportPNG renderers, just reached from
+// ResultView's own "Floor Plan" row instead of the Full Works completion
+// screen. One source of truth (§5.1): both call sites project from the same
+// CapturedRoom through the same builder/renderer, so a single-room plan and
+// a Full Works per-floor plan can never disagree in style or content.
+struct RoomFloorPlanScreen: View {
+    let room: CapturedRoom
+    let roomName: String
+    var onDone: () -> Void = {}
+
+    @State private var plan: FloorPlan2D?
+    @State private var shareURL: URL?
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if let plan {
+                    FloorPlan2DView(plan: plan)
+                } else {
+                    ProgressView()
+                }
+            }
+            .navigationTitle("Floor Plan")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Done", action: onDone)
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        guard let plan else { return }
+                        shareURL = FloorPlan2DExport.exportPDF(plan: plan, title: roomName)
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                    .disabled(plan == nil)
+                }
+            }
+        }
+        .onAppear {
+            guard plan == nil else { return }
+            plan = FloorPlan2DBuilder.build(from: room, roomName: roomName)
+        }
+        .sheet(item: $shareURL) { url in
+            ShareSheet(url: url)
+        }
     }
 }
 
@@ -2667,6 +2802,7 @@ struct JobDescriptionView: View {
     @State private var showQuote      = false
     @State private var showVoicePanel = false
     @State private var showQuickSetup = false
+    @State private var showSpaceScan  = false   // §3.3 — Space mode "attach to quote"
     @State private var quickSetupDismissedByUser = false   // Fix #14: track intentional dismiss
     @FocusState private var typeFocused: Bool
 
@@ -2730,7 +2866,13 @@ struct JobDescriptionView: View {
                             // Mic button overlay
                             Button {
                                 typeFocused = false
-                                showVoicePanel.toggle()
+                                // Fix #16 — the panel below has a .transition
+                                // but this toggle wasn't wrapped in
+                                // withAnimation, so it snapped in/out instead
+                                // of animating like the transition implies.
+                                withAnimation(.easeInOut(duration: 0.25)) {
+                                    showVoicePanel.toggle()
+                                }
                             } label: {
                                 ZStack {
                                     Circle()
@@ -2754,6 +2896,25 @@ struct JobDescriptionView: View {
                             )
                             .padding(.horizontal, 24).padding(.bottom, 16)
                             .transition(.move(edge: .top).combined(with: .opacity))
+                        }
+
+                        // ── Space mode — measure a detail and attach it (§3.3) ──
+                        if SpaceCaptureCoordinator.isSupported {
+                            Button {
+                                typeFocused = false
+                                showSpaceScan = true
+                            } label: {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "viewfinder")
+                                        .font(.system(size: 13, weight: .medium))
+                                    Text("Measure a detail (void, window, door frame)")
+                                        .font(.system(size: 13, weight: .medium))
+                                }
+                                .foregroundColor(AQ.blue)
+                                .padding(.horizontal, 14).padding(.vertical, 10)
+                                .background(AQ.blue.opacity(0.08)).cornerRadius(12)
+                            }
+                            .padding(.horizontal, 24).padding(.bottom, 16)
                         }
 
                         // Customer name — Fix #16: capped at 120 chars
@@ -2833,18 +2994,32 @@ struct JobDescriptionView: View {
                     .foregroundColor(AQ.secondary)
                 }
             }
-            .onAppear {
-                guard jobDescription.isEmpty else { return }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                    showVoicePanel = true
-                    // recorder.toggle() intentionally absent — user must tap mic button
-                }
-            }
+            // Fix #16 — removed the auto-show-after-0.6s of the voice panel.
+            // It used to pop open unprompted on every visit to an empty job
+            // description, competing with the mic button for attention
+            // instead of just being one deliberate tap away like every other
+            // input method here. The mic button (above) is the only
+            // affordance needed to reveal it now.
         }
         .fullScreenCover(isPresented: $showQuote) {
             QuoteView(result: result, jobDescription: jobDescription,
                       customerName: customerName, coordinator: coordinator)
                 .environmentObject(questionEngine)
+        }
+        .fullScreenCover(isPresented: $showSpaceScan) {
+            SpaceScanFlowView(
+                onDone: { showSpaceScan = false },
+                onAttach: { note in
+                    // §3.3 — fold the measurement note straight into the job
+                    // description, the one field that flows into both quote-
+                    // section discovery and every section's generation prompt.
+                    if jobDescription.isEmpty {
+                        jobDescription = note
+                    } else {
+                        jobDescription += "\n" + note
+                    }
+                }
+            )
         }
         .sheet(isPresented: $showQuickSetup, onDismiss: {
             // Fix #14: only open QuoteView when the user completed setup via onContinue,
@@ -3346,18 +3521,62 @@ struct QuoteView: View {
         let dims = result
         let job  = jobDescription
         let cust = customerName
+        // §2 step 3 / §7: persist a USDZ alongside the saved quote so history
+        // can show a 3D thumbnail and re-open the model later. Only Room's
+        // LiDAR path has a CapturedRoom to export — poseFusion/manual scans
+        // have no mesh, matching the same gap ScanViewer3D's own "View in
+        // 3D" entry point in ResultView already has.
+        let room = coordinator.lastCapturedRoom
+        let roomName = result.roomType.capitalized
         Task.detached(priority: .userInitiated) {
+            let artifactURL = room.flatMap { Self.exportRoomUSDZ($0) }
+            // §7: thumbnail rendered once at save time, cached as JPEG next
+            // to the USDZ — history rows read the cached file, never
+            // re-render on every scroll.
+            if let artifactURL {
+                _ = HistoryThumbnailRenderer.renderThumbnail(usdzURL: artifactURL)
+            }
+            // §5.2/§5.5 — persist the same floor plan RoomFloorPlanScreen
+            // would render, alongside the USDZ, so a plan.pdf exists in
+            // aq_scans/<id>/ even if the user never opened the Floor Plan
+            // row before generating the quote. Best-effort: a failed plan
+            // render must never block quote generation.
+            if let room, let artifactURL {
+                let plan = FloorPlan2DBuilder.build(from: room, roomName: roomName)
+                await MainActor.run {
+                    let planURL = artifactURL.deletingLastPathComponent().appendingPathComponent("plan.pdf")
+                    let tempPDF = FloorPlan2DExport.exportPDF(plan: plan, title: roomName)
+                    try? FileManager.default.removeItem(at: planURL)
+                    try? FileManager.default.copyItem(at: tempPDF, to: planURL)
+                }
+            }
             await service.generate(
                 jobDescription: job,
                 customerName: cust,
                 roomDimensions: dims,
                 claudeContext: ctx,
                 preferredSupplier: supplier,
-                usualItems: usualItems
+                usualItems: usualItems,
+                scanMode: .room,
+                scanArtifactURL: artifactURL
             )
         }
     }
 
+    /// Exports to Documents/aq_scans/<uuid>.usdz per §2 step 3 / §5.5's
+    /// persistence convention (same folder SpaceMeshExport/FloorPlan2DExport
+    /// already write into).
+    private static func exportRoomUSDZ(_ room: CapturedRoom) -> URL? {
+        let folder = SpaceMeshExport.scanFolder(id: UUID().uuidString)
+        guard (try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)) != nil else { return nil }
+        let url = folder.appendingPathComponent("model.usdz")
+        do {
+            try room.export(to: url, exportOptions: [.mesh, .parametric])
+            return url
+        } catch {
+            return nil
+        }
+    }
 }
 
 // MARK: - Quote Loading View
@@ -3580,12 +3799,10 @@ struct QuoteErrorView: View {
 
     // Fix #34: detect non-retryable errors (subscription required, auth) so we can
     // show an exit path instead of trapping the user in an infinite retry loop.
-    private var isRetryable: Bool {
-        !message.localizedCaseInsensitiveContains("subscription_required") &&
-        !message.localizedCaseInsensitiveContains("subscription required") &&
-        !message.localizedCaseInsensitiveContains("not authenticated") &&
-        !message.localizedCaseInsensitiveContains("sign in")
-    }
+    // Fix #11: classification now lives in ScanErrorClassifier (ScanCoordinator.swift)
+    // so ErrorView/SpaceErrorView/FullWorksErrorView can share the same logic
+    // instead of each screen inventing its own (or, as before, not having any).
+    private var isRetryable: Bool { ScanErrorClassifier.isRetryable(message) }
 
     var body: some View {
         VStack(spacing: 24) {
@@ -3715,7 +3932,27 @@ struct QuoteResultView: View {
                     labourTotalOverride = labourTotalOverride ?? quote.labourTotal
                     editingLabourTotal = true
                 } label: {
-                    QuoteRow(label: "Labour ✎", value: Money.gbp(effectiveLabourTotal), bold: false)
+                    // Fix #17 — previously identical to the read-only
+                    // Materials/VAT/Total rows below it apart from the "✎"
+                    // glyph tucked into the label text, easy to miss. Now
+                    // matches the same tappable-row affordance already used
+                    // for "View in 3D"/"Floor Plan" elsewhere: a trailing
+                    // chevron plus AQ.blue tint on the label.
+                    HStack(alignment: .center) {
+                        Text("Labour")
+                            .font(AQ.body(15))
+                            .foregroundColor(AQ.blue)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        Text(Money.gbp(effectiveLabourTotal))
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(AQ.blue)
+                            .monospacedDigit()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(AQ.blue)
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 14)
                 }
                 Divider().background(AQ.rule).padding(.leading, 24)
                 if !quote.items.isEmpty {
@@ -4521,6 +4758,8 @@ struct DepositRequestView: View {
 
 // MARK: - PDF Share Sheet
 
+// Also relied on by ScanViewer3D.swift's AR Quick Look .fullScreenCover(item:) —
+// one conformance per module, so it lives here rather than being redeclared there.
 extension URL: @retroactive Identifiable {
     public var id: String { absoluteString }
 }
@@ -4611,6 +4850,12 @@ struct QuoteRow: View {
 struct ErrorView: View {
     let message: String
     @ObservedObject var coordinator: ScanCoordinator
+
+    // Fix #11 — same retry-vs-not classification QuoteErrorView already had
+    // (Fix #34); this screen previously always showed "Try Again" even for
+    // errors a retry could never fix, with no way out for the user.
+    private var isRetryable: Bool { ScanErrorClassifier.isRetryable(message) }
+
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
@@ -4618,13 +4863,13 @@ struct ErrorView: View {
                 Circle()
                     .fill(Color(red: 0.98, green: 0.96, blue: 0.94))
                     .frame(width: 80, height: 80)
-                Image(systemName: "exclamationmark")
+                Image(systemName: isRetryable ? "exclamationmark" : "lock")
                     .font(.system(size: 30, weight: .medium))
                     .foregroundColor(Color(red: 0.85, green: 0.40, blue: 0.20))
             }
             .padding(.bottom, 28)
 
-            Text("Scan Failed")
+            Text(isRetryable ? "Scan Failed" : "Subscription Required")
                 .font(.system(size: 24, weight: .semibold))
                 .foregroundColor(AQ.ink)
                 .padding(.bottom, 10)
@@ -4639,17 +4884,27 @@ struct ErrorView: View {
 
             VStack(spacing: 0) {
                 Divider().background(AQ.rule).padding(.bottom, 20)
-                Button { coordinator.reset() } label: {
-                    Text("Try Again")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 17)
-                        .background(AQ.blue)
-                        .cornerRadius(14)
+                if isRetryable {
+                    Button { coordinator.reset() } label: {
+                        Text("Try Again")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 17)
+                            .background(AQ.blue)
+                            .cornerRadius(14)
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 44)
+                } else {
+                    // Always provide a way out, matching QuoteErrorView's Fix #34.
+                    Button { coordinator.reset() } label: {
+                        Text("Close")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(AQ.secondary)
+                    }
+                    .padding(.bottom, 44)
                 }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 44)
             }
         }
         .background(Color.white)

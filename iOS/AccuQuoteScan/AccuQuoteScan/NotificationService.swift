@@ -22,6 +22,13 @@ final class NotificationService: NSObject, ObservableObject {
 
     @Published private(set) var permissionGranted: Bool = false
     @Published private(set) var lastReceivedNotification: ReceivedNotification? = nil
+    // Fix #14 — ContentView observes this and presents NotificationPrimerSheet;
+    // set by requestPermissionAfterFirstQuote() instead of calling
+    // requestAuthorization directly, so the user sees a one-line explanation
+    // before the system's own permission dialog appears.
+    @Published var showPrimerRequested: Bool = false
+
+    private static let primerSeenKey = "aq_notification_primer_seen"
 
     private override init() { super.init() }
 
@@ -40,6 +47,27 @@ final class NotificationService: NSObject, ObservableObject {
                 }
             }
         }
+    }
+
+    // MARK: - First-quote trigger (Fix #14)
+    //
+    // Previously requestPermission() was called directly from
+    // AccuQuoteScanApp's .onChange(of: authManager.isSignedIn) — i.e. right
+    // at sign-in, before the user had done anything a push notification
+    // would ever be about. Moved to fire after the first successful quote
+    // generation instead (see QuoteGenerationService.persistToHistory), and
+    // now shows a one-time primer sheet explaining why, rather than jumping
+    // straight to iOS's own permission dialog with no context.
+    func requestPermissionAfterFirstQuote() {
+        guard !UserDefaults.standard.bool(forKey: Self.primerSeenKey) else { return }
+        showPrimerRequested = true
+    }
+
+    /// Called by the primer sheet's "Continue" button.
+    func primerContinueTapped() {
+        UserDefaults.standard.set(true, forKey: Self.primerSeenKey)
+        showPrimerRequested = false
+        requestPermission()
     }
 
     // MARK: - Token registration

@@ -68,11 +68,19 @@ struct SavedQuote: Identifiable, Codable {
     let notes: String
     // Sectioned breakdown — empty for old records
     var sections: [SavedQuoteSection]
+    // Tri-Mode Scanning build spec §7 — which mode produced this scan, and
+    // where its 3D artifact (USDZ/mesh) lives on disk, if any. Both default
+    // for old records: scanMode "room" (every pre-Phase-7 scan WAS a Room
+    // scan, so this isn't a guess), scanArtifactURL nil (no artifact was
+    // ever persisted before this phase).
+    var scanMode: String
+    var scanArtifactURL: String?
 
     enum CodingKeys: String, CodingKey {
         case id, savedAt, customerName, jobDescription, roomType, floorArea
         case labourDays, labourRate, labourTotal, items
         case subtotal, vatRate, vatAmount, grandTotal, notes, sections
+        case scanMode, scanArtifactURL
     }
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -92,11 +100,14 @@ struct SavedQuote: Identifiable, Codable {
         grandTotal     = try c.decode(Double.self,         forKey: .grandTotal)
         notes          = try c.decode(String.self,         forKey: .notes)
         sections       = (try? c.decode([SavedQuoteSection].self, forKey: .sections)) ?? []
+        scanMode       = (try? c.decode(String.self, forKey: .scanMode)) ?? "room"
+        scanArtifactURL = try? c.decode(String.self, forKey: .scanArtifactURL)
     }
     init(id: String, savedAt: Date, customerName: String, jobDescription: String,
          roomType: String, floorArea: Double, labourDays: Double, labourRate: Double,
          labourTotal: Double, items: [SavedQuoteItem], subtotal: Double, vatRate: Double,
-         vatAmount: Double, grandTotal: Double, notes: String, sections: [SavedQuoteSection] = []) {
+         vatAmount: Double, grandTotal: Double, notes: String, sections: [SavedQuoteSection] = [],
+         scanMode: String = "room", scanArtifactURL: String? = nil) {
         self.id = id; self.savedAt = savedAt; self.customerName = customerName
         self.jobDescription = jobDescription; self.roomType = roomType
         self.floorArea = floorArea; self.labourDays = labourDays
@@ -104,6 +115,23 @@ struct SavedQuote: Identifiable, Codable {
         self.items = items; self.subtotal = subtotal; self.vatRate = vatRate
         self.vatAmount = vatAmount; self.grandTotal = grandTotal
         self.notes = notes; self.sections = sections
+        self.scanMode = scanMode; self.scanArtifactURL = scanArtifactURL
+    }
+
+    /// "thumb.jpg" next to the USDZ (see HistoryThumbnailRenderer /
+    /// SpaceMeshExport.scanFolder's aq_scans/<id>/ layout) — not persisted
+    /// separately since it's always derivable from scanArtifactURL's folder.
+    var thumbnailURL: URL? {
+        guard let scanArtifactURL, let url = URL(string: scanArtifactURL) else { return nil }
+        return url.deletingLastPathComponent().appendingPathComponent("thumb.jpg")
+    }
+
+    var scanModeDisplayLabel: String {
+        switch scanMode {
+        case "space":     return "Space"
+        case "fullWorks": return "Full Works"
+        default:          return "Room"
+        }
     }
 }
 
@@ -124,7 +152,30 @@ final class QuoteHistoryStore: ObservableObject {
     private static let maxQuotes = 200   // H7: cap history growth
     private var writeTask: Task<Void, Never>?   // H6: serialise persistence
 
-    private init() { load() }
+    // Test-only seam: a store rooted at an injected directory (e.g. a temp
+    // dir) instead of the real Documents/ + UserDefaults-migration path, so
+    // XCTest can exercise save/delete/persistence/load without touching the
+    // real app's on-device quote history. Production code always uses
+    // `.shared`, which keeps the nonisolated static `fileURL` above and the
+    // legacy-UserDefaults migration in `load()` untouched.
+    private let overrideFileURL: URL?
+
+    private init() {
+        overrideFileURL = nil
+        load()
+    }
+
+    #if DEBUG
+    /// Test-only initializer — persists to `directory/aq_quote_history.json`
+    /// and skips the legacy-UserDefaults migration entirely (a fresh temp
+    /// directory never has one). Never used by app code, only XCTest.
+    init(testDirectory directory: URL) {
+        overrideFileURL = directory.appendingPathComponent("aq_quote_history.json")
+        load()
+    }
+    #endif
+
+    private var effectiveFileURL: URL { overrideFileURL ?? Self.fileURL }
 
     func save(_ quote: SavedQuote) {
         quotes.insert(quote, at: 0)
@@ -142,7 +193,7 @@ final class QuoteHistoryStore: ObservableObject {
     // MARK: - I/O
 
     private func load() {
-        let url = Self.fileURL
+        let url = effectiveFileURL
         if FileManager.default.fileExists(atPath: url.path) {
             // Primary: read from file
             if let data = try? Data(contentsOf: url),
@@ -151,7 +202,10 @@ final class QuoteHistoryStore: ObservableObject {
                 return
             }
         }
-        // Fallback: migrate from UserDefaults
+        // Fallback: migrate from UserDefaults — only for the real shared
+        // store; a test store rooted at a temp directory has no legacy
+        // UserDefaults data of its own to migrate.
+        guard overrideFileURL == nil else { return }
         if let data = UserDefaults.standard.data(forKey: Self.legacyDefaultsKey),
            let decoded = try? JSONDecoder().decode([SavedQuote].self, from: data) {
             quotes = decoded
@@ -167,13 +221,23 @@ final class QuoteHistoryStore: ObservableObject {
         // snapshot on the MainActor before handing off to a background encode.
         writeTask?.cancel()
         let snapshot = quotes
+        let url = effectiveFileURL
         writeTask = Task.detached(priority: .utility) {
             guard !Task.isCancelled,
                   let data = try? JSONEncoder().encode(snapshot) else { return }
             guard !Task.isCancelled else { return }
-            try? data.write(to: Self.fileURL, options: .atomic)
+            try? data.write(to: url, options: .atomic)
         }
     }
+
+    #if DEBUG
+    /// Test-only synchronous flush — awaits the in-flight persistAsync()
+    /// write task so a test can assert on-disk state deterministically
+    /// instead of racing the detached background write.
+    func flushPendingWritesForTesting() async {
+        await writeTask?.value
+    }
+    #endif
 }
 
 // MARK: - Quote History View
@@ -181,6 +245,39 @@ final class QuoteHistoryStore: ObservableObject {
 struct QuoteHistoryView: View {
     @ObservedObject var store: QuoteHistoryStore
     @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            QuoteHistoryContent(store: store)
+                .navigationTitle("Quote History")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button("Done") { dismiss() }
+                            .foregroundColor(AQ.secondary)
+                    }
+                }
+        }
+    }
+}
+
+// MARK: - Quote History Content
+//
+// Fix #5/#6 — this used to be duplicated: ProfileMenuSheet's "My Quotes" tab
+// had its own hand-rolled reimplementation (QuoteHistoryTab, further down)
+// that swiped-to-delete with NO confirmation and hardcoded
+// "£\(Int(quote.grandTotal).formatted())" instead of Money.gbp — silently
+// dropping pence in the tab even though the standalone Quote History sheet
+// (this view) formatted it correctly via QuoteHistoryRow. Rather than fix
+// the duplicate in two places (and have it drift again later), the shared
+// list/search/delete-confirmation content now lives here, with no
+// NavigationStack/toolbar of its own, so it can be embedded either inside
+// this view's own NavigationStack (the standalone "View all" sheet) or
+// directly inside ProfileMenuSheet's existing NavigationStack (the tab) —
+// nesting a second NavigationStack there would have produced a duplicate
+// nav bar and a duplicate "Done" button.
+struct QuoteHistoryContent: View {
+    @ObservedObject var store: QuoteHistoryStore
 
     @State private var searchText = ""                    // #9 search
     @State private var pendingDeleteID: String? = nil     // #5 delete confirmation
@@ -204,85 +301,75 @@ struct QuoteHistoryView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            Group {
-                if store.quotes.isEmpty {
-                    VStack(spacing: 16) {
-                        Spacer()
-                        Image(systemName: "doc.text.magnifyingglass")
-                            .font(.system(size: 44, weight: .light))
-                            .foregroundColor(AQ.secondary.opacity(0.5))
-                            .accessibilityHidden(true)   // #8
-                        Text("No quotes yet")
-                            .font(.title3.weight(.semibold))   // #1
-                            .foregroundColor(AQ.ink)
-                        Text("Your generated quotes will appear here.")
-                            .font(.subheadline)   // #1
-                            .foregroundColor(AQ.secondary)
-                        Spacer()
-                    }
-                } else if filtered.isEmpty {
-                    // #9 no-results state
-                    VStack(spacing: 16) {
-                        Spacer()
-                        Image(systemName: "magnifyingglass")
-                            .font(.system(size: 40, weight: .light))
-                            .foregroundColor(AQ.secondary.opacity(0.5))
-                            .accessibilityHidden(true)
-                        Text("No matches")
-                            .font(.title3.weight(.semibold))
-                            .foregroundColor(AQ.ink)
-                        Text("No quotes match “\(searchText)”.")
-                            .font(.subheadline)
-                            .foregroundColor(AQ.secondary)
-                        Spacer()
-                    }
-                } else {
-                    List {
-                        ForEach(filtered) { quote in
-                            QuoteHistoryRow(quote: quote, dateFormatter: dateFormatter)
-                                // #29 context menu on long-press
-                                .contextMenu {
-                                    Button(role: .destructive) {
-                                        pendingDeleteID = quote.id
-                                        showDeleteConfirm = true
-                                    } label: {
-                                        Label("Delete Quote", systemImage: "trash")
-                                    }
-                                }
-                        }
-                        .onDelete { offsets in
-                            // #5 require confirmation — capture the id first
-                            if let i = offsets.first {
-                                pendingDeleteID = filtered[i].id
-                                showDeleteConfirm = true
-                            }
-                        }
-                    }
-                    .listStyle(.insetGrouped)
-                    .searchable(text: $searchText, prompt: "Search quotes")   // #9
-                }
-            }
-            .navigationTitle("Quote History")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Done") { dismiss() }
+        Group {
+            if store.quotes.isEmpty {
+                VStack(spacing: 16) {
+                    Spacer()
+                    Image(systemName: "doc.text.magnifyingglass")
+                        .font(.system(size: 44, weight: .light))
+                        .foregroundColor(AQ.secondary.opacity(0.5))
+                        .accessibilityHidden(true)   // #8
+                    Text("No quotes yet")
+                        .font(.title3.weight(.semibold))   // #1
+                        .foregroundColor(AQ.ink)
+                    Text("Your generated quotes will appear here.")
+                        .font(.subheadline)   // #1
                         .foregroundColor(AQ.secondary)
+                    Spacer()
                 }
-            }
-            // #5 confirmation dialog
-            .confirmationDialog("Delete this quote?",
-                                isPresented: $showDeleteConfirm,
-                                titleVisibility: .visible) {
-                Button("Delete", role: .destructive) {
-                    if let id = pendingDeleteID { store.delete(id: id) }
-                    pendingDeleteID = nil
+            } else if filtered.isEmpty {
+                // #9 no-results state
+                VStack(spacing: 16) {
+                    Spacer()
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 40, weight: .light))
+                        .foregroundColor(AQ.secondary.opacity(0.5))
+                        .accessibilityHidden(true)
+                    Text("No matches")
+                        .font(.title3.weight(.semibold))
+                        .foregroundColor(AQ.ink)
+                    Text("No quotes match “\(searchText)”.")
+                        .font(.subheadline)
+                        .foregroundColor(AQ.secondary)
+                    Spacer()
                 }
-                Button("Cancel", role: .cancel) { pendingDeleteID = nil }
-            } message: {
-                Text("This quote will be permanently deleted.")
+            } else {
+                List {
+                    ForEach(filtered) { quote in
+                        QuoteHistoryRow(quote: quote, dateFormatter: dateFormatter)
+                            // #29 context menu on long-press
+                            .contextMenu {
+                                Button(role: .destructive) {
+                                    pendingDeleteID = quote.id
+                                    showDeleteConfirm = true
+                                } label: {
+                                    Label("Delete Quote", systemImage: "trash")
+                                }
+                            }
+                    }
+                    .onDelete { offsets in
+                        // #5 require confirmation — capture the id first
+                        if let i = offsets.first {
+                            pendingDeleteID = filtered[i].id
+                            showDeleteConfirm = true
+                        }
+                    }
+                }
+                .listStyle(.insetGrouped)
+                .searchable(text: $searchText, prompt: "Search quotes")   // #9
             }
+        }
+        // #5 confirmation dialog
+        .confirmationDialog("Delete this quote?",
+                            isPresented: $showDeleteConfirm,
+                            titleVisibility: .visible) {
+            Button("Delete", role: .destructive) {
+                if let id = pendingDeleteID { store.delete(id: id) }
+                pendingDeleteID = nil
+            }
+            Button("Cancel", role: .cancel) { pendingDeleteID = nil }
+        } message: {
+            Text("This quote will be permanently deleted.")
         }
     }
 }
@@ -294,47 +381,90 @@ private struct QuoteHistoryRow: View {
     let dateFormatter: DateFormatter
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(Money.gbp(quote.grandTotal))   // #24 keeps pence when present
-                    // .system(_:design:) folds in the rounded design without the
-                    // iOS 16.1-only .fontDesign() modifier (deploy target is 16.0).
-                    .font(.system(.title2, design: .rounded).weight(.bold))
-                    .foregroundColor(AQ.ink)
-                Spacer()
-                Text(dateFormatter.string(from: quote.savedAt))
-                    .font(.caption)   // #1
+        HStack(alignment: .top, spacing: 12) {
+            HistoryThumbnailView(url: quote.thumbnailURL)
+
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(Money.gbp(quote.grandTotal))   // #24 keeps pence when present
+                        // .system(_:design:) folds in the rounded design without the
+                        // iOS 16.1-only .fontDesign() modifier (deploy target is 16.0).
+                        .font(.system(.title2, design: .rounded).weight(.bold))
+                        .foregroundColor(AQ.ink)
+                    Spacer()
+                    Text(dateFormatter.string(from: quote.savedAt))
+                        .font(.caption)   // #1
+                        .foregroundColor(AQ.secondary)
+                }
+
+                if !quote.customerName.isEmpty {
+                    Text(quote.customerName)
+                        .font(.footnote.weight(.medium))   // #1
+                        .foregroundColor(AQ.label)
+                        .lineLimit(1)
+                }
+
+                Text(quote.jobDescription)
+                    .font(.footnote)   // #1
                     .foregroundColor(AQ.secondary)
-            }
+                    .lineLimit(2)
 
-            if !quote.customerName.isEmpty {
-                Text(quote.customerName)
-                    .font(.footnote.weight(.medium))   // #1
-                    .foregroundColor(AQ.label)
-                    .lineLimit(1)
-            }
-
-            Text(quote.jobDescription)
-                .font(.footnote)   // #1
-                .foregroundColor(AQ.secondary)
-                .lineLimit(2)
-
-            HStack(spacing: 8) {
-                Label(quote.roomType.capitalized, systemImage: "cube.transparent")
-                    .font(.caption.weight(.medium))   // #1
-                    .foregroundColor(AQ.blue)
-                Text("·").foregroundColor(AQ.rule)
-                Text(String(format: "%.1fm²", quote.floorArea))
-                    .font(.caption.weight(.medium))   // #1
-                    .foregroundColor(AQ.secondary)
-                if !quote.sections.isEmpty {
+                HStack(spacing: 8) {
+                    // §7 mode chip — Room/Space/Full Works
+                    Text(quote.scanModeDisplayLabel)
+                        .font(AQ.caption(11))
+                        .foregroundColor(AQ.blue)
+                        .padding(.horizontal, 6).padding(.vertical, 2)
+                        .background(AQ.blue.opacity(0.1))
+                        .cornerRadius(5)
                     Text("·").foregroundColor(AQ.rule)
-                    Text("\(quote.sections.count) sections")
+                    Label(quote.roomType.capitalized, systemImage: "cube.transparent")
+                        .font(.caption.weight(.medium))   // #1
+                        .foregroundColor(AQ.blue)
+                    Text("·").foregroundColor(AQ.rule)
+                    Text(String(format: "%.1fm²", quote.floorArea))
                         .font(.caption.weight(.medium))   // #1
                         .foregroundColor(AQ.secondary)
+                    if !quote.sections.isEmpty {
+                        Text("·").foregroundColor(AQ.rule)
+                        Text("\(quote.sections.count) sections")
+                            .font(.caption.weight(.medium))   // #1
+                            .foregroundColor(AQ.secondary)
+                    }
                 }
             }
         }
         .padding(.vertical, 6)
+    }
+}
+
+// MARK: - History thumbnail (§7)
+//
+// Reads the cached JPEG written by HistoryThumbnailRenderer at save time —
+// never renders on demand, just displays or falls back to a placeholder
+// glyph. Old records (scanArtifactURL nil) and any record whose thumbnail
+// failed to render both hit the fallback, indistinguishably — a missing
+// thumbnail is never an error state worth surfacing.
+private struct HistoryThumbnailView: View {
+    let url: URL?
+    private static let size: CGFloat = 44
+
+    var body: some View {
+        Group {
+            if let url, let data = try? Data(contentsOf: url), let uiImage = UIImage(data: data) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+            } else {
+                ZStack {
+                    AQ.fill
+                    Image(systemName: "cube.transparent")
+                        .font(.system(size: 16, weight: .light))
+                        .foregroundColor(AQ.secondary.opacity(0.5))
+                }
+            }
+        }
+        .frame(width: Self.size, height: Self.size)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
