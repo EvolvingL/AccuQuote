@@ -13,3 +13,17 @@ iOS/AccuQuoteScan/AccuQuoteScan/APIKeys.swift
 .vercel
 .netlify
 dist/
+
+# Xcode local user state — machine-specific, not project config
+xcuserdata/
+*.xcuserstate
+
+# Local-only planning assets — not meant for repo history
+*.docx
+~$*
+images/
+IMG_*.PNG
+IMG_*.png
+image.jpg
+AccuQuote-icon-1024.png
+AccuQuote-preview.png
