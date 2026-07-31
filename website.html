@@ -210,6 +210,14 @@
     .trades-chip { display: flex; align-items: center; gap: 9px; font-size: 0.9rem; font-weight: 500; color: var(--secondary); }
     .trades-chip strong { color: var(--ink); font-weight: 600; }
     .trades-chip svg { flex-shrink: 0; }
+    .trades-strap__inner--centred { gap: 14px; }
+    .trades-strap__text { font-size: 0.9rem; font-weight: 500; color: var(--secondary); text-align: center; }
+    .trades-strap__text strong { color: var(--ink); font-weight: 600; }
+
+    /* MOTTO BANNER */
+    .motto-banner { background: var(--ink); padding: 40px 24px; text-align: center; }
+    .motto-banner p { max-width: 720px; margin: 0 auto; font-size: clamp(1.15rem, 2.4vw, 1.5rem); font-weight: 700; color: #fff; line-height: 1.35; letter-spacing: -0.01em; }
+    .motto-banner span { color: #5EAEFF; }
 
     /* STEPS */
     .steps__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 56px; }
@@ -328,6 +336,22 @@
     .pricing__guarantee strong { color: var(--ink); }
     @media (max-width: 820px) { .pricing__grid { grid-template-columns: 1fr; max-width: 400px; margin-left: auto; margin-right: auto; } }
     @media (max-width: 600px) { .pricing__free-banner { flex-direction: column; align-items: flex-start; } }
+
+    /* REFERRAL */
+    .referral__card {
+      max-width: 720px; margin: 0 auto; text-align: center;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 48px 40px;
+    }
+    .referral__card p { font-size: 1.05rem; color: var(--secondary); margin: 6px 0; }
+    .referral__card p.referral__lede { font-size: 1.15rem; color: var(--ink); font-weight: 600; margin-bottom: 4px; }
+    .referral__offer {
+      margin: 28px auto 8px; display: inline-flex; align-items: baseline; gap: 10px;
+      background: rgba(0,122,255,0.08); border-radius: 999px; padding: 12px 28px;
+    }
+    .referral__offer-num { font-size: 1.5rem; font-weight: 700; color: var(--blue); }
+    .referral__offer-label { font-size: 0.95rem; color: var(--ink); font-weight: 600; }
+    .referral__note { font-size: 0.85rem; color: var(--secondary); margin-top: 4px; }
 
     /* STORY */
     .story__inner {
@@ -470,7 +494,7 @@
       <div class="hero__badge">Quoting app built for the trades</div>
       <h1 id="hero-heading">Quote the whole house<br><span style="color:#5EAEFF">before you leave the drive.</span></h1>
       <p class="hero__sub">
-        Scan the space, describe the job, and AccuQuote does the maths, materials and live pricing — a full itemised quote ready to send while you're still on site. Every scan also leaves you with a proper floor plan and 3D model, not just numbers. Customer approves it, deposit lands. No spreadsheets. No late nights. No cancellations.
+        Scan the space, describe the job, and AccuQuote does the maths, materials and live pricing — a full itemised quote ready to send while you're still on site. Every scan also leaves you with a proper floor plan and 3D model, not just numbers. Customer approves it and pays their deposit straight through the app — deposit lands before you've left the drive. No spreadsheets. No late nights. No cancellations.
       </p>
       <div class="hero__actions">
         <a href="#pricing" class="btn btn-blue">Start Free — 3 Quotes</a>
@@ -481,7 +505,7 @@
       <div class="hero__stats" aria-label="At a glance">
         <div class="hero__stat"><span class="hero__stat-num">12 min</span><span class="hero__stat-label">from walk-around to quote sent</span></div>
         <div class="hero__stat"><span class="hero__stat-num">Hours back</span><span class="hero__stat-label">every week for the average tradesman</span></div>
-        <div class="hero__stat"><span class="hero__stat-num">Spot-on</span><span class="hero__stat-label">materials, maths &amp; live prices — every time</span></div>
+        <div class="hero__stat"><span class="hero__stat-num">Precision</span><span class="hero__stat-label">Accurate to 1cm, live prices, learns how you work</span></div>
       </div>
     </div>
   </div>
@@ -489,28 +513,16 @@
 
 <!-- TRADES STRAP -->
 <div class="trades-strap" aria-label="Built for the trades">
-  <div class="trades-strap__inner">
-    <div class="trades-chip">
-      <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 16 V9 L10 4 L16 9 V16 H12 V12 H8 V16 Z" stroke="#007AFF" stroke-width="1.6" stroke-linejoin="round"/></svg>
-      Wins for <strong>Builders</strong>
-    </div>
-    <div class="trades-chip">
-      <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="5" r="2" stroke="#007AFF" stroke-width="1.6"/><path d="M7 8 H13 L14 16 H6 Z" stroke="#007AFF" stroke-width="1.6" stroke-linejoin="round"/><path d="M8 12 H12" stroke="#007AFF" stroke-width="1.4" stroke-linecap="round"/></svg>
-      Trusted by <strong>Electricians</strong>
-    </div>
-    <div class="trades-chip">
-      <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M6 16 L6 8 Q10 5 14 8 L14 16" stroke="#007AFF" stroke-width="1.6" stroke-linejoin="round"/><path d="M8 12 H12" stroke="#007AFF" stroke-width="1.4" stroke-linecap="round"/></svg>
-      Used by <strong>Plasterers</strong>
-    </div>
-    <div class="trades-chip">
-      <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 10 Q4 4 10 4 Q16 4 16 10" stroke="#007AFF" stroke-width="1.6" stroke-linecap="round"/><rect x="3" y="10" width="14" height="6" rx="2" stroke="#007AFF" stroke-width="1.6"/></svg>
-      Fast for <strong>Plumbers</strong>
-    </div>
-    <div class="trades-chip">
-      <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="3" y="4" width="14" height="12" rx="2" stroke="#007AFF" stroke-width="1.6"/><path d="M3 9 H17" stroke="#007AFF" stroke-width="1.4"/><circle cx="10" cy="13" r="1.5" fill="#007AFF"/></svg>
-      Sharp for <strong>Decorators</strong>
-    </div>
+  <div class="trades-strap__inner trades-strap__inner--centred">
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 16 V9 L10 4 L16 9 V16 H12 V12 H8 V16 Z" stroke="#007AFF" stroke-width="1.6" stroke-linejoin="round"/></svg>
+    <span class="trades-strap__text">For <strong>Builders</strong>, <strong>electricians</strong>, <strong>plasterers</strong>, <strong>plumbers</strong> and <strong>Decorators</strong></span>
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="5" r="2" stroke="#007AFF" stroke-width="1.6"/><path d="M7 8 H13 L14 16 H6 Z" stroke="#007AFF" stroke-width="1.6" stroke-linejoin="round"/><path d="M8 12 H12" stroke="#007AFF" stroke-width="1.4" stroke-linecap="round"/></svg>
   </div>
+</div>
+
+<!-- MOTTO -->
+<div class="motto-banner">
+  <p>Finish quoting before you leave the <span>driveway</span>.</p>
 </div>
 
 <!-- HOW IT WORKS -->
@@ -758,7 +770,7 @@
 
     <div class="pricing__guarantee fade-up">
       <svg viewBox="0 0 40 40" fill="none" width="40" height="40" style="flex-shrink:0"><path d="M20 4 L34 10 V20 C34 28 20 36 20 36 C20 36 6 28 6 20 V10 Z" stroke="#21B86E" stroke-width="2" fill="rgba(33,184,110,0.08)" stroke-linejoin="round"/><path d="M13 20 L18 25 L27 15" stroke="#21B86E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <p><strong>If AccuQuote doesn't save you time on your first 3 quotes, email us.</strong> We'll extend your free trial by 3 months, no questions asked. We've been tradesmen. We know what it's like to try a new bit of kit and wonder if it'll stick. Give it 3 quotes — if it's not working, just say so.</p>
+      <p><strong>If AccuQuote doesn't save you time on your first 3 quotes, email us.</strong> We'll extend your free trial by 3 months, no questions asked. We know what it's like to try a new bit of kit and wonder if it'll stick. Give it 3 quotes — if it's not working, just say so.</p>
     </div>
   </div>
 </section>
@@ -769,13 +781,14 @@
     <div class="story__inner">
       <div class="story__text fade-up">
         <p class="section-label">Our story</p>
-        <h2 id="story-heading">It started with a decorator who knocked off at 2pm.</h2>
+        <h2 id="story-heading">This all started with a decorator who finished work at 2pm, daily.</h2>
         <p>Our founder Luke runs <em>Slick Digital</em>, a development agency. When he started prospecting, he quickly noticed something: builders, carpenters, painters, electricians — they'd all quietly started using technology to work smarter. Not because anyone told them to. Because it was saving them real time.</p>
         <p>Then he met Gary.</p>
-        <p>Gary is a decorator. Over a conversation that started with AI and ended somewhere around the third cup of tea, he walked Luke through his workflow — three separate apps cobbled together to scan spaces, work out materials, and get accurate quotes out fast. Live prices, proper numbers, professional PDFs.</p>
+        <p>Gary is a decorator. Over a conversation that started with websites and ended with digital assistants and AI, he walked Luke through his workflow — three separate apps cobbled together to scan spaces, work out materials, and get accurate quotes out fast. Live prices, proper numbers, professional PDFs.</p>
         <p>That bit was impressive. <em>This bit stopped Luke in his tracks:</em> Gary was finishing work at 2pm. Every day.</p>
         <p>He wasn't trying to grow an empire. He just wanted his afternoons back — time with his family, time to breathe, time that quoting used to steal every evening. Gary had found it. The process just happened to involve three apps that didn't quite talk to each other.</p>
         <p>With Gary's help — and a group of master tradesmen who knew exactly where the pain was — Luke built AccuQuote: one app that does what Gary's three did, without the friction. <em>Thousands of tradespeople are now getting real hours back every week. It's their time now, not the quote's.</em></p>
+        <p>These days Gary's problem isn't accuracy — it's discipline. The scan-to-materials pipeline is precise enough that if he deviates from the plan AccuQuote hands him, even slightly, he comes up short on-site. He's had to learn to just follow the numbers.</p>
       </div>
       <div class="story__card fade-up d2">
         <div class="story__card-label">The difference it makes</div>
@@ -800,6 +813,25 @@
           <div class="story__stat-label">Not outsourced to the lowest-cost centre hoping for the best.</div>
         </div>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- REFERRAL -->
+<section class="section" id="referral" aria-labelledby="referral-heading">
+  <div class="container">
+    <div class="section-header center fade-up">
+      <p class="section-label">Referral programme</p>
+      <h2 id="referral-heading">This product is inherently viral.</h2>
+      <p>Every tradesman knows ten others.</p>
+    </div>
+    <div class="referral__card fade-up">
+      <p class="referral__lede">I'd give:</p>
+      <div class="referral__offer">
+        <span class="referral__offer-num">One month free</span>
+        <span class="referral__offer-label">for every referral</span>
+      </div>
+      <p class="referral__note">Not cash.</p>
     </div>
   </div>
 </section>
@@ -875,28 +907,18 @@
     <div class="testimonials__grid fade-up">
 
       <div class="testimonial-card">
-        <p>"Quoted a full bathroom rip-out and retile on site. Customer signed off before I'd even got back to the van."</p>
-        <div class="testimonial-card__author"><strong>Danny M.</strong> <span>Tiler, Birmingham</span></div>
-      </div>
-
-      <div class="testimonial-card">
-        <p>"Used to spend Sunday evenings doing quotes. Now I do them on the drive home. Proper time saver."</p>
-        <div class="testimonial-card__author"><strong>Craig H.</strong> <span>Plasterer, Leeds</span></div>
-      </div>
-
-      <div class="testimonial-card">
-        <p>"Did a rewire quote for a 4-bed semi in about 12 minutes. Client said it was the most professional quote they'd seen. Got the job."</p>
-        <div class="testimonial-card__author"><strong>Tomasz W.</strong> <span>Electrician, Nottingham</span></div>
-      </div>
-
-      <div class="testimonial-card">
         <p>"Deposit feature alone is worth it. Three cancellations last year cost me thousands. Haven't had one since I started taking deposits upfront."</p>
         <div class="testimonial-card__author"><strong>Steve B.</strong> <span>Builder, Manchester</span></div>
       </div>
 
       <div class="testimonial-card">
-        <p>"Scanned a kitchen extension, whole thing priced in 15 mins. Screwfix prices pulled in automatically — dead on."</p>
-        <div class="testimonial-card__author"><strong>Arjun P.</strong> <span>Carpenter, Leicester</span></div>
+        <p>"Proper time saver."</p>
+        <div class="testimonial-card__author"><strong>Craig H.</strong> <span>Plasterer, Leeds</span></div>
+      </div>
+
+      <div class="testimonial-card">
+        <p>"Did a rewire quote for a 4-bed semi in about 12 minutes. Client said it was the most professional quote they'd seen — and I'm not exactly Microsoft Word's biggest fan, so that says something. Got the job the same afternoon."</p>
+        <div class="testimonial-card__author"><strong>Tomasz W.</strong> <span>Electrician, Nottingham</span></div>
       </div>
 
       <div class="testimonial-card">
@@ -905,23 +927,13 @@
       </div>
 
       <div class="testimonial-card">
-        <p>"Quoted a two-storey extension. Normally take me a full evening. Done in 20 minutes including the write-up."</p>
-        <div class="testimonial-card__author"><strong>Mirek K.</strong> <span>Builder, Bristol</span></div>
-      </div>
-
-      <div class="testimonial-card">
-        <p>"I'm not a tech person at all. Genuinely thought I'd download it and give up. Been using it every day for 3 months."</p>
+        <p>"I'm not a tech person at all. Genuinely thought I'd download it and give up within a week. That was three months ago — I open it most mornings before I've even had my tea."</p>
         <div class="testimonial-card__author"><strong>Terry S.</strong> <span>Plumber, Cardiff</span></div>
       </div>
 
       <div class="testimonial-card">
-        <p>"Did a loft conversion quote on the spot while the customer was showing me around. They were well impressed."</p>
-        <div class="testimonial-card__author"><strong>Raj B.</strong> <span>Builder, East London</span></div>
-      </div>
-
-      <div class="testimonial-card">
-        <p>"Customer approved the quote, paid the deposit, and I had confirmation before I'd even started the drive home. Mad."</p>
-        <div class="testimonial-card__author"><strong>Lee F.</strong> <span>Decorator, Coventry</span></div>
+        <p>"Scanned a kitchen extension. Whole thing priced in 15 minutes, Screwfix prices pulled in automatically. Checked the timber count against my own numbers after, out of habit more than doubt. Dead on."</p>
+        <div class="testimonial-card__author"><strong>Arjun P.</strong> <span>Carpenter, Leicester</span></div>
       </div>
 
       <div class="testimonial-card">

@@ -33,51 +33,53 @@
     <span>AccuQuote</span>
   </a>
   <h1>Privacy Policy</h1>
-  <p class="subtitle">Last updated: 27 April 2026</p>
+  <p class="subtitle">Last updated: 6 July 2026</p>
 
   <p>AccuQuote ("we", "our", "us") is a quoting application for UK trade professionals. This policy explains what data we collect, how we use it, and your rights.</p>
 
   <h2>1. Data we collect</h2>
   <ul>
-    <li><strong>Account information</strong> — name, business name, email address, VAT number when you sign up.</li>
-    <li><strong>Job data</strong> — room dimensions from LiDAR scans, verbal job descriptions you dictate, materials lists, quotes, and customer contact details you enter.</li>
-    <li><strong>Device data</strong> — camera and microphone access (only when actively scanning or dictating). We do not record or store raw audio or video.</li>
-    <li><strong>Usage data</strong> — pages visited, features used, error logs. No advertising tracking.</li>
+    <li><strong>Account information</strong> — your email address, and a securely hashed password, or the identifier provided by Google or Apple if you sign in that way.</li>
+    <li><strong>Job data</strong> — room dimensions and scan data captured by your device's camera/LiDAR sensor, job descriptions (typed or dictated — voice is transcribed on-device before sending), your business profile answers (day rate, preferred suppliers, trade type), materials lists, quotes, and any customer contact details you enter.</li>
+    <li><strong>Device data</strong> — camera and microphone access, used only while actively scanning or dictating. We do not record or store raw audio or video.</li>
+    <li><strong>Location</strong> — requested only while the app is in use, only if you use the supplier-lookup feature, to suggest your nearest trade supplier branch.</li>
   </ul>
+  <p>We do not use advertising or analytics tracking SDKs, and we do not track you across other companies' apps or websites.</p>
 
   <h2>2. How we use your data</h2>
   <ul>
-    <li>To generate materials lists and quotes using AI (your job descriptions are sent to Anthropic's Claude API — see section 4).</li>
-    <li>To check live prices from trade suppliers (search terms only — no personal data sent).</li>
-    <li>To store your jobs and quotes so you can access them across devices.</li>
-    <li>To send you quote-related emails if you request it.</li>
+    <li>To generate quote line items and pricing using AI — your job description and relevant profile details are sent via our server to Anthropic's Claude API (see section 4).</li>
+    <li>To store your jobs and quotes so your quote history is available to you across sessions.</li>
+    <li>To process subscription purchases via Apple's StoreKit.</li>
+    <li>To process deposit payments you request from your own customers, via Stripe, if you use that feature.</li>
   </ul>
 
   <h2>3. Data storage</h2>
-  <p>Job data is currently stored locally on your device (browser localStorage / iPhone storage). When cloud sync is enabled, data is stored in encrypted form on EU-based servers (Supabase, Frankfurt region). We do not sell your data.</p>
+  <p>Scan files, floor plans, and 3D model thumbnails are stored locally on your device. Account, job, and quote data is sent to and stored on our application server (hosted on Render) so it's available to you across sessions. We do not sell your data.</p>
 
   <h2>4. Third-party services</h2>
   <ul>
-    <li><strong>Anthropic (Claude AI)</strong> — job descriptions are sent to generate materials lists. Anthropic's <a href="https://www.anthropic.com/privacy" target="_blank">privacy policy</a> applies. Data is not used to train models.</li>
-    <li><strong>Cloudflare Workers</strong> — price checking requests pass through Cloudflare's network. No personal data is included in price queries.</li>
-    <li><strong>Apple RoomPlan</strong> — LiDAR room scanning is processed entirely on-device by Apple's framework. No scan data leaves your iPhone.</li>
+    <li><strong>Firebase (Google)</strong> — handles sign-in and account security. Processes your email address and authentication tokens.</li>
+    <li><strong>Anthropic (Claude AI)</strong> — job descriptions and quoting-relevant profile details are sent to generate your quote's line items. Anthropic's <a href="https://www.anthropic.com/legal/privacy" target="_blank">privacy policy</a> applies. This data is not used to train Anthropic's models.</li>
+    <li><strong>Apple (StoreKit, Sign in with Apple)</strong> — processes purchase confirmation and, if used, your Apple sign-in identifier. We never receive your payment card details.</li>
+    <li><strong>Stripe</strong> — if you use the deposit-request feature, Stripe processes that payment. Stripe's <a href="https://stripe.com/privacy" target="_blank">privacy policy</a> applies — we only receive confirmation that a payment link was created and its status.</li>
   </ul>
 
   <h2>5. Camera and microphone</h2>
-  <p>The iOS app uses the iPhone camera and LiDAR sensor exclusively to measure room dimensions. The web app uses your microphone exclusively to transcribe job descriptions. We do not record, store, or transmit raw audio or video at any point.</p>
+  <p>The app uses your device's camera and LiDAR sensor to measure room dimensions, and your microphone to transcribe spoken job descriptions on-device before sending the resulting text. We do not record, store, or transmit raw audio or video.</p>
 
   <h2>6. Your rights (UK GDPR)</h2>
   <ul>
     <li>Right to access your data</li>
     <li>Right to correct inaccurate data</li>
-    <li>Right to delete your data ("right to be forgotten")</li>
+    <li>Right to delete your account ("right to be forgotten") — available at any time from Account settings within the app, which immediately and permanently deletes your login credentials</li>
     <li>Right to data portability</li>
     <li>Right to object to processing</li>
   </ul>
-  <p>To exercise any of these rights, email us at <a href="mailto:privacy@accuquote.co.uk">privacy@accuquote.co.uk</a>.</p>
+  <p>To exercise any of these rights, email us at <a href="mailto:slickdigitaluk@gmail.com">slickdigitaluk@gmail.com</a>.</p>
 
   <h2>7. Data retention</h2>
-  <p>We retain job and quote data for as long as your account is active. You can delete individual jobs at any time within the app. Deleting your account removes all associated data within 30 days.</p>
+  <p>We retain job and quote data for as long as your account is active. Scan files stored on your device can be automatically or manually removed after 90 days using a setting in the app, while your dimension and quote records are kept. Deleting your account permanently removes your login credentials from our authentication system immediately.</p>
 
   <h2>8. Children</h2>
   <p>AccuQuote is intended for professional tradespeople (18+). We do not knowingly collect data from children.</p>
@@ -88,7 +90,7 @@
   <h2>10. Contact</h2>
   <p>
     AccuQuote<br>
-    Email: <a href="mailto:privacy@accuquote.co.uk">privacy@accuquote.co.uk</a><br>
+    Email: <a href="mailto:slickdigitaluk@gmail.com">slickdigitaluk@gmail.com</a><br>
     For data protection queries, reference "UK GDPR request" in the subject line.
   </p>
 
