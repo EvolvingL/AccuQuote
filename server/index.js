@@ -37,10 +37,17 @@
  */
 
 import express from 'express';
+import { randomUUID } from 'crypto';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { createRequire } from 'module';
 import rateLimit from 'express-rate-limit';
+import { log, installCrashHandlers } from './logger.js';
+
+// Installed first, before any other module code runs, so a throw during
+// startup (e.g. a bad env var read further down this file) is still logged
+// instead of producing the same silent bare-restart this was built to fix.
+installCrashHandlers();
 
 const require    = createRequire(import.meta.url);
 const __dirname  = dirname(fileURLToPath(import.meta.url));
@@ -55,7 +62,7 @@ if (process.env.NODE_ENV === 'production') {
                     'STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET', 'ADMIN_SECRET'];
   const missing  = required.filter(k => !process.env[k]);
   if (missing.length) {
-    console.error(`FATAL: missing required env vars: ${missing.join(', ')}`);
+    log.fatal('missing required env vars', { missing });
     process.exit(1);
   }
 }
@@ -71,7 +78,7 @@ let adminFirestore = null;
 const firebaseReady = (async () => {
   const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT;
   if (!serviceAccountJson) {
-    console.warn('[Firebase] FIREBASE_SERVICE_ACCOUNT not set — auth disabled');
+    log.warn('Firebase Service Account not set — auth disabled');
     return false;
   }
   try {
@@ -85,10 +92,10 @@ const firebaseReady = (async () => {
     }
     adminAuth      = admin.auth();
     adminFirestore = admin.firestore();
-    console.log('[Firebase] Initialised');
+    log.info('Firebase initialised');
     return true;
   } catch (e) {
-    console.error('[Firebase] Init failed:', e.message);
+    log.error('Firebase init failed', { err: e });
     return false;
   }
 })();
@@ -104,7 +111,7 @@ let appleClient = null;
 const appleReady = (async () => {
   const { APPLE_ISSUER_ID, APPLE_KEY_ID, APPLE_PRIVATE_KEY, APPLE_BUNDLE_ID } = process.env;
   if (!APPLE_ISSUER_ID || !APPLE_KEY_ID || !APPLE_PRIVATE_KEY || !APPLE_BUNDLE_ID) {
-    console.warn('[Apple IAP] Apple env vars not fully set — IAP verification disabled');
+    log.warn('Apple IAP env vars not fully set — IAP verification disabled');
     return false;
   }
   try {
@@ -124,10 +131,10 @@ const appleReady = (async () => {
     appleClient = new AppStoreServerAPI(
       APPLE_PRIVATE_KEY, APPLE_KEY_ID, APPLE_ISSUER_ID, APPLE_BUNDLE_ID, environment
     );
-    console.log(`[Apple IAP] Initialised (${environment})`);
+    log.info('Apple IAP initialised', { environment });
     return true;
   } catch (e) {
-    console.error('[Apple IAP] Init failed:', e.message);
+    log.error('Apple IAP init failed', { err: e });
     return false;
   }
 })();
@@ -257,7 +264,7 @@ async function reserveFreeQuote(uid) {
       return true;
     });
   } catch (err) {
-    console.error('[reserveFreeQuote]', err.message);
+    log.error('reserveFreeQuote failed', { err });
     return false;
   }
 }
@@ -275,7 +282,7 @@ async function releaseFreeQuoteReservation(uid) {
       txn.set(userRef, { freeQuotesUsed: Math.max(0, used - 1) }, { merge: true });
     });
   } catch (err) {
-    console.error('[releaseFreeQuoteReservation]', err.message);
+    log.error('releaseFreeQuoteReservation failed', { err });
   }
 }
 
@@ -287,6 +294,29 @@ app.use('/api/stripe/webhook', express.raw({ type: 'application/json', limit: '1
 // Cap request bodies. Job descriptions/context are truncated downstream anyway,
 // so 256kb is generous; this rejects multi-MB payloads before we spend CPU on them.
 app.use(express.json({ limit: '256kb' }));
+
+// ── Request ID + access logging ─────────────────────────────────────────────
+// Every request gets a short correlation ID attached to req.id, echoed in every
+// log line for that request (including any error thrown while handling it) and
+// back to the client as X-Request-Id — so "quote generation failed" can be
+// matched to the exact server-side log lines instead of guessing from a
+// timestamp. Logged on completion (not just on entry) so the response status
+// and duration are captured in one line per request.
+app.use((req, res, next) => {
+  req.id = randomUUID().slice(0, 8);
+  res.setHeader('X-Request-Id', req.id);
+  const startedAt = Date.now();
+  res.on('finish', () => {
+    log.info('request', {
+      requestId: req.id,
+      method: req.method,
+      path: req.path,
+      status: res.statusCode,
+      durationMs: Date.now() - startedAt,
+    });
+  });
+  next();
+});
 
 // ── Security headers ──────────────────────────────────────────────────────────
 // Fix #22: added Content-Security-Policy to protect admin panel from XSS
@@ -310,6 +340,11 @@ const ALLOWED_ORIGINS = new Set([
   'http://localhost:3000',
   'http://localhost:5000',
   'https://accuquote.onrender.com',
+  'https://www.accuquote.uk',
+  'https://accuquote.uk',
+  // .co.uk kept alongside .uk (not replaced) in case of stale DNS/redirects
+  // still pointing here — see the App Store readiness audit, 6 Jul 2026,
+  // which confirmed accuquote.uk is the current live domain.
   'https://www.accuquote.co.uk',
   'https://accuquote.co.uk',
 ]);
@@ -466,7 +501,7 @@ app.post('/api/quote/discover', requireAuth, requireEntitlement, aiLimiter, asyn
     });
 
     if (!response.ok) {
-      console.error('[quote/discover] Anthropic', response.status);
+      log.error('quote/discover: Anthropic request failed', { requestId: req.id, status: response.status });
       if (isFree) await releaseFreeQuoteReservation(req.user.uid);
       return res.status(response.status).json({ error: 'AI request failed. Please try again.' });
     }
@@ -476,7 +511,7 @@ app.post('/api/quote/discover', requireAuth, requireEntitlement, aiLimiter, asyn
 
     res.json({ text });
   } catch (err) {
-    console.error('[quote/discover]', err);
+    log.error('quote/discover failed', { requestId: req.id, err });
     if (isFree) await releaseFreeQuoteReservation(req.user.uid);
     res.status(500).json({ error: 'Internal server error.' });
   }
@@ -553,7 +588,7 @@ app.post('/api/quote/section', requireAuth, requireEntitlement, aiLimiter, async
     });
 
     if (!upstream.ok) {
-      console.error('[quote/section] Anthropic', upstream.status);
+      log.error('quote/section: Anthropic request failed', { requestId: req.id, status: upstream.status });
       res.write(`data: ${JSON.stringify({ error: 'AI request failed. Please try again.' })}\n\n`);
       return res.end();
     }
@@ -563,7 +598,7 @@ app.post('/api/quote/section', requireAuth, requireEntitlement, aiLimiter, async
     }
     res.end();
   } catch (err) {
-    console.error('[quote/section]', err);
+    log.error('quote/section failed', { requestId: req.id, err });
     res.write(`data: ${JSON.stringify({ error: 'Internal server error.' })}\n\n`);
     res.end();
   }
@@ -598,7 +633,7 @@ app.post('/api/claude', requireAuth, aiLimiter, async (req, res) => {
     });
 
     if (!response.ok) {
-      console.error('[/api/claude] Anthropic error', response.status);
+      log.error('/api/claude: Anthropic request failed', { requestId: req.id, status: response.status });
       return res.status(response.status).json({ error: 'AI request failed. Please try again.' });
     }
 
@@ -606,7 +641,7 @@ app.post('/api/claude', requireAuth, aiLimiter, async (req, res) => {
     const content = data.content?.[0]?.text || '';
     res.json({ content });
   } catch (err) {
-    console.error('[/api/claude]', err);
+    log.error('/api/claude failed', { requestId: req.id, err });
     res.status(500).json({ error: 'Internal server error.' });
   }
 });
@@ -665,7 +700,7 @@ app.post('/api/stripe/create-checkout', requireAuth, stripeLimiter, async (req, 
 
     res.json({ url: data.url, sessionId: data.id });
   } catch (err) {
-    console.error("[server]", err);
+    log.error('unhandled route error', { requestId: req.id, path: req.path, err });
     res.status(500).json({ error: "Internal server error." });
   }
 });
@@ -678,7 +713,7 @@ app.post('/api/stripe/webhook', async (req, res) => {
   const stripeKey = process.env.STRIPE_SECRET_KEY;
 
   if (!webhookSecret || !stripeKey) {
-    console.error('[Webhook] STRIPE_WEBHOOK_SECRET or STRIPE_SECRET_KEY not set');
+    log.error('Webhook: STRIPE_WEBHOOK_SECRET or STRIPE_SECRET_KEY not set');
     return res.status(500).json({ error: 'Webhook not configured' });
   }
 
@@ -719,12 +754,12 @@ app.post('/api/stripe/webhook', async (req, res) => {
 
     event = JSON.parse(payload.toString('utf8'));
   } catch (err) {
-    console.error('[Webhook] parse error', err.message);
+    log.error('Webhook parse error', { err });
     return res.status(400).json({ error: 'Webhook parse error' });
   }
 
   if (!adminFirestore) {
-    console.warn('[Webhook] Firestore not available, skipping entitlement update');
+    log.warn('Webhook: Firestore not available, skipping entitlement update');
     return res.json({ received: true });
   }
 
@@ -738,7 +773,7 @@ app.post('/api/stripe/webhook', async (req, res) => {
           await adminFirestore
             .doc(`users/${uid}/entitlement/subscription`)
             .set({ tier, status: 'active', updatedAt: Date.now(), stripeSessionId: session.id }, { merge: true });
-          console.log(`[Webhook] Activated ${tier} for ${uid}`);
+          log.info('Webhook: subscription activated', { tier, uid });
         }
         break;
       }
@@ -761,7 +796,7 @@ app.post('/api/stripe/webhook', async (req, res) => {
           await adminFirestore
             .doc(`users/${uid}/entitlement/subscription`)
             .set({ tier: 'free', status: 'inactive', updatedAt: Date.now() }, { merge: true });
-          console.log(`[Webhook] Deactivated subscription for ${uid}`);
+          log.info('Webhook: subscription deactivated', { uid });
         }
         break;
       }
@@ -769,7 +804,7 @@ app.post('/api/stripe/webhook', async (req, res) => {
         break;
     }
   } catch (err) {
-    console.error('[Webhook] Firestore update error:', err.message);
+    log.error('Webhook Firestore update error', { err });
   }
 
   res.json({ received: true });
@@ -815,7 +850,7 @@ app.post('/api/iap/verify', requireAuth, stripeLimiter, async (req, res) => {
 
     res.json({ ok: true, tier: isActive ? tier : 'free' });
   } catch (err) {
-    console.error('[IAP verify]', err.message);
+    log.error('IAP verify failed', { err, requestId: req.id });
     res.status(500).json({ error: 'Verification failed' });
   }
 });
@@ -878,7 +913,7 @@ app.post('/api/apple/notifications', express.json({ limit: '256kb' }), async (re
 
     res.json({ received: true });
   } catch (err) {
-    console.error('[Apple notification]', err.message);
+    log.error('Apple notification handler failed', { err });
     res.status(400).json({ error: 'Invalid notification' });
   }
 });
@@ -955,7 +990,7 @@ app.post('/api/stripe/payment-link', requireAuth, requirePaidTier, stripeLimiter
 
     res.json({ url: linkBody.url, depositAmount: amount, serviceFee: servicePence / 100 });
   } catch (err) {
-    console.error("[server]", err);
+    log.error('unhandled route error', { requestId: req.id, path: req.path, err });
     res.status(500).json({ error: "Internal server error." });
   }
 });
@@ -992,7 +1027,7 @@ app.post('/api/subscribe', subscribeLimiter, async (req, res) => {
     }
     return res.status(response.status).json({ error: data?.message || 'Beehiiv error' });
   } catch (err) {
-    console.error("[server]", err);
+    log.error('unhandled route error', { requestId: req.id, path: req.path, err });
     res.status(500).json({ error: "Internal server error." });
   }
 });
@@ -1068,7 +1103,7 @@ app.get('/api/admin/users', requireAdmin, adminLimiter, async (req, res) => {
     rows.sort((a, b) => (b.totalScans || 0) - (a.totalScans || 0));
     res.json({ users: rows, total: rows.length });
   } catch (err) {
-    console.error("[server]", err);
+    log.error('unhandled route error', { requestId: req.id, path: req.path, err });
     res.status(500).json({ error: "Internal server error." });
   }
 });
@@ -1121,7 +1156,7 @@ app.get('/api/admin/users.csv', requireAdmin, adminLimiter, async (req, res) => 
     res.setHeader('Content-Disposition', `attachment; filename="accuscan-users-${Date.now()}.csv"`);
     res.send(csv);
   } catch (err) {
-    console.error("[server]", err);
+    log.error('unhandled route error', { requestId: req.id, path: req.path, err });
     res.status(500).json({ error: "Internal server error." });
   }
 });
@@ -1246,7 +1281,7 @@ app.post('/api/push/register', requireAuth, async (req, res) => {
 
     res.json({ ok: true });
   } catch (err) {
-    console.error("[server]", err);
+    log.error('unhandled route error', { requestId: req.id, path: req.path, err });
     res.status(500).json({ error: "Internal server error." });
   }
 });
@@ -1293,7 +1328,7 @@ app.post('/api/admin/broadcast', requireAdmin, adminLimiter, async (req, res) =>
   try {
     snap = await query.limit(5000).get();
   } catch (err) {
-    console.error("[broadcast] Firestore query", err);
+    log.error('broadcast Firestore query failed', { err, requestId: req.id });
     return res.status(500).json({ error: "Internal server error." });
   }
 
@@ -1400,7 +1435,7 @@ app.post('/api/push/personal', requireAdmin, adminLimiter, async (req, res) => {
   try {
     deviceDoc = await adminFirestore.doc(`devices/${uid}`).get();
   } catch (err) {
-    console.error("[push/personal]", err);
+    log.error('push/personal failed', { err, requestId: req.id });
     return res.status(500).json({ error: "Internal server error." });
   }
 
@@ -1428,7 +1463,7 @@ app.post('/api/push/personal', requireAdmin, adminLimiter, async (req, res) => {
   if (!result.success) {
     if (result.stale) await adminFirestore.doc(`devices/${uid}`).delete().catch(() => {});
     // Do not leak FCM error codes — log server-side only
-    console.error('[push/personal] FCM error', result.error);
+    log.error('push/personal FCM error', { fcmError: result.error });
     return res.status(500).json({ error: 'Push delivery failed.' });
   }
 
@@ -1457,10 +1492,12 @@ app.get('/api/admin/push/log', requireAdmin, adminLimiter, async (req, res) => {
       .orderBy('sentAt', 'desc')
       .limit(50)
       .get();
-    const log = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    res.json({ log });
+    // Named pushLog, not log — a local `log` here would shadow the imported
+    // structured logger for the rest of this catch block.
+    const pushLog = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    res.json({ log: pushLog });
   } catch (err) {
-    console.error("[server]", err);
+    log.error('unhandled route error', { requestId: req.id, path: req.path, err });
     res.status(500).json({ error: "Internal server error." });
   }
 });
@@ -1516,5 +1553,5 @@ app.use(express.static(ROOT, {
 app.get('*', (req, res) => res.sendFile(join(ROOT, 'website.html')));
 
 app.listen(PORT, () => {
-  console.log(`AccuQuote server running on port ${PORT}`);
+  log.info('server started', { port: PORT });
 });
