@@ -253,7 +253,14 @@ async function requireEntitlement(req, res, next) {
 // Returns true if the slot was reserved, false if quota was already exhausted
 // by a race that requireEntitlement's read couldn't see.
 async function reserveFreeQuote(uid) {
-  if (!adminFirestore) return false;
+  // Fail OPEN like getUserTier/getFreeQuotesUsed above: if Firestore is
+  // unavailable or the transaction throws, that's an infra problem, not
+  // evidence the user's quota is exhausted. Failing closed here previously
+  // meant a brand-new free-tier user could be rejected with "subscription
+  // required" on their very first quote purely because of a transient
+  // Firestore error, even though every read-side check reported them as
+  // eligible (0 quotes used) — a confusing, silent false rejection.
+  if (!adminFirestore) return true;
   const userRef = adminFirestore.doc(`users/${uid}`);
   try {
     return await adminFirestore.runTransaction(async (txn) => {
