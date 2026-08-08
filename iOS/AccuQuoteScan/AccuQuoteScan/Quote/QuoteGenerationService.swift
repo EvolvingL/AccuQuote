@@ -40,6 +40,48 @@ enum GenerationState: Equatable {
     case failed(String)
 }
 
+// MARK: - Error messaging
+//
+// Single choke-point for turning a network/HTTP failure into copy a user can
+// act on. Never surfaces a raw status code or NSError/URLError string —
+// those go to AQLog only. Distinguishes retryable failures (network blip,
+// server hiccup — user should just try again) from ones that need a
+// different action (session expired, subscription required) so the caller
+// can decide whether to offer "Try Again" or route the user elsewhere.
+// Mirrors the existing ScanErrorClassifier convention (ScanCoordinator.swift).
+
+enum QuoteErrorMessaging {
+    /// User-facing copy for an HTTP status code from our own server.
+    /// 401/403 are handled with their own specific copy at the call site
+    /// (session expired / subscription required) before this is reached —
+    /// this covers everything else (5xx, unexpected 4xx, routing failures).
+    static func message(forHTTPStatus status: Int) -> String {
+        switch status {
+        case 500...599:
+            return "We're having trouble generating your quote right now. Please try again in a moment."
+        default:
+            return "Something went wrong generating your quote. Please try again."
+        }
+    }
+
+    /// User-facing copy for a thrown network error (no HTTP response at all —
+    /// offline, timeout, DNS failure, TLS issue, etc.). `error` is logged via
+    /// AQLog by the caller, never shown.
+    static func message(forNetworkError error: Error) -> String {
+        if let urlError = error as? URLError {
+            switch urlError.code {
+            case .notConnectedToInternet, .networkConnectionLost, .dataNotAllowed:
+                return "You're offline. Check your connection and try again."
+            case .timedOut:
+                return "The request took too long. Please try again."
+            default:
+                return "Couldn't reach the server. Please try again."
+            }
+        }
+        return "Couldn't reach the server. Please try again."
+    }
+}
+
 // MARK: - Service
 
 @MainActor
@@ -49,7 +91,7 @@ final class QuoteGenerationService: ObservableObject {
     @Published var state: GenerationState = .idle
     @Published var vatRate: Double = 20.0
 
-    // Test-only seam: defaults to .shared for every real call site (Views.swift's
+    // Test-only seam: defaults to .shared for every real call site (QuoteView.swift's
     // startGeneration, unchanged), letting XCTest inject a URLSession configured
     // with a URLProtocol stub instead of hitting the real network. Never changed
     // by app code — only ever set via the test-only initializer below.
@@ -98,7 +140,11 @@ final class QuoteGenerationService: ObservableObject {
                 claudeContext: claudeContext
             )
         } catch {
-            state = .failed("Could not plan quote sections: \(error.localizedDescription)")
+            // error.localizedDescription here is already user-safe copy set upstream
+            // by discoverSections/attachAuthToken (e.g. "Your session has expired…",
+            // or QuoteErrorMessaging output) — shown as-is, no added technical framing.
+            AQLog.quote.error("discoverSections failed: \(error.localizedDescription, privacy: .public)")
+            state = .failed(error.localizedDescription)
             return
         }
 
@@ -157,6 +203,8 @@ final class QuoteGenerationService: ObservableObject {
             if case .failed = $0.status { return true }; return false
         }
         if failedAll {
+            let sectionCount = sections.count
+            AQLog.quote.error("all \(sectionCount) sections failed to generate")
             state = .failed("All sections failed to generate. Please check your connection and try again.")
             return
         }
@@ -211,6 +259,8 @@ final class QuoteGenerationService: ObservableObject {
         QuoteHistoryStore.shared.save(saved)
         if isFirstQuoteEver {
             NotificationService.shared.requestPermissionAfterFirstQuote()
+            // AccuScan→AccuQuote Funnel build spec §5 — funnel-completion event.
+            FunnelAnalytics.log(.firstQuoteGenerated)
         }
     }
 
@@ -228,7 +278,9 @@ final class QuoteGenerationService: ObservableObject {
     ) async throws -> [QuoteSectionDescriptor] {
 
         guard let url = URL(string: "\(AQBackend.baseURL)/api/quote/discover") else {
-            throw URLError(.badURL)
+            AQLog.network.error("discoverSections: failed to construct URL from baseURL")
+            throw NSError(domain: "QuoteGen", code: 0,
+                          userInfo: [NSLocalizedDescriptionKey: QuoteErrorMessaging.message(forNetworkError: URLError(.badURL))])
         }
 
         var request = URLRequest(url: url)
@@ -243,7 +295,17 @@ final class QuoteGenerationService: ObservableObject {
         ]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-        let (data, response) = try await urlSession.data(for: request)
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await urlSession.data(for: request)
+        } catch {
+            // Connectivity-level failure (offline, timeout, DNS/TLS) — never reached
+            // the HTTP-status switch below, so sanitize here at the source.
+            AQLog.network.error("discoverSections: network request failed: \(error.localizedDescription, privacy: .public)")
+            throw NSError(domain: "QuoteGen", code: 0,
+                          userInfo: [NSLocalizedDescriptionKey: QuoteErrorMessaging.message(forNetworkError: error)])
+        }
 
         // Fix #17/#18/#19: handle HTTP status codes explicitly before parsing
         if let http = response as? HTTPURLResponse {
@@ -262,8 +324,12 @@ final class QuoteGenerationService: ObservableObject {
                 throw NSError(domain: "QuoteGen", code: 403,
                               userInfo: [NSLocalizedDescriptionKey: message])
             default:
+                // Server-authored messages (e.g. request-validation errors) are safe
+                // to show as-is — they're written for users. Anything else falls back
+                // to calm, non-technical copy; the real status code is logged, never shown.
+                AQLog.network.error("discoverSections: unexpected HTTP status \(http.statusCode, privacy: .public)")
                 let msg = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["error"] as? String
-                    ?? "Server error (\(http.statusCode)). Please try again."
+                    ?? QuoteErrorMessaging.message(forHTTPStatus: http.statusCode)
                 throw NSError(domain: "QuoteGen", code: http.statusCode,
                               userInfo: [NSLocalizedDescriptionKey: msg])
             }
@@ -345,7 +411,8 @@ final class QuoteGenerationService: ObservableObject {
             let (byteStream, response) = try await urlSession.bytes(for: request)
             let httpStatus = (response as? HTTPURLResponse)?.statusCode ?? 0
             guard httpStatus == 200 else {
-                return failedSection(descriptor: descriptor, reason: "HTTP \(httpStatus)")
+                AQLog.network.error("generateSection(\(descriptor.sectionKey, privacy: .public)): unexpected HTTP status \(httpStatus, privacy: .public)")
+                return failedSection(descriptor: descriptor, reason: QuoteErrorMessaging.message(forHTTPStatus: httpStatus))
             }
 
             var fullText = ""
@@ -376,7 +443,8 @@ final class QuoteGenerationService: ObservableObject {
                                           roomDimensions: roomDimensions, claudeContext: claudeContext,
                                           preferredSupplier: preferredSupplier, usualItems: usualItems)
             }
-            return failedSection(descriptor: descriptor, reason: error.localizedDescription)
+            AQLog.network.error("generateSection(\(descriptor.sectionKey, privacy: .public)) failed: \(error.localizedDescription, privacy: .public)")
+            return failedSection(descriptor: descriptor, reason: QuoteErrorMessaging.message(forNetworkError: error))
         }
     }
 

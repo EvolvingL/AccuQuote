@@ -6,7 +6,7 @@ import UIKit
 // PDF (vector) and PNG (300dpi raster) export for a FloorPlan2D, both driven
 // by the same FloorPlan2DRenderer.draw(...) the live Canvas view uses — so
 // the exported artefacts are guaranteed to match what the user saw on
-// screen. Mirrors the existing quote-PDF pattern in Views.swift
+// screen. Mirrors the existing quote-PDF pattern in QuoteView.swift
 // (UIGraphicsPDFRenderer, A4 points, not PDFKit) rather than introducing a
 // second PDF-generation approach.
 

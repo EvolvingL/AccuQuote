@@ -116,6 +116,12 @@ final class EntitlementManager: ObservableObject {
             if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                let tierStr = json["tier"] as? String,
                let fetched = SubscriptionTier(rawValue: tierStr) {
+                // AccuScan→AccuQuote Funnel build spec §5 — log only on the
+                // free→paid transition, not every refresh, so foreground
+                // polling of an already-paid account doesn't re-log the event.
+                if tier == .free, fetched != .free {
+                    FunnelAnalytics.log(.subscribed(tier: fetched.rawValue))
+                }
                 tier = fetched
                 freeQuotesRemaining = json["freeQuotesRemaining"] as? Int
                 SecureTokenStore.write(key: cacheKey, value: fetched.rawValue)

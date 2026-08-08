@@ -58,7 +58,14 @@ struct LoginView: View {
     @State private var password = ""
     @State private var showSignUp = false
     @State private var showReset  = false
+    // Referral code entry — collapsed by default, revealed on tap. Carried
+    // through to whichever sign-up path the user actually takes (email via
+    // SignUpView, or Apple/Google directly from this screen) via
+    // auth.pendingReferralCode, set immediately before each path starts.
+    @State private var showReferralField = false
+    @State private var referralCode = ""
     @FocusState private var focusedField: Field?
+    @FocusState private var referralFieldFocused: Bool
 
     enum Field { case email, password }
 
@@ -174,7 +181,10 @@ struct LoginView: View {
                         .cornerRadius(12)
                         .padding(.horizontal, 28)
                         // Trigger the native Apple flow when the button is tapped
-                        .simultaneousGesture(TapGesture().onEnded { auth.signInWithApple() })
+                        .simultaneousGesture(TapGesture().onEnded {
+                            auth.pendingReferralCode = referralCode
+                            auth.signInWithApple()
+                        })
 
                         // Google Sign-In — fully implemented via ASWebAuthenticationSession
                         SocialButton(
@@ -182,28 +192,63 @@ struct LoginView: View {
                             icon: "globe",
                             color: Color(red: 0.85, green: 0.20, blue: 0.15)
                         ) {
+                            auth.pendingReferralCode = referralCode
                             auth.signInWithGoogle()
                         }
                         .disabled(auth.isLoading)
                         .padding(.horizontal, 28)
                     }
 
+                    // Referral code — collapsed by default, reveals a small
+                    // text field on tap. Applies only if the account being
+                    // created (via any method below) turns out to be brand
+                    // new — see AuthManager.registerPendingReferralIfNeeded.
+                    VStack(spacing: 10) {
+                        if !showReferralField {
+                            Button {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    showReferralField = true
+                                }
+                                referralFieldFocused = true
+                            } label: {
+                                Text("Referred by a friend?")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(AQ.secondary)
+                            }
+                        } else {
+                            TextField("Enter their code", text: $referralCode)
+                                .textInputAutocapitalization(.characters)
+                                .autocorrectionDisabled()
+                                .focused($referralFieldFocused)
+                                .font(.system(size: 15))
+                                .padding(12)
+                                .background(AQ.fill)
+                                .cornerRadius(10)
+                                .overlay(RoundedRectangle(cornerRadius: 10).stroke(AQ.rule, lineWidth: 1))
+                        }
+                    }
+                    .padding(.horizontal, 28)
+                    .padding(.top, 20)
+
                     // Sign up link
                     HStack(spacing: 4) {
                         Text("Don't have an account?")
                             .font(.system(size: 14))
                             .foregroundColor(AQ.secondary)
-                        Button("Sign up") { showSignUp = true }
+                        Button("Sign up") {
+                            auth.pendingReferralCode = referralCode
+                            showSignUp = true
+                        }
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(AQ.blue)
                     }
-                    .padding(.top, 28)
+                    .padding(.top, 20)
                     .padding(.bottom, 40)
                 }
             }
             .navigationBarHidden(true)
         }
-        .sheet(isPresented: $showSignUp) { SignUpView() }
+        .sheet(isPresented: $showSignUp) { SignUpView(referralCode: referralCode) }
         .sheet(isPresented: $showReset)  { PasswordResetView() }
     }
 
@@ -221,6 +266,7 @@ struct LoginView: View {
 struct SignUpView: View {
     @EnvironmentObject var auth: AuthManager
     @Environment(\.dismiss) private var dismiss
+    var referralCode: String? = nil
     @State private var email = ""
     @State private var password = ""
     @State private var confirm = ""
@@ -344,6 +390,7 @@ struct SignUpView: View {
     private func signUp() {
         guard canSubmit else { return }
         focusedField = nil
+        auth.pendingReferralCode = referralCode
         Task { await auth.signUp(email: email, password: password) }
     }
 }

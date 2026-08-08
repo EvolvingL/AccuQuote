@@ -33,6 +33,8 @@
  *   POST /api/admin/broadcast               — push to segment + A/B test (admin)
  *   POST /api/push/personal                 — personalised push to single user (admin)
  *   GET  /api/admin/push/log                — last 50 push events (admin)
+ *   GET  /api/referral/me                   — returns caller's referral code + reward count (auth required)
+ *   POST /api/referral/register             — registers a referral code against the caller's account (auth required)
  *   GET  /*                                 — serves the web app static files
  */
 
@@ -276,6 +278,160 @@ async function reserveFreeQuote(uid) {
   }
 }
 
+// ── Referrals ─────────────────────────────────────────────────────────────────
+// Each user has one permanent referral code (users/{uid}.referralCode). A new
+// account can register another user's code once (referrals/{newUid}, keyed by
+// the REFERRED user's uid so the "already registered" check is a single doc
+// read). The reward — one free month added to the REFERRER's account — is
+// granted the moment the referred user's *first* payment lands (Stripe
+// checkout.session.completed, IAP verify with isActive, or the Apple SUBSCRIBED
+// notification), never at signup, so referrers can't be gamed by accounts that
+// register a code and never pay.
+
+const REFERRAL_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O/1/I
+
+function generateReferralCode() {
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+    code += REFERRAL_CODE_ALPHABET[Math.floor(Math.random() * REFERRAL_CODE_ALPHABET.length)];
+  }
+  return code;
+}
+
+// Returns the user's existing referral code, generating and persisting one on
+// first call. Retries on the (extremely unlikely) collision case.
+async function getOrCreateReferralCode(uid) {
+  const userRef = adminFirestore.doc(`users/${uid}`);
+  const doc = await userRef.get();
+  if (doc.exists && doc.data().referralCode) return doc.data().referralCode;
+
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const code = generateReferralCode();
+    const existing = await adminFirestore.collection('users')
+      .where('referralCode', '==', code).limit(1).get();
+    if (existing.empty) {
+      await userRef.set({ referralCode: code }, { merge: true });
+      return code;
+    }
+  }
+  throw new Error('Could not generate a unique referral code after 5 attempts');
+}
+
+// Applies the actual reward to the referrer's account: 1 free month, via
+// whichever payment provider they're on. Apple subscribers get their renewal
+// date pushed back 30 days (Apple's own sanctioned mechanism for this via
+// extendSubscriptionRenewalDate); Stripe subscribers get an additive account
+// credit (balance_transactions — NOT the customer's `balance` field, which
+// would overwrite rather than add to any prior referral credit).
+async function applyReferralReward(referrerUid, referredTier) {
+  const entDoc = await adminFirestore.doc(`users/${referrerUid}/entitlement/subscription`).get();
+  if (!entDoc.exists) {
+    log.warn('applyReferralReward: referrer has no entitlement doc', { referrerUid });
+    return false;
+  }
+  const ent = entDoc.data();
+
+  if (ent.provider === 'apple' && ent.appleOriginalTransactionId) {
+    const ready = await appleReady;
+    if (!ready || !appleClient) {
+      log.error('applyReferralReward: Apple IAP not configured, cannot extend renewal', { referrerUid });
+      return false;
+    }
+    try {
+      const { ExtendReasonCode } = await import('app-store-server-api');
+      await appleClient.extendSubscriptionRenewalDate(ent.appleOriginalTransactionId, {
+        extendByDays: 30,
+        extendReasonCode: ExtendReasonCode.CUSTOMER_SATISFACTION,
+        requestIdentifier: randomUUID(),
+      });
+      log.info('applyReferralReward: extended Apple renewal by 30 days', { referrerUid });
+      return true;
+    } catch (err) {
+      log.error('applyReferralReward: Apple extendSubscriptionRenewalDate failed', { err, referrerUid });
+      return false;
+    }
+  }
+
+  if (ent.stripeCustomerId) {
+    const stripeKey = process.env.STRIPE_SECRET_KEY;
+    if (!stripeKey) {
+      log.error('applyReferralReward: STRIPE_SECRET_KEY not set, cannot credit balance', { referrerUid });
+      return false;
+    }
+    // Flat £1/month-equivalent credit isn't right here — price varies by tier —
+    // but we don't need the referrer's own price: crediting a fixed amount that
+    // matches the cheapest paid tier (Solo) undercounts for Team/Crew referrers.
+    // Simplest correct approach: look up what the REFERRER is currently paying
+    // and credit that. Falls back to the Solo price if we can't tell.
+    const tierPricePence = { solo: 999, team: 1999, crew: 2999 };
+    const creditPence = tierPricePence[ent.tier] || tierPricePence.solo;
+    try {
+      const res = await fetch(`https://api.stripe.com/v1/customers/${ent.stripeCustomerId}/balance_transactions`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${stripeKey}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          amount: String(-creditPence),
+          currency: 'gbp',
+          description: `Referral reward — 1 free month (referred user subscribed: ${referredTier})`,
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.text().catch(() => '');
+        log.error('applyReferralReward: Stripe balance credit failed', { status: res.status, body, referrerUid });
+        return false;
+      }
+      log.info('applyReferralReward: credited Stripe balance', { referrerUid, creditPence });
+      return true;
+    } catch (err) {
+      log.error('applyReferralReward: Stripe balance credit threw', { err, referrerUid });
+      return false;
+    }
+  }
+
+  log.warn('applyReferralReward: referrer has neither Apple nor Stripe billing on file', { referrerUid });
+  return false;
+}
+
+// Grants the referrer's reward exactly once for a given referred user, no
+// matter how many times this is called (Stripe webhooks retry, IAP verify can
+// be called more than once by the client, Apple notifications can be
+// redelivered). The `rewardGranted` flag is set INSIDE the same transaction
+// that reads it, before the external API call runs, so concurrent/retried
+// calls can't both pass the check and double-grant. If the external call then
+// fails, the flag is already set — by design, so a retry can't double-credit —
+// which means a failed grant needs manual ops follow-up; it's logged loudly
+// specifically so that's visible rather than silently lost.
+async function grantReferralRewardIfDue(referredUid, referredTier) {
+  const referralRef = adminFirestore.doc(`referrals/${referredUid}`);
+
+  const claim = await adminFirestore.runTransaction(async (txn) => {
+    const doc = await txn.get(referralRef);
+    if (!doc.exists) return null; // this user wasn't referred
+    const data = doc.data();
+    if (data.rewardGranted) return null; // already handled
+    txn.set(referralRef, { rewardGranted: true, rewardGrantedAt: Date.now() }, { merge: true });
+    return data.referrerUid;
+  });
+
+  if (!claim) return;
+
+  const ok = await applyReferralReward(claim, referredTier);
+  if (!ok) {
+    log.error('grantReferralRewardIfDue: reward flag set but grant failed — needs manual follow-up', {
+      referrerUid: claim, referredUid,
+    });
+    return;
+  }
+
+  const admin = require('firebase-admin');
+  await adminFirestore.doc(`users/${claim}`).set({
+    referralRewardsGranted: admin.firestore.FieldValue.increment(1),
+  }, { merge: true });
+}
+
 // Gives back a provisionally-reserved free quote when the AI call that would
 // have consumed it fails, so a transient error doesn't cost the user part of
 // their marketing allowance. Clamped at 0 — never goes negative.
@@ -400,6 +556,13 @@ const adminLimiter = rateLimit({
   windowMs: 60_000, max: 30, keyGenerator: (req) => req.ip,
   standardHeaders: true, legacyHeaders: false,
   message: { error: 'Too many admin requests.' },
+});
+
+// Referral endpoints: 20 calls/min per user
+const referralLimiter = rateLimit({
+  windowMs: 60_000, max: 20, keyGenerator: byUid,
+  standardHeaders: true, legacyHeaders: false,
+  message: { error: 'Too many requests. Please wait a moment.' },
 });
 
 // ── Health check ──────────────────────────────────────────────────────────────
@@ -779,8 +942,13 @@ app.post('/api/stripe/webhook', async (req, res) => {
         if (uid) {
           await adminFirestore
             .doc(`users/${uid}/entitlement/subscription`)
-            .set({ tier, status: 'active', updatedAt: Date.now(), stripeSessionId: session.id }, { merge: true });
+            .set({
+              tier, status: 'active', updatedAt: Date.now(), stripeSessionId: session.id,
+              provider: 'stripe', stripeCustomerId: session.customer,
+            }, { merge: true });
           log.info('Webhook: subscription activated', { tier, uid });
+          grantReferralRewardIfDue(uid, tier).catch(err =>
+            log.error('grantReferralRewardIfDue failed (stripe checkout)', { err, uid }));
         }
         break;
       }
@@ -855,6 +1023,11 @@ app.post('/api/iap/verify', requireAuth, stripeLimiter, async (req, res) => {
       updatedAt: Date.now(),
     }, { merge: true });
 
+    if (isActive) {
+      grantReferralRewardIfDue(uid, tier).catch(err =>
+        log.error('grantReferralRewardIfDue failed (iap verify)', { err, uid }));
+    }
+
     res.json({ ok: true, tier: isActive ? tier : 'free' });
   } catch (err) {
     log.error('IAP verify failed', { err, requestId: req.id });
@@ -911,11 +1084,22 @@ app.post('/api/apple/notifications', express.json({ limit: '256kb' }), async (re
       .get();
 
     if (!query.empty) {
-      await query.docs[0].ref.set({
+      const entRef = query.docs[0].ref;
+      await entRef.set({
         tier: status === 'inactive' ? 'free' : tier,
         status,
         updatedAt: Date.now(),
       }, { merge: true });
+
+      if (notification.notificationType === 'SUBSCRIBED') {
+        // entitlement doc is users/{uid}/entitlement/subscription — walk up
+        // from the subdoc to the parent user doc to get the uid.
+        const referredUid = entRef.parent.parent?.id;
+        if (referredUid) {
+          grantReferralRewardIfDue(referredUid, tier).catch(err =>
+            log.error('grantReferralRewardIfDue failed (apple notification)', { err, referredUid }));
+        }
+      }
     }
 
     res.json({ received: true });
@@ -1506,6 +1690,62 @@ app.get('/api/admin/push/log', requireAdmin, adminLimiter, async (req, res) => {
   } catch (err) {
     log.error('unhandled route error', { requestId: req.id, path: req.path, err });
     res.status(500).json({ error: "Internal server error." });
+  }
+});
+
+// ── Referrals ─────────────────────────────────────────────────────────────────
+app.get('/api/referral/me', requireAuth, referralLimiter, async (req, res) => {
+  if (!adminFirestore) return res.status(503).json({ error: 'Referral service unavailable' });
+  try {
+    const uid = req.user.uid;
+    const code = await getOrCreateReferralCode(uid);
+    const doc = await adminFirestore.doc(`users/${uid}`).get();
+    const referralCount = doc.exists ? (doc.data().referralRewardsGranted || 0) : 0;
+    res.json({ code, referralCount });
+  } catch (err) {
+    log.error('referral/me failed', { err, requestId: req.id });
+    res.status(500).json({ error: 'Could not load referral details' });
+  }
+});
+
+app.post('/api/referral/register', requireAuth, referralLimiter, async (req, res) => {
+  if (!adminFirestore) return res.status(503).json({ error: 'Referral service unavailable' });
+
+  const { code } = req.body || {};
+  if (!code || typeof code !== 'string') {
+    return res.status(400).json({ error: 'code required' });
+  }
+  const uid = req.user.uid;
+
+  try {
+    const normalisedCode = code.trim().toUpperCase();
+    const referrerQuery = await adminFirestore.collection('users')
+      .where('referralCode', '==', normalisedCode).limit(1).get();
+    if (referrerQuery.empty) {
+      return res.status(404).json({ error: 'Referral code not found' });
+    }
+    const referrerUid = referrerQuery.docs[0].id;
+    if (referrerUid === uid) {
+      return res.status(400).json({ error: 'Cannot use your own referral code' });
+    }
+
+    const referralRef = adminFirestore.doc(`referrals/${uid}`);
+    const existing = await referralRef.get();
+    if (existing.exists) {
+      return res.status(409).json({ error: 'Referral code already registered for this account' });
+    }
+
+    await referralRef.set({
+      referrerUid,
+      code: normalisedCode,
+      createdAt: Date.now(),
+      rewardGranted: false,
+    });
+
+    res.json({ ok: true });
+  } catch (err) {
+    log.error('referral/register failed', { err, requestId: req.id });
+    res.status(500).json({ error: 'Could not register referral code' });
   }
 });
 

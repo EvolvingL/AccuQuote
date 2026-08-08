@@ -61,7 +61,7 @@ final class StoreKitManager: ObservableObject {
         do {
             products = try await Product.products(for: Self.productIDs)
         } catch {
-            print("[StoreKit] Failed to load products: \(error)")
+            AQLog.entitlement.error("StoreKit failed to load products: \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -158,7 +158,7 @@ final class StoreKitManager: ObservableObject {
                     // Unverified: leave unfinished so it's redelivered and retried
                     // later, same reasoning as in purchase() above.
                 } catch {
-                    print("[StoreKit] Transaction update verification failed: \(error)")
+                    AQLog.entitlement.error("StoreKit transaction update verification failed: \(error.localizedDescription, privacy: .public)")
                 }
             }
         }

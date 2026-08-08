@@ -57,6 +57,16 @@ final class AuthManager: NSObject, ObservableObject {
     // nonisolated(unsafe) allows the nonisolated delegate to read this safely
     nonisolated(unsafe) private var currentNonce: String?
 
+    // MARK: - Referral code carried into sign-up
+    //
+    // Set by LoginView just before starting ANY sign-up path (email/password
+    // via SignUpView, or tapping Apple/Google directly on LoginView, both of
+    // which can create a brand-new account with no separate "sign up" step).
+    // Read once inside handleTokenResult when that call turns out to be a
+    // genuine new-account creation (isNewUser), then cleared — never applied
+    // to a sign-IN of an existing account, and never applied twice.
+    var pendingReferralCode: String? = nil
+
     // MARK: - Init
 
     override private init() {
@@ -306,7 +316,7 @@ final class AuthManager: NSObject, ObservableObject {
         let fbURL = URL(string: "https://identitytoolkit.googleapis.com/v1/accounts:signInWithIdp?key=\(firebaseApiKey)")!
         let body: [String: Any] = [
             "postBody":          "id_token=\(idToken)&providerId=google.com&nonce=\(nonce)",
-            "requestUri":        "https://accuquote.co.uk",
+            "requestUri":        "https://accuquote.uk",
             "returnIdpCredential": true,
             "returnSecureToken":  true,
         ]
@@ -352,6 +362,35 @@ final class AuthManager: NSObject, ObservableObject {
         SecureTokenStore.write(key: keychainEmail,        value: email)
 
         isSignedIn = true
+
+        // Firebase's isNewUser is present on accounts:signUp / signInWithIdp
+        // responses; absent (nil) on plain signInWithPassword — default false
+        // there since a password sign-in is by definition an existing account.
+        // Every one of the 4 auth paths (email/password sign-up, Apple,
+        // Google, and — harmlessly, since isNewUser is false there — plain
+        // sign-in) converges on this one function, so this is the single
+        // choke point for "did this call just create a brand-new account."
+        let isNewUser = (result["isNewUser"] as? Bool) ?? false
+        registerPendingReferralIfNeeded(isNewUser: isNewUser)
+    }
+
+    /// Fires (fire-and-forget) the one-time referral-code registration for a
+    /// freshly-created account, if the user entered one on LoginView before
+    /// starting this sign-up. Deliberately non-blocking and non-throwing —
+    /// see ReferralService.register's own doc comment for why a broken code
+    /// must never affect the sign-up itself.
+    private func registerPendingReferralIfNeeded(isNewUser: Bool) {
+        guard isNewUser, let code = pendingReferralCode, !code.isEmpty else {
+            pendingReferralCode = nil
+            return
+        }
+        pendingReferralCode = nil
+        Task {
+            let ok = await ReferralService.register(code: code)
+            if !ok {
+                AQLog.referral.warning("registerPendingReferralIfNeeded: registration did not succeed (code invalid, already used, or network failure) — account creation was not affected")
+            }
+        }
     }
 
     @discardableResult
@@ -447,8 +486,15 @@ final class AuthManager: NSObject, ObservableObject {
             switch e {
             case .firebaseError(let msg):
                 switch msg {
-                case "EMAIL_NOT_FOUND":          return "No account found with that email."
+                case "EMAIL_NOT_FOUND":          return "No account found with that email. Tap \"Sign up\" below to create one."
                 case "INVALID_PASSWORD":         return "Incorrect password."
+                // Modern Firebase projects return this consolidated code instead of
+                // EMAIL_NOT_FOUND/INVALID_PASSWORD specifically to prevent sign-in
+                // enumeration (an attacker learning which emails have accounts) — so
+                // this case covers BOTH "no account exists" and "wrong password" and
+                // can't honestly claim to know which. Points at the existing "Sign up"
+                // link either way rather than guessing.
+                case "INVALID_LOGIN_CREDENTIALS": return "Incorrect email or password. If you don't have an account yet, tap \"Sign up\" below."
                 case "EMAIL_EXISTS":             return "An account already exists with that email."
                 case "WEAK_PASSWORD : Password should be at least 6 characters":
                                                  return "Password must be at least 6 characters."
@@ -461,7 +507,9 @@ final class AuthManager: NSObject, ObservableObject {
                 // "USER_DISABLED") shown verbatim to the user. Any code not
                 // explicitly recognised above now gets a generic, still-actionable
                 // message instead of framework internals.
-                default:                         return "Something went wrong. Please try again."
+                default:
+                    AQLog.auth.warning("Unrecognised Firebase error code: \(msg, privacy: .public)")
+                    return "Something went wrong. Please try again."
                 }
             case .invalidResponse: return "Unexpected response. Please try again."
             }
@@ -541,7 +589,7 @@ extension AuthManager: ASAuthorizationControllerDelegate {
         let url = URL(string: "https://identitytoolkit.googleapis.com/v1/accounts:signInWithIdp?key=\(firebaseApiKey)")!
         let body: [String: Any] = [
             "postBody":          "id_token=\(idToken)&providerId=apple.com&nonce=\(nonce)",
-            "requestUri":        "https://accuquote.co.uk",
+            "requestUri":        "https://accuquote.uk",
             "returnIdpCredential": true,
             "returnSecureToken":  true,
         ]

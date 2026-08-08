@@ -82,7 +82,7 @@ final class NotificationService: NSObject, ObservableObject {
     }
 
     func didFailToRegisterToken(_ error: Error) {
-        print("[Push] APNs registration failed: \(error.localizedDescription)")
+        AQLog.network.error("APNs registration failed: \(error.localizedDescription, privacy: .public)")
     }
 
     // MARK: - Token upload
@@ -117,7 +117,7 @@ final class NotificationService: NSObject, ObservableObject {
                 SecureTokenStore.write(key: "aq_apns_token", value: token)
             }
         } catch {
-            print("[Push] Token upload failed: \(error.localizedDescription)")
+            AQLog.network.error("Push token upload failed: \(error.localizedDescription, privacy: .public)")
         }
     }
 

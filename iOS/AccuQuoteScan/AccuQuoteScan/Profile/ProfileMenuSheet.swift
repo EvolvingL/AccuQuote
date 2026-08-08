@@ -414,6 +414,7 @@ private struct AccountTab: View {
     @State private var showSignOutConfirm       = false
     @State private var showResetConfirm         = false
     @State private var showPaywall              = false
+    @State private var showReferral             = false
     @State private var showManageSubscriptions  = false
     @State private var resetEmailSent           = false
     @State private var showStorageConfirm       = false
@@ -525,6 +526,34 @@ private struct AccountTab: View {
                 .cornerRadius(14)
                 .overlay(RoundedRectangle(cornerRadius: 14).stroke(AQ.rule, lineWidth: 1))
 
+                // ── Refer a friend ─────────────────────────────────────────
+                VStack(alignment: .leading, spacing: 0) {
+                    sectionLabel("Referrals")
+
+                    Button {
+                        showReferral = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "gift")
+                                .font(.system(size: 15))
+                                .foregroundColor(AQ.ink)
+                                .frame(width: 24)
+                            Text("Refer a friend")
+                                .font(.system(size: 15))
+                                .foregroundColor(AQ.ink)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12))
+                                .foregroundColor(AQ.secondary)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 14)
+                    }
+                }
+                .background(Color.white)
+                .cornerRadius(14)
+                .overlay(RoundedRectangle(cornerRadius: 14).stroke(AQ.rule, lineWidth: 1))
+
                 // ── Security ──────────────────────────────────────────────
                 VStack(alignment: .leading, spacing: 0) {
                     sectionLabel("Security")
@@ -613,6 +642,30 @@ private struct AccountTab: View {
                 // ── Account actions ───────────────────────────────────────
                 VStack(alignment: .leading, spacing: 0) {
                     sectionLabel("Account")
+
+                    // Guideline 5.1.2 — in-app privacy policy link. Kept as a
+                    // plain informational row (not destructive-styled) ahead
+                    // of Sign out/Reset/Delete, matching the storage row's
+                    // icon+label+chevron pattern below.
+                    Link(destination: AQLegalLinks.privacyPolicyURL) {
+                        HStack {
+                            Image(systemName: "hand.raised")
+                                .font(.system(size: 15))
+                                .foregroundColor(AQ.secondary)
+                                .frame(width: 24)
+                            Text("Privacy Policy")
+                                .font(.system(size: 15))
+                                .foregroundColor(AQ.ink)
+                            Spacer()
+                            Image(systemName: "arrow.up.right")
+                                .font(.system(size: 12))
+                                .foregroundColor(AQ.secondary)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 14)
+                    }
+
+                    Divider().background(AQ.rule).padding(.leading, 16)
 
                     Button { showSignOutConfirm = true } label: {
                         HStack {
@@ -801,6 +854,9 @@ private struct AccountTab: View {
                 .environmentObject(entitlement)
                 .environmentObject(AuthManager.shared)
         }
+        .sheet(isPresented: $showReferral) {
+            ReferralView()
+        }
         #if DEBUG
         .sheet(isPresented: $showDevTools) {
             DevToolsView()
@@ -837,6 +893,11 @@ private struct AccountTab: View {
 
 extension Notification.Name {
     static let aqSignOut = Notification.Name("aq_sign_out")
+    // AccuScan→AccuQuote Funnel build spec §4.2 — posted by AccuQuoteScanApp's
+    // onOpenURL for a live accuquote://import deep link; ContentView (where
+    // the ScanCoordinator actually lives) observes this and calls
+    // HandoffImporter.importIfPending.
+    static let aqHandoffDeepLink = Notification.Name("aq_handoff_deep_link")
 }
 
 // MARK: - Persistent Profile Icon Button

@@ -5,7 +5,7 @@ import Foundation
 // Manages Documents/aq_scans/ — the folder every scan mode's mesh/USDZ/
 // thumbnail/CSV/PDF artifacts live under (SpaceMeshExport.scanFolder,
 // FloorPlan2DExport.persistToScanFolder, FullWorksOutput.generate, and the
-// Room-mode USDZ export in Views.swift's startGeneration all write here).
+// Room-mode USDZ export in QuoteView.swift's startGeneration all write here).
 //
 // "Remove 3D models older than 90 days" deletes only the artifact FILES —
 // dimensions themselves live in SavedQuote/QuoteHistoryStore, a completely

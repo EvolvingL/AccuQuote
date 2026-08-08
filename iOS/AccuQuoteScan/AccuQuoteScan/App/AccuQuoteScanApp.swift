@@ -37,6 +37,14 @@ struct AccuQuoteScanApp: App {
                                 await EntitlementManager.shared.refresh()
                             }
                         }
+                    } else if url.scheme == "accuquote", url.host == "import" {
+                        // AccuScan→AccuQuote Funnel build spec §4.2 — live
+                        // deep-link path while the app is already running.
+                        // The cold-launch/already-pending path is handled by
+                        // ContentView's .task, which calls the same
+                        // HandoffImporter.importIfPending so there's one
+                        // source of truth for dedupe.
+                        NotificationCenter.default.post(name: .aqHandoffDeepLink, object: url)
                     }
                 }
                 // Fix #14 — push permission is no longer requested here at

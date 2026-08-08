@@ -202,9 +202,9 @@ struct ScanViewer3D: View {
 }
 
 // URL: Identifiable conformance (needed for .fullScreenCover(item:)/.sheet(item:))
-// is already declared in Views.swift, next to ShareSheet's identical need —
-// reused here rather than redeclared, since Swift only allows one conformance
-// of a type to a given protocol per module.
+// is already declared in Quote/ShareSheet.swift, next to ShareSheet's identical
+// need — reused here rather than redeclared, since Swift only allows one
+// conformance of a type to a given protocol per module.
 
 // MARK: - SceneKit wrapper
 

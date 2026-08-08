@@ -49,6 +49,17 @@ enum Money {
     }
 }
 
+// MARK: - Legal links (App Store readiness audit — Guideline 5.1.2)
+//
+// AccuQuote collects account/quote data (Firebase auth, quote history), so
+// Guideline 5.1.2 requires a real, reachable privacy policy link somewhere
+// in the app — this was a submission BLOCKER until wired into
+// ProfileMenuSheet's Account tab. Points at the live policy hosted
+// alongside the marketing site, not a placeholder.
+enum AQLegalLinks {
+    static let privacyPolicyURL = URL(string: "https://accuquote.uk/privacy-policy.html")!
+}
+
 // MARK: - Camera priming sheet (Fix #8)
 //
 // Shown once per install, right before the very first scan of any mode —

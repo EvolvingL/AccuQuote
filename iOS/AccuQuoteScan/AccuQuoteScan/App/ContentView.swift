@@ -36,8 +36,15 @@ struct ContentView: View {
                 case .processing:
                     ProcessingView()
                 case .complete(let result):
-                    // Paywall gate: free users see dimensions only
-                    if entitlement.isPaid {
+                    // Paywall gate: free-tier users get 3 free quotes (server-enforced,
+                    // see FREE_QUOTE_LIMIT in server/index.js) before quote generation is
+                    // blocked — so gating here on `isPaid` alone locked out every free
+                    // user before they'd used any of their allowance. Only show the
+                    // locked state once the allowance is actually exhausted; otherwise
+                    // let them through to attempt generation, where the server's 403
+                    // (surfaced via QuoteGenerationService's .failed state) is the real
+                    // enforcement point.
+                    if entitlement.isPaid || (entitlement.freeQuotesRemaining ?? 1) > 0 {
                         ResultView(result: result, coordinator: coordinator)
                     } else {
                         LockedResultView(result: result, coordinator: coordinator)
@@ -68,6 +75,16 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: .aqSignOut)) { _ in
             auth.signOut()
             entitlement.clear()
+        }
+        // AccuScan→AccuQuote Funnel build spec §4.3 — the two import paths
+        // (cold launch / already-running with a pending handoff, and a live
+        // accuquote://import deep link) both funnel through the same
+        // HandoffImporter.importIfPending so dedupe has one source of truth.
+        .task {
+            HandoffImporter.importIfPending(into: coordinator)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .aqHandoffDeepLink)) { _ in
+            HandoffImporter.importIfPending(into: coordinator)
         }
         // Fix #14 — one-time primer sheet shown before the real notification
         // permission prompt, triggered after the user's first successful

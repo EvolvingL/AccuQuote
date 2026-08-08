@@ -458,17 +458,6 @@ struct GuestShareCard: View {
 
 // MARK: - Upsell Banner
 
-// Kept for backwards compatibility — no longer used in GuestResultView
-struct GuestUpsellBanner: View {
-    let gold: Color
-    let navy: Color
-    @Binding var showGuest: Bool
-
-    var body: some View {
-        GuestUpsellSheet(gold: gold, navy: navy, showGuest: $showGuest)
-    }
-}
-
 struct GuestUpsellSheet: View {
     let gold: Color
     let navy: Color
