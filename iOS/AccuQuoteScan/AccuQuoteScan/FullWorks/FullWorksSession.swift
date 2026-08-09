@@ -56,7 +56,22 @@ final class FullWorksSession: ObservableObject {
     @Published var propertyName: String = ""
     @Published var floors: [Floor] = []
     @Published var currentFloorIndex: Int = 0
-    @Published var phase: FullWorksPhase = .setup
+    // didSet mirrors ScanCoordinator/SpaceCaptureCoordinator's pattern —
+    // every phase assignment updates ScanStorageManager's scan-in-progress
+    // guard automatically. .scanningRoom is the live per-room capture;
+    // .merging runs StructureBuilder over already-captured per-room data
+    // (no live sensor writes, but still reading/writing scan artifacts on
+    // disk under aq_scans/, so it's treated as "in progress" too).
+    @Published var phase: FullWorksPhase = .setup {
+        didSet {
+            switch phase {
+            case .scanningRoom, .merging:
+                ScanStorageManager.isScanInProgress = true
+            case .setup, .betweenRooms, .complete, .error:
+                ScanStorageManager.isScanInProgress = false
+            }
+        }
+    }
 
     /// Merged per-floor structures, keyed by Floor.id, populated during
     /// .merging. §4.1: "Whole-house = array of per-floor structures stacked

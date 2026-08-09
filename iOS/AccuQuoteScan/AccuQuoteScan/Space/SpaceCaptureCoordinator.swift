@@ -42,7 +42,19 @@ enum SpaceCaptureTarget: Hashable {
 @MainActor
 final class SpaceCaptureCoordinator: NSObject, ObservableObject, ARSessionDelegate {
 
-    @Published var state: SpaceCaptureState = .placingVolume
+    // didSet mirrors ScanCoordinator's pattern — every state assignment
+    // updates ScanStorageManager's scan-in-progress guard automatically
+    // rather than needing a manual toggle at each call site.
+    @Published var state: SpaceCaptureState = .placingVolume {
+        didSet {
+            switch state {
+            case .scanning, .processing:
+                ScanStorageManager.isScanInProgress = true
+            case .placingVolume, .complete, .completeFrame, .unsupported, .error:
+                ScanStorageManager.isScanInProgress = false
+            }
+        }
+    }
     @Published var instructionText: String = "Tap the detail you want to measure"
     @Published var captureVolume: CaptureVolume?
     @Published var captureTarget: SpaceCaptureTarget = .void

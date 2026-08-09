@@ -17,6 +17,7 @@ struct AccuQuoteScanApp: App {
 
     init() {
         PhotogrammetryAssetManager.registerBackgroundTask()
+        Task { @MainActor in ScanStorageManager.autoCleanupIfDue() }
     }
 
     var body: some Scene {
@@ -61,6 +62,7 @@ struct AccuQuoteScanApp: App {
                     if authManager.isSignedIn {
                         Task { await entitlementManager.refresh() }
                     }
+                    ScanStorageManager.autoCleanupIfDue()
                 }
         }
     }

@@ -39,7 +39,9 @@ enum ReferralService {
         guard let http = response as? HTTPURLResponse, http.statusCode == 200,
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let code = json["code"] as? String else {
-            AQLog.referral.error("fetchInfo: unexpected response")
+            let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+            let bodyText = String(data: data, encoding: .utf8) ?? "<non-utf8 body>"
+            AQLog.referral.error("fetchInfo: unexpected response — status \(status, privacy: .public), body: \(bodyText, privacy: .public)")
             throw ReferralServiceError.other
         }
         let count = json["referralCount"] as? Int ?? 0

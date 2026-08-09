@@ -171,15 +171,31 @@ async function loadData() {
   document.getElementById('tableWrap').innerHTML = '<div id="loading">Loading…</div>';
 
   try {
-    const res = await fetch('/api/admin/users', {
-      headers: { 'Authorization': 'Bearer ' + secret }
-    });
-    if (!res.ok) {
-      document.getElementById('tableWrap').innerHTML = `<div class="empty">Error ${res.status}: ${esc((await res.json()).error)}</div>`;
-      return;
+    // /api/admin/users is paginated (200/page max) so a single dashboard
+    // load can never trigger an unbounded Firestore scan. The dashboard's
+    // UX is still "see everyone" though, so walk every page here — a
+    // handful of sequential requests, not one unbounded one server-side.
+    allUsers = [];
+    let cursor = null, cursorUid = null;
+    for (;;) {
+      const url = new URL('/api/admin/users', window.location.origin);
+      url.searchParams.set('limit', '200');
+      if (cursor !== null) {
+        url.searchParams.set('cursor', cursor);
+        url.searchParams.set('cursorUid', cursorUid);
+      }
+      const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + secret } });
+      if (!res.ok) {
+        document.getElementById('tableWrap').innerHTML = `<div class="empty">Error ${res.status}: ${esc((await res.json()).error)}</div>`;
+        return;
+      }
+      const data = await res.json();
+      allUsers = allUsers.concat(data.users || []);
+      document.getElementById('loading').textContent = `Loading… (${allUsers.length} so far)`;
+      if (!data.hasMore) break;
+      cursor = data.nextCursor;
+      cursorUid = data.nextCursorUid;
     }
-    const data = await res.json();
-    allUsers = data.users || [];
     renderStats();
     renderTable();
     document.getElementById('totalBadge').textContent = allUsers.length + ' users';

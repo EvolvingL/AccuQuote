@@ -118,7 +118,21 @@ private final class SessionBridge: NSObject, RoomCaptureSessionDelegate, RoomCap
 @MainActor
 final class ScanCoordinator: ObservableObject {
 
-    @Published var state: ScanState = .ready
+    // didSet (not a manual toggle at every call site) so ScanStorageManager's
+    // scan-in-progress guard can never go stale — every one of this file's
+    // many `state = ...` assignments (startLiDAR, startPoseFusion, reset(),
+    // submitManual, submitCustomShape, acceptWithWarnings, ...) updates the
+    // guard automatically instead of needing to remember to touch it too.
+    @Published var state: ScanState = .ready {
+        didSet {
+            switch state {
+            case .scanning, .processing:
+                ScanStorageManager.isScanInProgress = true
+            case .ready, .complete, .needsReview, .error:
+                ScanStorageManager.isScanInProgress = false
+            }
+        }
+    }
     @Published var instructionText: String = ""
     @Published var scanProgress: Float = 0.0
     @Published var frameCount: Int = 0

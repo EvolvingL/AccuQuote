@@ -151,6 +151,35 @@ function tierFromProductId(productId) {
   return null;
 }
 
+// Writes tier/status to BOTH the entitlement subdoc (source of truth, read by
+// getUserTier/requireEntitlement/every paid-feature check) and a denormalized
+// copy on the parent users/{uid} doc (read by the admin dashboard so it can
+// list hundreds of users with 1 Firestore read instead of 1 + N).
+//
+// Both writes go in a single batch so they can never land as a torn write —
+// if the process crashes mid-request, either both commit or neither does,
+// so the denormalized copy can never silently drift from the source of truth
+// via any of these call sites. (The only drift vector left is someone editing
+// Firestore by hand outside the API, which no code-level fix can close — not
+// worth adding a reconciliation job for, since there's no scheduler/cron
+// infra in this codebase to run one on.)
+//
+// entitlementRef is a DocumentReference (callers already have one, either via
+// adminFirestore.doc(...) or a collectionGroup query result) so this works
+// for both the direct users/{uid}/entitlement/subscription path and the
+// Apple-notifications path where the doc is found via collectionGroup and
+// the uid is recovered from entRef.parent.parent.id.
+async function setEntitlementWithDenormalizedCopy(entitlementRef, entitlementFields, uid) {
+  const userRef = adminFirestore.doc(`users/${uid}`);
+  const batch = adminFirestore.batch();
+  batch.set(entitlementRef, entitlementFields, { merge: true });
+  batch.set(userRef, {
+    tier: entitlementFields.tier,
+    subStatus: entitlementFields.status,
+  }, { merge: true });
+  await batch.commit();
+}
+
 // ── Auth middleware ───────────────────────────────────────────────────────────
 
 async function requireAuth(req, res, next) {
@@ -592,12 +621,11 @@ app.post('/api/debug/entitlement', requireAuth, stripeLimiter, async (req, res) 
     return res.status(400).json({ error: `tier must be one of: ${validTiers.join(', ')}` });
   }
 
-  await adminFirestore.doc(`users/${req.user.uid}/entitlement/subscription`).set({
-    tier,
-    status: tier === 'free' ? 'inactive' : 'active',
-    provider: 'debug',
-    updatedAt: Date.now(),
-  }, { merge: true });
+  await setEntitlementWithDenormalizedCopy(
+    adminFirestore.doc(`users/${req.user.uid}/entitlement/subscription`),
+    { tier, status: tier === 'free' ? 'inactive' : 'active', provider: 'debug', updatedAt: Date.now() },
+    req.user.uid,
+  );
 
   res.json({ ok: true, tier });
 });
@@ -940,12 +968,14 @@ app.post('/api/stripe/webhook', async (req, res) => {
         const uid = session.metadata?.firebaseUid || session.client_reference_id;
         const tier = session.metadata?.tier || 'solo';
         if (uid) {
-          await adminFirestore
-            .doc(`users/${uid}/entitlement/subscription`)
-            .set({
+          await setEntitlementWithDenormalizedCopy(
+            adminFirestore.doc(`users/${uid}/entitlement/subscription`),
+            {
               tier, status: 'active', updatedAt: Date.now(), stripeSessionId: session.id,
               provider: 'stripe', stripeCustomerId: session.customer,
-            }, { merge: true });
+            },
+            uid,
+          );
           log.info('Webhook: subscription activated', { tier, uid });
           grantReferralRewardIfDue(uid, tier).catch(err =>
             log.error('grantReferralRewardIfDue failed (stripe checkout)', { err, uid }));
@@ -958,9 +988,11 @@ app.post('/api/stripe/webhook', async (req, res) => {
         const tier = sub.metadata?.tier || 'solo';
         const status = sub.status === 'active' ? 'active' : 'inactive';
         if (uid) {
-          await adminFirestore
-            .doc(`users/${uid}/entitlement/subscription`)
-            .set({ tier, status, updatedAt: Date.now(), stripeSubscriptionId: sub.id }, { merge: true });
+          await setEntitlementWithDenormalizedCopy(
+            adminFirestore.doc(`users/${uid}/entitlement/subscription`),
+            { tier, status, updatedAt: Date.now(), stripeSubscriptionId: sub.id },
+            uid,
+          );
         }
         break;
       }
@@ -968,9 +1000,11 @@ app.post('/api/stripe/webhook', async (req, res) => {
         const sub = event.data.object;
         const uid = sub.metadata?.firebaseUid;
         if (uid) {
-          await adminFirestore
-            .doc(`users/${uid}/entitlement/subscription`)
-            .set({ tier: 'free', status: 'inactive', updatedAt: Date.now() }, { merge: true });
+          await setEntitlementWithDenormalizedCopy(
+            adminFirestore.doc(`users/${uid}/entitlement/subscription`),
+            { tier: 'free', status: 'inactive', updatedAt: Date.now() },
+            uid,
+          );
           log.info('Webhook: subscription deactivated', { uid });
         }
         break;
@@ -1015,13 +1049,17 @@ app.post('/api/iap/verify', requireAuth, stripeLimiter, async (req, res) => {
     const isActive = !decoded.revocationDate && (!decoded.expiresDate || decoded.expiresDate > now);
 
     const uid = req.user.uid;
-    await adminFirestore.doc(`users/${uid}/entitlement/subscription`).set({
-      tier: isActive ? tier : 'free',
-      status: isActive ? 'active' : 'inactive',
-      provider: 'apple',
-      appleOriginalTransactionId: decoded.originalTransactionId,
-      updatedAt: Date.now(),
-    }, { merge: true });
+    await setEntitlementWithDenormalizedCopy(
+      adminFirestore.doc(`users/${uid}/entitlement/subscription`),
+      {
+        tier: isActive ? tier : 'free',
+        status: isActive ? 'active' : 'inactive',
+        provider: 'apple',
+        appleOriginalTransactionId: decoded.originalTransactionId,
+        updatedAt: Date.now(),
+      },
+      uid,
+    );
 
     if (isActive) {
       grantReferralRewardIfDue(uid, tier).catch(err =>
@@ -1085,16 +1123,27 @@ app.post('/api/apple/notifications', express.json({ limit: '256kb' }), async (re
 
     if (!query.empty) {
       const entRef = query.docs[0].ref;
-      await entRef.set({
-        tier: status === 'inactive' ? 'free' : tier,
-        status,
-        updatedAt: Date.now(),
-      }, { merge: true });
+      // entitlement doc is users/{uid}/entitlement/subscription — walk up
+      // from the subdoc to the parent user doc to get the uid.
+      const referredUid = entRef.parent.parent?.id;
+      if (referredUid) {
+        await setEntitlementWithDenormalizedCopy(
+          entRef,
+          { tier: status === 'inactive' ? 'free' : tier, status, updatedAt: Date.now() },
+          referredUid,
+        );
+      } else {
+        // Shouldn't happen — entitlement docs always have a parent user doc —
+        // but fall back to a plain write rather than silently dropping the
+        // notification if the doc structure is ever unexpected.
+        await entRef.set({
+          tier: status === 'inactive' ? 'free' : tier,
+          status,
+          updatedAt: Date.now(),
+        }, { merge: true });
+      }
 
       if (notification.notificationType === 'SUBSCRIBED') {
-        // entitlement doc is users/{uid}/entitlement/subscription — walk up
-        // from the subdoc to the parent user doc to get the uid.
-        const referredUid = entRef.parent.parent?.id;
         if (referredUid) {
           grantReferralRewardIfDue(referredUid, tier).catch(err =>
             log.error('grantReferralRewardIfDue failed (apple notification)', { err, referredUid }));
@@ -1249,94 +1298,105 @@ app.get('/admin', requireAdmin, adminLimiter, (req, res) => {
   res.sendFile(join(__dirname, 'admin.html'));
 });
 
-// GET /api/admin/users — list all users with entitlement + scan count
-// Queries Firestore users collection (top-level documents).
+// Shapes a users/{uid} doc snapshot into the row shape both /api/admin/users
+// and /api/admin/users.csv return. tier/subStatus now live directly on this
+// doc (denormalized at write time by setEntitlementWithDenormalizedCopy) —
+// no per-user entitlement subdoc read needed any more.
+function shapeAdminUserRow(userDoc) {
+  const uid = userDoc.id;
+  const userData = userDoc.data() || {};
+  return {
+    uid,
+    email: userData.email || '',
+    trade: userData.trade || '',
+    tier: userData.tier || 'free',
+    subStatus: userData.subStatus || 'none',
+    totalScans: userData.totalScans || 0,
+    lastActive: userData.lastActive ? new Date(userData.lastActive).toISOString() : '',
+    engagementTier: userData.engagementTier || 'user',
+    createdAt: userData.createdAt ? new Date(userData.createdAt).toISOString() : '',
+  };
+}
+
+// GET /api/admin/users — paginated user list, ordered by totalScans desc.
+// ?limit=<1-200, default 50>&cursor=<totalScans value from the previous
+// page's last row>. Firestore's startAfter cursor must be a value of the
+// same field the query orders by, so the cursor IS a totalScans number —
+// ties (multiple users with the same totalScans) are broken by uid via a
+// secondary orderBy so the cursor is always unambiguous and no user can be
+// skipped or repeated across pages.
 app.get('/api/admin/users', requireAdmin, adminLimiter, async (req, res) => {
   if (!adminFirestore) {
     return res.status(503).json({ error: 'Firestore not available' });
   }
 
+  const limit = Math.min(200, Math.max(1, parseInt(req.query.limit, 10) || 50));
+  const cursorScans = req.query.cursor !== undefined ? parseInt(req.query.cursor, 10) : null;
+  const cursorUid = typeof req.query.cursorUid === 'string' ? req.query.cursorUid : null;
+
   try {
-    // Firestore doesn't support arbitrary cross-user queries without a flat collection.
-    // We read the top-level `users` collection and sub-doc entitlement.
-    const usersSnap = await adminFirestore.collection('users').limit(500).get();
-    const rows = [];
+    let query = adminFirestore.collection('users')
+      .orderBy('totalScans', 'desc')
+      .orderBy('__name__', 'desc')
+      .limit(limit);
+    if (cursorScans !== null && !Number.isNaN(cursorScans) && cursorUid) {
+      query = query.startAfter(cursorScans, cursorUid);
+    }
 
-    await Promise.all(usersSnap.docs.map(async (userDoc) => {
-      const uid = userDoc.id;
-      const userData = userDoc.data() || {};
+    const usersSnap = await query.get();
+    const rows = usersSnap.docs.map(shapeAdminUserRow);
+    const last = usersSnap.docs[usersSnap.docs.length - 1];
 
-      // Entitlement
-      let tier = 'free';
-      let subStatus = 'none';
-      try {
-        const entDoc = await adminFirestore.doc(`users/${uid}/entitlement/subscription`).get();
-        if (entDoc.exists) {
-          const ent = entDoc.data();
-          tier = ent.tier || 'free';
-          subStatus = ent.status || 'none';
-        }
-      } catch {}
-
-      rows.push({
-        uid,
-        email: userData.email || '',
-        trade: userData.trade || '',
-        tier,
-        subStatus,
-        totalScans: userData.totalScans || 0,
-        lastActive: userData.lastActive ? new Date(userData.lastActive).toISOString() : '',
-        engagementTier: userData.engagementTier || 'user',
-        createdAt: userData.createdAt ? new Date(userData.createdAt).toISOString() : '',
-      });
-    }));
-
-    rows.sort((a, b) => (b.totalScans || 0) - (a.totalScans || 0));
-    res.json({ users: rows, total: rows.length });
+    res.json({
+      users: rows,
+      pageSize: limit,
+      hasMore: usersSnap.docs.length === limit,
+      nextCursor: last ? (last.data().totalScans || 0) : null,
+      nextCursorUid: last ? last.id : null,
+    });
   } catch (err) {
     log.error('unhandled route error', { requestId: req.id, path: req.path, err });
     res.status(500).json({ error: "Internal server error." });
   }
 });
 
-// GET /api/admin/users.csv — same data as CSV export
+// GET /api/admin/users.csv — full CSV export, every user (unlike the paginated
+// JSON list, an export is expected to be complete). Pages internally through
+// the collection in batches of PAGE_SIZE via startAfter so at most PAGE_SIZE
+// docs are ever held in memory at once, regardless of how many users exist —
+// this replaces the old hard `.limit(500)` that silently truncated the export
+// past 500 users with no indication anything was missing.
 app.get('/api/admin/users.csv', requireAdmin, adminLimiter, async (req, res) => {
   if (!adminFirestore) {
     return res.status(503).json({ error: 'Firestore not available' });
   }
 
+  const PAGE_SIZE = 500;
   try {
-    const usersSnap = await adminFirestore.collection('users').limit(500).get();
     const rows = [];
+    let cursor = null;
+    for (;;) {
+      let query = adminFirestore.collection('users')
+        .orderBy('totalScans', 'desc')
+        .orderBy('__name__', 'desc')
+        .limit(PAGE_SIZE);
+      if (cursor) query = query.startAfter(cursor.totalScans, cursor.uid);
 
-    await Promise.all(usersSnap.docs.map(async (userDoc) => {
-      const uid = userDoc.id;
-      const userData = userDoc.data() || {};
-      let tier = 'free';
-      let subStatus = 'none';
-      try {
-        const entDoc = await adminFirestore.doc(`users/${uid}/entitlement/subscription`).get();
-        if (entDoc.exists) {
-          const ent = entDoc.data();
-          tier = ent.tier || 'free';
-          subStatus = ent.status || 'none';
-        }
-      } catch {}
+      const usersSnap = await query.get();
+      if (usersSnap.empty) break;
 
-      rows.push([
-        uid,
-        userData.email || '',
-        userData.trade || '',
-        tier,
-        subStatus,
-        userData.totalScans || 0,
-        userData.engagementTier || 'user',
-        userData.lastActive ? new Date(userData.lastActive).toISOString() : '',
-        userData.createdAt ? new Date(userData.createdAt).toISOString() : '',
-      ]);
-    }));
+      for (const userDoc of usersSnap.docs) {
+        const row = shapeAdminUserRow(userDoc);
+        rows.push([
+          row.uid, row.email, row.trade, row.tier, row.subStatus,
+          row.totalScans, row.engagementTier, row.lastActive, row.createdAt,
+        ]);
+      }
 
-    rows.sort((a, b) => (b[5] || 0) - (a[5] || 0));
+      const last = usersSnap.docs[usersSnap.docs.length - 1];
+      cursor = { totalScans: last.data().totalScans || 0, uid: last.id };
+      if (usersSnap.docs.length < PAGE_SIZE) break; // last page
+    }
 
     const header = 'uid,email,trade,tier,subStatus,totalScans,engagementTier,lastActive,createdAt\n';
     const csv = header + rows.map(r =>

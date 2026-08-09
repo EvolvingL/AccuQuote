@@ -10,9 +10,27 @@ import Foundation
 // "Remove 3D models older than 90 days" deletes only the artifact FILES —
 // dimensions themselves live in SavedQuote/QuoteHistoryStore, a completely
 // separate JSON store this never touches, so cleanup can never lose a
-// quote's numbers, only its 3D preview/export files.
+// quote's numbers. It also never deletes a folder still referenced by a
+// saved quote's scanArtifactURL/thumbnail (see removeArtifactsOlderThan's
+// referencedFolderIDs param) — QuoteHistoryStore caps at 200 quotes by
+// count, not by age, so a quote's 3D preview can legitimately outlive the
+// 90-day age cutoff and must survive both the manual button (ProfileMenuSheet)
+// and the automatic pass (autoCleanupIfDue, called on launch/foreground).
 
 enum ScanStorageManager {
+
+    // MARK: - Scan-in-progress guard
+    //
+    // Set true by whichever coordinator (ScanCoordinator/SpaceCaptureCoordinator/
+    // FullWorksSession) is actively capturing, false again the moment that
+    // capture ends (success, error, or reset) — see each coordinator's
+    // start/terminal-state call sites. autoCleanupIfDue() checks this before
+    // touching aq_scans/ so an automatic cleanup pass can never race a live
+    // capture that's mid-write into a scan folder. The manual "Remove 3D
+    // models" button in Profile doesn't check this — a user tapping it
+    // in-app is never doing so mid-scan (the button isn't reachable from a
+    // scanning screen), so the guard only needs to protect the automatic path.
+    @MainActor static var isScanInProgress = false
 
     static var rootFolder: URL {
         FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -68,11 +86,31 @@ enum ScanStorageManager {
         return modificationDate < cutoff
     }
 
-    /// Deletes every per-scan folder under aq_scans/ whose modification
-    /// date is older than retentionDays. Returns the number of folders
-    /// removed and bytes freed, for the confirming UI to report back.
+    /// Deletes every per-scan folder under aq_scans/ whose modification date
+    /// is older than retentionDays AND whose folder name isn't in
+    /// `referencedFolderIDs`. The reference check exists because a saved
+    /// quote's SavedQuote.scanArtifactURL points straight into
+    /// aq_scans/<folder>/ — QuoteHistoryStore caps at 200 quotes by count,
+    /// not by age, so a quote saved well over 90 days ago can still be live
+    /// in history with its 3D preview/thumbnail depending on a folder that
+    /// pure age-based cleanup would otherwise delete out from under it.
+    /// Passing the referenced set in (rather than this function reaching
+    /// into QuoteHistoryStore itself) keeps this pure/fixture-testable and
+    /// is required anyway since QuoteHistoryStore is @MainActor-isolated
+    /// while cleanup runs off the main thread — see autoCleanupIfDue().
+    ///
+    /// referencedFolderIDs defaults to empty so the existing manual "Remove
+    /// 3D models" button (ProfileMenuSheet) keeps its current behaviour
+    /// unchanged unless a caller opts in.
+    ///
+    /// Returns the number of folders removed and bytes freed, for the
+    /// confirming UI to report back.
     @discardableResult
-    static func removeArtifactsOlderThan(days retentionDays: Int = defaultRetentionDays, now: Date = Date()) -> (removedCount: Int, bytesFreed: Int64) {
+    static func removeArtifactsOlderThan(
+        days retentionDays: Int = defaultRetentionDays,
+        now: Date = Date(),
+        referencedFolderIDs: Set<String> = []
+    ) -> (removedCount: Int, bytesFreed: Int64) {
         let fm = FileManager.default
         guard let contents = try? fm.contentsOfDirectory(
             at: rootFolder, includingPropertiesForKeys: [.contentModificationDateKey]
@@ -83,6 +121,7 @@ enum ScanStorageManager {
         var removedCount = 0
         var bytesFreed: Int64 = 0
         for folder in contents {
+            guard !referencedFolderIDs.contains(folder.lastPathComponent) else { continue }
             guard let modDate = (try? folder.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate,
                   isEligibleForCleanup(modificationDate: modDate, now: now, retentionDays: retentionDays) else { continue }
             let size = directorySize(folder)
@@ -92,5 +131,50 @@ enum ScanStorageManager {
             }
         }
         return (removedCount, bytesFreed)
+    }
+
+    // MARK: - Automatic cleanup (launch / foreground)
+
+    private static let lastAutoCleanupKey = "aq_last_auto_cleanup"
+    private static let autoCleanupMinInterval: TimeInterval = 24 * 60 * 60   // once/day
+
+    /// Called on cold launch and every foreground — see AccuQuoteScanApp.swift.
+    /// Runs the same removeArtifactsOlderThan(90 days) as the manual Profile
+    /// button, but: (1) throttled to at most once/day via UserDefaults, so it
+    /// never does real I/O work on every single foreground; (2) skipped
+    /// entirely while a scan is actively capturing (ScanStorageManager
+    /// .isScanInProgress), so it can never race a coordinator that's mid-write
+    /// into aq_scans/ — the next foreground/launch will simply retry; (3)
+    /// passed the live set of folder IDs still referenced by saved quote
+    /// history, computed here on the MainActor (QuoteHistoryStore is
+    /// MainActor-isolated) before handing off to a background Task, so the
+    /// filesystem work itself never blocks app launch.
+    @MainActor
+    static func autoCleanupIfDue() {
+        guard !isScanInProgress else { return }
+
+        let now = Date()
+        if let last = UserDefaults.standard.object(forKey: lastAutoCleanupKey) as? Date,
+           now.timeIntervalSince(last) < autoCleanupMinInterval {
+            return
+        }
+        UserDefaults.standard.set(now, forKey: lastAutoCleanupKey)
+
+        let referencedFolderIDs = Set(
+            QuoteHistoryStore.shared.quotes.compactMap { quote -> String? in
+                guard let urlString = quote.scanArtifactURL, let url = URL(string: urlString) else { return nil }
+                // aq_scans/<folderID>/<file> — the folder is the artifact's
+                // parent directory name, same layout HistoryThumbnailView's
+                // sibling thumb.jpg lookup already assumes.
+                return url.deletingLastPathComponent().lastPathComponent
+            }
+        )
+
+        Task.detached(priority: .utility) {
+            let result = removeArtifactsOlderThan(referencedFolderIDs: referencedFolderIDs)
+            if result.removedCount > 0 {
+                AQLog.general.info("autoCleanupIfDue: removed \(result.removedCount, privacy: .public) folder(s), freed \(formattedSize(result.bytesFreed), privacy: .public)")
+            }
+        }
     }
 }

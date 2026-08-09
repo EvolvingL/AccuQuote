@@ -817,14 +817,25 @@ private struct AccountTab: View {
             isPresented: $showStorageConfirm, titleVisibility: .visible
         ) {
             Button("Remove", role: .destructive) {
-                let result = ScanStorageManager.removeArtifactsOlderThan()
+                // Same reference guard as the automatic cleanup pass (see
+                // ScanStorageManager.autoCleanupIfDue) — a scan folder still
+                // backing a saved quote's 3D preview is never deleted here
+                // either, regardless of age, so the message below is actually
+                // true rather than aspirational.
+                let referencedFolderIDs = Set(
+                    QuoteHistoryStore.shared.quotes.compactMap { quote -> String? in
+                        guard let urlString = quote.scanArtifactURL, let url = URL(string: urlString) else { return nil }
+                        return url.deletingLastPathComponent().lastPathComponent
+                    }
+                )
+                let result = ScanStorageManager.removeArtifactsOlderThan(referencedFolderIDs: referencedFolderIDs)
                 storageCleanupResult = result.removedCount == 0
                     ? "Nothing to remove — no 3D models older than \(ScanStorageManager.defaultRetentionDays) days."
                     : "Removed \(result.removedCount) model\(result.removedCount == 1 ? "" : "s"), freed \(ScanStorageManager.formattedSize(result.bytesFreed))."
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Dimensions and quote history are kept forever — only the 3D preview/export files are deleted.")
+            Text("Dimensions and quote history are kept forever. 3D preview files are deleted, except for scans still backing a saved quote's preview image.")
         }
         .confirmationDialog(
             "Delete your account?", isPresented: $showDeleteAccountConfirm, titleVisibility: .visible
