@@ -387,13 +387,43 @@ async function applyReferralReward(referrerUid, referredTier) {
       log.error('applyReferralReward: STRIPE_SECRET_KEY not set, cannot credit balance', { referrerUid });
       return false;
     }
-    // Flat £1/month-equivalent credit isn't right here — price varies by tier —
-    // but we don't need the referrer's own price: crediting a fixed amount that
-    // matches the cheapest paid tier (Solo) undercounts for Team/Crew referrers.
-    // Simplest correct approach: look up what the REFERRER is currently paying
-    // and credit that. Falls back to the Solo price if we can't tell.
-    const tierPricePence = { solo: 999, team: 1999, crew: 2999 };
-    const creditPence = tierPricePence[ent.tier] || tierPricePence.solo;
+    // A flat/hardcoded per-tier credit drifts the moment prices change in
+    // Stripe (this is exactly what happened before — a stale table credited
+    // ~£10 for referrers actually paying £99-£349/mo). Source of truth is
+    // the referrer's own live Stripe subscription: fetch it and read the
+    // real price they're paying (correct for monthly vs annual too, not
+    // just tier), rather than re-deriving price from a tier name anywhere
+    // in this codebase.
+    if (!ent.stripeSubscriptionId) {
+      log.error('applyReferralReward: no stripeSubscriptionId on file, cannot determine credit amount', { referrerUid });
+      return false;
+    }
+    let creditPence;
+    try {
+      const subRes = await fetch(`https://api.stripe.com/v1/subscriptions/${ent.stripeSubscriptionId}`, {
+        headers: { 'Authorization': `Bearer ${stripeKey}` },
+      });
+      if (!subRes.ok) {
+        const body = await subRes.text().catch(() => '');
+        log.error('applyReferralReward: failed to fetch referrer subscription', { status: subRes.status, body, referrerUid });
+        return false;
+      }
+      const sub = await subRes.json();
+      const item = sub.items?.data?.[0];
+      const unitAmount = item?.price?.unit_amount;
+      const interval = item?.price?.recurring?.interval;
+      if (typeof unitAmount !== 'number' || !interval) {
+        log.error('applyReferralReward: subscription has no readable price', { referrerUid, stripeSubscriptionId: ent.stripeSubscriptionId });
+        return false;
+      }
+      // "1 free month" on an annual plan means 1/12th of the annual price,
+      // not the full annual amount.
+      creditPence = interval === 'year' ? Math.round(unitAmount / 12) : unitAmount;
+    } catch (err) {
+      log.error('applyReferralReward: fetching referrer subscription threw', { err, referrerUid });
+      return false;
+    }
+
     try {
       const res = await fetch(`https://api.stripe.com/v1/customers/${ent.stripeCustomerId}/balance_transactions`, {
         method: 'POST',
@@ -824,7 +854,7 @@ app.post('/api/claude', requireAuth, aiLimiter, async (req, res) => {
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-5',
         max_tokens: maxTokens,
         messages: [{ role: 'user', content: safePrompt }],
       }),
@@ -973,6 +1003,7 @@ app.post('/api/stripe/webhook', async (req, res) => {
             {
               tier, status: 'active', updatedAt: Date.now(), stripeSessionId: session.id,
               provider: 'stripe', stripeCustomerId: session.customer,
+              stripeSubscriptionId: session.subscription,
             },
             uid,
           );
