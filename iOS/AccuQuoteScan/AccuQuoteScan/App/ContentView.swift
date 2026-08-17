@@ -17,9 +17,22 @@ struct ContentView: View {
     // light-themed SlickFooter (and its white background bar) must not
     // overlay them the way it correctly does over the light Room-mode screens.
     @State private var isInFullScreenScanMode = false
+    @State private var showProfileMenu = false
+
+    // Persistent profile access was previously only reachable from ReadyView's
+    // own top bar, so users on any other screen (History, Results, Quote,
+    // error/needs-review states) had no way back to Settings/Sign out/Home
+    // without navigating through "describe the job" first. This overlay makes
+    // the profile button globally reachable, suppressed only where a
+    // full-screen capture UI is active and any overlay chrome would obstruct it.
+    private var profileButtonHidden: Bool {
+        if case .scanning = coordinator.state { return true }
+        if isInFullScreenScanMode { return true }
+        return false
+    }
 
     var body: some View {
-        ZStack {
+        ZStack(alignment: .topTrailing) {
             if showGuest {
                 // ── Guest / free tool flow ──────────────────────────────
                 GuestLandingView(showGuest: $showGuest)
@@ -55,7 +68,20 @@ struct ContentView: View {
                     ErrorView(message: message, coordinator: coordinator)
                 }
             }
+
+            if !showGuest && !profileButtonHidden {
+                ProfileIconButton(pct: questionEngine.personalisation) {
+                    showProfileMenu = true
+                }
+                .padding(.top, 56)
+                .padding(.trailing, 24)
+                .transition(.opacity)
+            }
         }
+        .sheet(isPresented: $showProfileMenu) {
+            ProfileMenuSheet().environmentObject(questionEngine)
+        }
+        .animation(.easeInOut(duration: 0.2), value: profileButtonHidden)
         .animation(.easeInOut(duration: 0.4), value: showGuest)
         // #6/#30: AccuQuote is a deliberately light, paper-document themed quoting tool —
         // its quote PDFs, proposals and forms read as printed documents. The hardcoded

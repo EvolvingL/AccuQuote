@@ -9,6 +9,9 @@
 /* Begin PBXBuildFile section */
 		71231D412FC5057E00638750 /* StripeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71231D402FC5057E00638750 /* StripeService.swift */; };
 		71231D432FC5066600638750 /* ProfileMenuSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71231D422FC5066600638750 /* ProfileMenuSheet.swift */; };
+		1766FCF136DC61DC09624887 /* BusinessVerificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0E5CEBAE1E927A5667B5ECD /* BusinessVerificationManager.swift */; };
+		BD7ADC8CE3F8ABD8C9D577EC /* BusinessVerificationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E33D4B8ABDE41451A2C52636 /* BusinessVerificationView.swift */; };
+		30BB5400E6A74281AFE1F690 /* SavedQuoteDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D73B2FE576A613343355ED03 /* SavedQuoteDetailView.swift */; };
 		71BE0CE2300D43C3003312C0 /* GoogleService-Info (1).plist in Resources */ = {isa = PBXBuildFile; fileRef = 71BE0CE1300D43C3003312C0 /* GoogleService-Info (1).plist */; };
 		A101 /* AccuQuoteScanApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A001 /* AccuQuoteScanApp.swift */; };
 		A102 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A002 /* ContentView.swift */; };
@@ -98,6 +101,9 @@
 /* Begin PBXFileReference section */
 		71231D402FC5057E00638750 /* StripeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/StripeService.swift; sourceTree = "<group>"; };
 		71231D422FC5066600638750 /* ProfileMenuSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Profile/ProfileMenuSheet.swift; sourceTree = "<group>"; };
+		B0E5CEBAE1E927A5667B5ECD /* BusinessVerificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/BusinessVerificationManager.swift; sourceTree = "<group>"; };
+		E33D4B8ABDE41451A2C52636 /* BusinessVerificationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Auth/BusinessVerificationView.swift; sourceTree = "<group>"; };
+		D73B2FE576A613343355ED03 /* SavedQuoteDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = History/SavedQuoteDetailView.swift; sourceTree = "<group>"; };
 		71BE0CE1300D43C3003312C0 /* GoogleService-Info (1).plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info (1).plist"; sourceTree = "<group>"; };
 		A001 /* AccuQuoteScanApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/AccuQuoteScanApp.swift; sourceTree = "<group>"; };
 		A002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/ContentView.swift; sourceTree = "<group>"; };
@@ -243,6 +249,9 @@
 				71BE0CE1300D43C3003312C0 /* GoogleService-Info (1).plist */,
 				71231D402FC5057E00638750 /* StripeService.swift */,
 				71231D422FC5066600638750 /* ProfileMenuSheet.swift */,
+				B0E5CEBAE1E927A5667B5ECD /* BusinessVerificationManager.swift */,
+				E33D4B8ABDE41451A2C52636 /* BusinessVerificationView.swift */,
+				D73B2FE576A613343355ED03 /* SavedQuoteDetailView.swift */,
 				A001 /* AccuQuoteScanApp.swift */,
 				A002 /* ContentView.swift */,
 				A003 /* ScanCoordinator.swift */,
@@ -469,6 +478,9 @@
 				A319 /* ProfileGateView.swift in Sources */,
 				A320 /* OnboardingSheet.swift in Sources */,
 				71231D432FC5066600638750 /* ProfileMenuSheet.swift in Sources */,
+				1766FCF136DC61DC09624887 /* BusinessVerificationManager.swift in Sources */,
+				BD7ADC8CE3F8ABD8C9D577EC /* BusinessVerificationView.swift in Sources */,
+				30BB5400E6A74281AFE1F690 /* SavedQuoteDetailView.swift in Sources */,
 				A101 /* AccuQuoteScanApp.swift in Sources */,
 				A102 /* ContentView.swift in Sources */,
 				A103 /* ScanCoordinator.swift in Sources */,

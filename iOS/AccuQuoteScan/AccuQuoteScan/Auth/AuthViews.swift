@@ -7,6 +7,8 @@ import StoreKit
 struct AuthGateView: View {
     @EnvironmentObject var auth: AuthManager
     @EnvironmentObject var entitlement: EntitlementManager
+    @StateObject private var verification = BusinessVerificationManager.shared
+    @State private var checkedVerification = false
 
     var body: some View {
         Group {
@@ -14,6 +16,19 @@ struct AuthGateView: View {
                 SplashView()
             } else if !auth.isSignedIn {
                 LoginView()
+                    .onAppear { checkedVerification = false }
+            } else if !checkedVerification {
+                // Avoids a flash of BusinessVerificationView for already-verified
+                // users while the server round-trip is in flight — Keychain cache
+                // in BusinessVerificationManager's init already set isVerified
+                // for returning users, this task just confirms/refreshes it.
+                SplashView()
+                    .task {
+                        await verification.refreshStatus()
+                        checkedVerification = true
+                    }
+            } else if !verification.isVerified {
+                BusinessVerificationView()
             } else {
                 ContentView()
                     .task { await entitlement.refresh() }
@@ -25,6 +40,7 @@ struct AuthGateView: View {
         .buttonStyle(ScaleButtonStyle())
         .animation(.easeInOut(duration: 0.3), value: auth.isSignedIn)
         .animation(.easeInOut(duration: 0.3), value: auth.isLoading)
+        .animation(.easeInOut(duration: 0.3), value: verification.isVerified)
     }
 }
 
@@ -267,14 +283,23 @@ struct SignUpView: View {
     @EnvironmentObject var auth: AuthManager
     @Environment(\.dismiss) private var dismiss
     var referralCode: String? = nil
+    @StateObject private var verification = BusinessVerificationManager.shared
     @State private var email = ""
     @State private var password = ""
     @State private var confirm = ""
+    @State private var businessName = ""
+    // Set only when the user taps a result from the live search dropdown —
+    // verification then goes by this exact Companies House number rather
+    // than re-matching on the typed name, so a missing "Ltd"/"Limited" or
+    // any other near-miss never surfaces as a failure once they've picked
+    // from the list. Cleared whenever the text is edited after a pick.
+    @State private var selectedCompanyNumber: String?
     @State private var didDismiss = false   // Fix #6: guard against double-dismiss
     @State private var showDiscardConfirm = false   // Fix #20
+    @State private var isVerifying = false
     @FocusState private var focusedField: Field?
 
-    enum Field { case email, password, confirm }
+    enum Field { case email, password, confirm, business }
 
     var body: some View {
         NavigationStack {
@@ -285,6 +310,12 @@ struct SignUpView: View {
                         .foregroundColor(AQ.ink)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top, 8)
+
+                    Text("AccuQuote is built for registered UK trades businesses — we verify every trading name against Companies House before your account is active.")
+                        .font(.system(size: 13))
+                        .foregroundColor(AQ.secondary)
+                        .lineSpacing(3)
+                        .frame(maxWidth: .infinity, alignment: .leading)
 
                     VStack(spacing: 14) {
                         TextField("Email address", text: $email)
@@ -308,9 +339,78 @@ struct SignUpView: View {
                         SecureField("Confirm password", text: $confirm)
                             .textContentType(.newPassword)
                             .focused($focusedField, equals: .confirm)
-                            .submitLabel(.go)
-                            .onSubmit { signUp() }
+                            .submitLabel(.next)
+                            .onSubmit { focusedField = .business }
                             .authField()
+
+                        VStack(alignment: .leading, spacing: 0) {
+                            HStack {
+                                TextField("Business or trading name", text: $businessName)
+                                    .textContentType(.organizationName)
+                                    .autocapitalization(.words)
+                                    .focused($focusedField, equals: .business)
+                                    .submitLabel(.go)
+                                    .onSubmit { signUp() }
+                                    .onChange(of: businessName) { newValue in
+                                        selectedCompanyNumber = nil
+                                        verification.clearErrorOnly()
+                                        verification.search(query: newValue)
+                                    }
+                                if selectedCompanyNumber != nil {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundColor(AQ.green)
+                                }
+                            }
+                            .authField()
+
+                            // Live dropdown — the primary way to pick a business now.
+                            // Selecting a result here verifies by exact Companies House
+                            // number once the account is created, so a missing "Ltd" or
+                            // any other near-miss typed by hand never matters.
+                            if focusedField == .business && selectedCompanyNumber == nil
+                                && (!verification.searchResults.isEmpty || verification.isSearching) {
+                                VStack(spacing: 0) {
+                                    if verification.isSearching && verification.searchResults.isEmpty {
+                                        HStack {
+                                            ProgressView().controlSize(.small)
+                                            Text("Searching Companies House…")
+                                                .font(.system(size: 13))
+                                                .foregroundColor(AQ.secondary)
+                                        }
+                                        .padding(12)
+                                    }
+                                    ForEach(verification.searchResults, id: \.number) { r in
+                                        Button {
+                                            businessName = r.name
+                                            selectedCompanyNumber = r.number
+                                            verification.clearSearch()
+                                            focusedField = nil   // dismiss keyboard now the pick is made
+                                        } label: {
+                                            HStack {
+                                                VStack(alignment: .leading, spacing: 2) {
+                                                    Text(r.name)
+                                                        .font(.system(size: 14, weight: .medium))
+                                                        .foregroundColor(AQ.ink)
+                                                    Text(r.status.capitalized)
+                                                        .font(.system(size: 11))
+                                                        .foregroundColor(r.status == "active" ? AQ.green : AQ.secondary)
+                                                }
+                                                Spacer()
+                                            }
+                                            .padding(12)
+                                            .contentShape(Rectangle())
+                                        }
+                                        if r.number != verification.searchResults.last?.number {
+                                            Divider().background(AQ.rule)
+                                        }
+                                    }
+                                }
+                                .background(AQ.fill)
+                                .cornerRadius(12)
+                                .overlay(RoundedRectangle(cornerRadius: 12).stroke(AQ.rule, lineWidth: 1))
+                                .padding(.top, 6)
+                            }
+                        }
 
                         if let err = auth.authError {
                             Text(err)
@@ -326,9 +426,57 @@ struct SignUpView: View {
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
 
-                        Button(action: signUp) {
+                        if let err = verification.lastError {
+                            Text(err)
+                                .font(.system(size: 13))
+                                .foregroundColor(.red)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+
+                        if !verification.candidates.isEmpty {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Did you mean:")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundColor(AQ.secondary)
+                                ForEach(verification.candidates, id: \.number) { c in
+                                    Button {
+                                        businessName = c.name
+                                        selectedCompanyNumber = c.number
+                                        retryVerification()
+                                    } label: {
+                                        HStack {
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                Text(c.name)
+                                                    .font(.system(size: 14, weight: .medium))
+                                                    .foregroundColor(AQ.ink)
+                                                Text(c.status.capitalized)
+                                                    .font(.system(size: 11))
+                                                    .foregroundColor(AQ.secondary)
+                                            }
+                                            Spacer()
+                                            Image(systemName: "chevron.right")
+                                                .font(.system(size: 11, weight: .semibold))
+                                                .foregroundColor(AQ.secondary.opacity(0.5))
+                                        }
+                                        .padding(12)
+                                        .background(AQ.fill)
+                                        .cornerRadius(10)
+                                    }
+                                }
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+
+                        Button {
+                            // Once signUp() has already created the Firebase account
+                            // (we're mid-flow awaiting verification retry), re-tapping
+                            // this button must only re-verify, never re-attempt
+                            // account creation — Firebase would reject a second
+                            // accounts:signUp for the same email with EMAIL_EXISTS.
+                            auth.isSignedIn ? retryVerification() : signUp()
+                        } label: {
                             HStack {
-                                if auth.isLoading {
+                                if auth.isLoading || isVerifying {
                                     ProgressView().tint(.white)
                                 } else {
                                     Text("Create account")
@@ -341,7 +489,7 @@ struct SignUpView: View {
                             .background(canSubmit ? AQ.blue : AQ.blue.opacity(0.4))
                             .cornerRadius(12)
                         }
-                        .disabled(!canSubmit || auth.isLoading)
+                        .disabled(!canSubmit || auth.isLoading || isVerifying)
                     }
                 }
                 .padding(.horizontal, 28)
@@ -356,7 +504,7 @@ struct SignUpView: View {
                     // confirmation. Now only dismisses immediately if the form
                     // is actually empty; otherwise confirms first.
                     Button("Cancel") {
-                        if email.isEmpty && password.isEmpty && confirm.isEmpty {
+                        if email.isEmpty && password.isEmpty && confirm.isEmpty && businessName.isEmpty {
                             didDismiss = true
                             dismiss()
                         } else {
@@ -364,6 +512,7 @@ struct SignUpView: View {
                         }
                     }
                     .foregroundColor(AQ.secondary)
+                    .disabled(isVerifying)
                 }
             }
         }
@@ -374,24 +523,81 @@ struct SignUpView: View {
             }
             Button("Keep Editing", role: .cancel) {}
         }
-        // Fix #6: guard prevents double-dismiss when isSignedIn flips while Cancel is mid-animation
-        .onChange(of: auth.isSignedIn) { signed in
-            if signed && !didDismiss {
-                didDismiss = true
-                dismiss()
-            }
-        }
     }
 
     private var canSubmit: Bool {
-        !email.isEmpty && password.count >= 6 && password == confirm
+        !email.isEmpty && password.count >= 6 && password == confirm && !businessName.trimmingCharacters(in: .whitespaces).isEmpty
     }
 
+    // Account creation (Firebase) and Companies House verification happen
+    // back-to-back in this one call, before the sheet ever dismisses — per
+    // product policy, no one should hold usable login credentials without a
+    // verified business attached. If verification fails after the account is
+    // created, that account is deleted immediately rather than left as a
+    // dangling unverified login (see AuthManager.deleteAccount).
     private func signUp() {
         guard canSubmit else { return }
         focusedField = nil
         auth.pendingReferralCode = referralCode
-        Task { await auth.signUp(email: email, password: password) }
+        let name = businessName.trimmingCharacters(in: .whitespaces)
+        let companyNumber = selectedCompanyNumber
+
+        Task {
+            await auth.signUp(email: email, password: password)
+            guard auth.isSignedIn else { return }   // signUp already surfaced auth.authError
+
+            isVerifying = true
+            // Prefer the exact company picked from the search dropdown — no
+            // name-matching ambiguity at all. Only falls back to matching by
+            // typed name if the user hit "go" without selecting a result.
+            let verified: Bool
+            if let companyNumber {
+                verified = await verification.verify(companyNumber: companyNumber)
+            } else {
+                verified = await verification.verify(businessName: name)
+            }
+            isVerifying = false
+
+            if verified {
+                didDismiss = true
+                dismiss()
+            } else if verification.candidates.isEmpty {
+                // Hard failure (no plausible near-matches to offer) — the
+                // account we just created is unusable without verification,
+                // so remove it rather than leave a dangling unverified login.
+                // The candidates-list case is left signed in deliberately so
+                // the "Did you mean" buttons above can retry verify() against
+                // the SAME account instead of forcing a fresh sign-up.
+                try? await auth.deleteAccount()
+            }
+        }
+    }
+
+    // Re-verification against the account signUp() already created — used by
+    // the "Did you mean" candidate buttons, which must NOT call auth.signUp()
+    // again (the account already exists at that point; Firebase would reject
+    // a second accounts:signUp for the same email with EMAIL_EXISTS).
+    private func retryVerification() {
+        focusedField = nil
+        let companyNumber = selectedCompanyNumber
+        let name = businessName.trimmingCharacters(in: .whitespaces)
+        Task {
+            isVerifying = true
+            let verified: Bool
+            if let companyNumber {
+                verified = await verification.verify(companyNumber: companyNumber)
+            } else {
+                verified = await verification.verify(businessName: name)
+            }
+            isVerifying = false
+
+            if verified {
+                didDismiss = true
+                dismiss()
+            } else if verification.candidates.isEmpty {
+                try? await auth.deleteAccount()
+            }
+        }
     }
 }
 

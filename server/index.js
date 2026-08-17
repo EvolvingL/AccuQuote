@@ -624,6 +624,14 @@ const referralLimiter = rateLimit({
   message: { error: 'Too many requests. Please wait a moment.' },
 });
 
+// Business verification: 10 calls/min per user (Companies House lookups are cheap
+// but this still guards against a user hammering the endpoint with name variations)
+const businessLimiter = rateLimit({
+  windowMs: 60_000, max: 10, keyGenerator: byUid,
+  standardHeaders: true, legacyHeaders: false,
+  message: { error: 'Too many requests. Please wait a moment.' },
+});
+
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -1837,6 +1845,148 @@ app.post('/api/referral/register', requireAuth, referralLimiter, async (req, res
   } catch (err) {
     log.error('referral/register failed', { err, requestId: req.id });
     res.status(500).json({ error: 'Could not register referral code' });
+  }
+});
+
+// ── Business verification (Companies House) ───────────────────────────────────
+// Gates access to the main app: every account must have a trading name that
+// resolves to a real, active UK company/LLP before onboarding can complete.
+// This keeps the platform to genuine registered trades businesses rather than
+// unverified individuals, per product policy.
+// Live search-as-you-type for the sign-up/verification screens — returns raw
+// Companies House matches (name/number/status) with no Firestore write, so the
+// client can render a dropdown as the user types instead of making them submit
+// a full name and only finding out it didn't match (e.g. missing "Ltd") after
+// the fact. Same rate limiter as /verify since both hit the same CH quota.
+app.get('/api/business/search', requireAuth, businessLimiter, async (req, res) => {
+  const apiKey = process.env.COMPANIES_HOUSE_API_KEY;
+  if (!apiKey) return res.status(500).json({ error: 'Verification service not configured' });
+
+  const q = String(req.query.q || '').trim().slice(0, 200);
+  if (q.length < 2) return res.json({ results: [] });
+
+  try {
+    const authHeader = 'Basic ' + Buffer.from(`${apiKey}:`).toString('base64');
+    const chRes = await fetch(
+      `https://api.company-information.service.gov.uk/search/companies?q=${encodeURIComponent(q)}&items_per_page=8`,
+      { headers: { Authorization: authHeader } }
+    );
+
+    if (!chRes.ok) {
+      log.error('business/search: Companies House request failed', { requestId: req.id, status: chRes.status });
+      return res.status(502).json({ error: 'Search failed. Please try again.' });
+    }
+
+    const data = await chRes.json();
+    const items = Array.isArray(data.items) ? data.items : [];
+    res.json({
+      results: items.map((i) => ({
+        name: i.title, number: i.company_number, status: i.company_status || 'unknown',
+      })),
+    });
+  } catch (err) {
+    log.error('business/search failed', { err, requestId: req.id });
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+app.post('/api/business/verify', requireAuth, businessLimiter, async (req, res) => {
+  const apiKey = process.env.COMPANIES_HOUSE_API_KEY;
+  if (!apiKey) return res.status(500).json({ error: 'Verification service not configured' });
+
+  const { businessName, companyNumber } = req.body || {};
+
+  try {
+    let match;
+
+    if (companyNumber && typeof companyNumber === 'string') {
+      // Selected directly from the search dropdown — fetch that exact company
+      // rather than re-searching by name, so there's no ambiguity at all.
+      const authHeader = 'Basic ' + Buffer.from(`${apiKey}:`).toString('base64');
+      const chRes = await fetch(
+        `https://api.company-information.service.gov.uk/company/${encodeURIComponent(companyNumber.trim())}`,
+        { headers: { Authorization: authHeader } }
+      );
+      if (!chRes.ok) {
+        log.error('business/verify: Companies House lookup-by-number failed', { requestId: req.id, status: chRes.status });
+        return res.status(502).json({ error: 'Verification lookup failed. Please try again.' });
+      }
+      const company = await chRes.json();
+      if (company.company_status !== 'active') {
+        return res.json({ verified: false, candidates: [] });
+      }
+      match = { title: company.company_name, company_number: company.company_number };
+    } else {
+      if (!businessName || typeof businessName !== 'string' || !businessName.trim()) {
+        return res.status(400).json({ error: 'businessName or companyNumber required' });
+      }
+      const query = businessName.trim().slice(0, 200);
+
+      const authHeader = 'Basic ' + Buffer.from(`${apiKey}:`).toString('base64');
+      const chRes = await fetch(
+        `https://api.company-information.service.gov.uk/search/companies?q=${encodeURIComponent(query)}&items_per_page=10`,
+        { headers: { Authorization: authHeader } }
+      );
+
+      if (!chRes.ok) {
+        log.error('business/verify: Companies House request failed', { requestId: req.id, status: chRes.status });
+        return res.status(502).json({ error: 'Verification lookup failed. Please try again.' });
+      }
+
+      const data = await chRes.json();
+      const items = Array.isArray(data.items) ? data.items : [];
+
+      // Accept an active company/LLP whose name matches closely (case-insensitive,
+      // ignoring punctuation, and tolerant of a missing/extra "Ltd"/"Limited"/"LLP"
+      // suffix) — most users type their trading name without the legal suffix.
+      const normalise = (s) => s.toLowerCase()
+        .replace(/\b(limited|ltd|llp|plc)\b/g, '')
+        .replace(/[^a-z0-9]/g, '');
+      const target = normalise(query);
+      match = items.find((item) => {
+        const name = normalise(item.title || '');
+        return item.company_status === 'active' && (name === target || name.includes(target) || target.includes(name));
+      });
+
+      if (!match) {
+        return res.json({
+          verified: false,
+          candidates: items.slice(0, 5).map((i) => ({
+            name: i.title, number: i.company_number, status: i.company_status,
+          })),
+        });
+      }
+    }
+
+    if (adminFirestore) {
+      await adminFirestore.doc(`users/${req.user.uid}`).set({
+        businessVerified: true,
+        businessName: match.title,
+        companyNumber: match.company_number,
+        businessVerifiedAt: Date.now(),
+      }, { merge: true });
+    }
+
+    res.json({ verified: true, name: match.title, companyNumber: match.company_number });
+  } catch (err) {
+    log.error('business/verify failed', { err, requestId: req.id });
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+app.get('/api/business/verification-status', requireAuth, async (req, res) => {
+  if (!adminFirestore) return res.json({ verified: false });
+  try {
+    const doc = await adminFirestore.doc(`users/${req.user.uid}`).get();
+    const data = doc.exists ? doc.data() : {};
+    res.json({
+      verified: !!data.businessVerified,
+      name: data.businessName || null,
+      companyNumber: data.companyNumber || null,
+    });
+  } catch (err) {
+    log.error('business/verification-status failed', { err, requestId: req.id });
+    res.status(500).json({ error: 'Could not load verification status' });
   }
 });
 

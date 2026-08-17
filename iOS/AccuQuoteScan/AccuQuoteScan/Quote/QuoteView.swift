@@ -593,35 +593,23 @@ struct QuoteResultView: View {
         VStack(spacing: 0) {
             Divider().background(AQ.rule)
 
-            // Row 1: New Quote + Send to customer
-            HStack(spacing: 10) {
-                Button(action: onStartOver) {
-                    Text("New Quote")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundColor(AQ.secondary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 15)
-                        .background(AQ.fill)
-                        .cornerRadius(14)
-                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(AQ.rule, lineWidth: 1))
+            // Row 1: Send to customer — sole primary action, centered full-width.
+            // "New Quote" moved to the navigation bar's top-right (see .toolbar
+            // below) so it doesn't compete with this row's primary CTA.
+            Button {
+                pdfURL = buildPDF(summarised: true)
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "paperplane.fill")
+                        .font(.system(size: 15, weight: .semibold))
+                    Text("Send to customer")
+                        .font(.system(size: 17, weight: .semibold))
                 }
-                .frame(width: 110)
-
-                Button {
-                    pdfURL = buildPDF(summarised: true)
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "paperplane.fill")
-                            .font(.system(size: 15, weight: .semibold))
-                        Text("Send to customer")
-                            .font(.system(size: 17, weight: .semibold))
-                    }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(AQ.blue)
-                    .cornerRadius(14)
-                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(AQ.blue)
+                .cornerRadius(14)
             }
             .padding(.horizontal, 24)
             .padding(.top, 12)
@@ -695,6 +683,15 @@ struct QuoteResultView: View {
                 traderName: traderName,
                 onDismiss: { showDepositSheet = false }
             )
+        }
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: onStartOver) {
+                    Text("New Quote")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(AQ.blue)
+                }
+            }
         }
     }
 

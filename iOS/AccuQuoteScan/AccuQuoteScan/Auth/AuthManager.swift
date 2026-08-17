@@ -25,6 +25,13 @@ final class AuthManager: NSObject, ObservableObject {
     // MARK: - Published state
 
     @Published private(set) var isSignedIn: Bool = false
+    // True only immediately after a fresh accounts:signUp / signInWithIdp
+    // creation on THIS launch (never true for a returning sign-in). Used by
+    // AuthGateView/BusinessVerificationView to know whether an unverified
+    // account reaching the gate is safe to delete-on-abandon (it was just
+    // created and has no other state yet) versus a returning user's account
+    // that should never be silently deleted.
+    @Published private(set) var isFreshSignUp: Bool = false
     @Published private(set) var userEmail: String = ""
     @Published private(set) var userId: String = ""
     @Published private(set) var isLoading: Bool = true
@@ -371,6 +378,7 @@ final class AuthManager: NSObject, ObservableObject {
         // sign-in) converges on this one function, so this is the single
         // choke point for "did this call just create a brand-new account."
         let isNewUser = (result["isNewUser"] as? Bool) ?? false
+        isFreshSignUp = isNewUser
         registerPendingReferralIfNeeded(isNewUser: isNewUser)
     }
 
@@ -475,6 +483,7 @@ final class AuthManager: NSObject, ObservableObject {
         userId = ""; userEmail = ""
         tokenExpiry = .distantPast
         isSignedIn = false
+        isFreshSignUp = false
         SecureTokenStore.delete(key: keychainIdToken)
         SecureTokenStore.delete(key: keychainRefreshToken)
         SecureTokenStore.delete(key: keychainUserId)

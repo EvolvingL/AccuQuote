@@ -126,11 +126,14 @@ struct SavedQuote: Identifiable, Codable {
         return url.deletingLastPathComponent().appendingPathComponent("thumb.jpg")
     }
 
+    // Empty string for the default "room" mode — the room-type label right
+    // after this in QuoteHistoryRow already conveys what was scanned, so a
+    // literal "Room" chip was redundant noise on the majority of history rows.
     var scanModeDisplayLabel: String {
         switch scanMode {
         case "space":     return "Space"
         case "fullWorks": return "Full Works"
-        default:          return "Room"
+        default:          return ""
         }
     }
 }
@@ -336,7 +339,11 @@ struct QuoteHistoryContent: View {
             } else {
                 List {
                     ForEach(filtered) { quote in
-                        QuoteHistoryRow(quote: quote, dateFormatter: dateFormatter)
+                        NavigationLink {
+                            SavedQuoteDetailView(quote: quote)
+                        } label: {
+                            QuoteHistoryRow(quote: quote, dateFormatter: dateFormatter)
+                        }
                             // #29 context menu on long-press
                             .contextMenu {
                                 Button(role: .destructive) {
@@ -410,14 +417,18 @@ private struct QuoteHistoryRow: View {
                     .lineLimit(2)
 
                 HStack(spacing: 8) {
-                    // §7 mode chip — Room/Space/Full Works
-                    Text(quote.scanModeDisplayLabel)
-                        .font(AQ.caption(11))
-                        .foregroundColor(AQ.blue)
-                        .padding(.horizontal, 6).padding(.vertical, 2)
-                        .background(AQ.blue.opacity(0.1))
-                        .cornerRadius(5)
-                    Text("·").foregroundColor(AQ.rule)
+                    // §7 mode chip — Space/Full Works only; default "room" mode
+                    // renders no chip (see scanModeDisplayLabel) since the
+                    // room-type label right after it already says what it is.
+                    if !quote.scanModeDisplayLabel.isEmpty {
+                        Text(quote.scanModeDisplayLabel)
+                            .font(AQ.caption(11))
+                            .foregroundColor(AQ.blue)
+                            .padding(.horizontal, 6).padding(.vertical, 2)
+                            .background(AQ.blue.opacity(0.1))
+                            .cornerRadius(5)
+                        Text("·").foregroundColor(AQ.rule)
+                    }
                     Label(quote.roomType.capitalized, systemImage: "cube.transparent")
                         .font(.caption.weight(.medium))   // #1
                         .foregroundColor(AQ.blue)
@@ -425,12 +436,6 @@ private struct QuoteHistoryRow: View {
                     Text(String(format: "%.1fm²", quote.floorArea))
                         .font(.caption.weight(.medium))   // #1
                         .foregroundColor(AQ.secondary)
-                    if !quote.sections.isEmpty {
-                        Text("·").foregroundColor(AQ.rule)
-                        Text("\(quote.sections.count) sections")
-                            .font(.caption.weight(.medium))   // #1
-                            .foregroundColor(AQ.secondary)
-                    }
                 }
             }
         }

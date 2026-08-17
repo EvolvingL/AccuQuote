@@ -14,7 +14,6 @@ struct ReadyView: View {
     @State private var showOnboarding = false
     @State private var showManualEntry = false
     @State private var showHistory = false
-    @State private var showProfileMenu = false
     @State private var pulseIcon = false
     @ObservedObject private var historyStore = QuoteHistoryStore.shared
 
@@ -43,16 +42,14 @@ struct ReadyView: View {
                         .foregroundColor(AQ.secondary)
                 }
                 Spacer()
-                HStack(spacing: 12) {
-                    AIProfileButton(
-                        answered: questionEngine.answeredCount,
-                        pct: questionEngine.personalisation
-                    ) { showOnboarding = true }
-
-                    ProfileIconButton(pct: questionEngine.personalisation) {
-                        showProfileMenu = true
-                    }
-                }
+                // ProfileIconButton previously lived here but is now shown as a
+                // persistent overlay in ContentView on every screen — see
+                // ContentView's profileButtonHidden — so it isn't duplicated here.
+                AIProfileButton(
+                    answered: questionEngine.answeredCount,
+                    pct: questionEngine.personalisation
+                ) { showOnboarding = true }
+                    .padding(.trailing, 52)   // clears the global profile button overlay
             }
             .padding(.horizontal, 24)
             .padding(.top, 56)
@@ -217,11 +214,7 @@ struct ReadyView: View {
         .sheet(isPresented: $showHistory) {
             QuoteHistoryView(store: historyStore)
         }
-        .sheet(isPresented: $showProfileMenu) {
-            ProfileMenuSheet().environmentObject(questionEngine)
-        }
         .onReceive(NotificationCenter.default.publisher(for: .aqSignOut)) { _ in
-            showProfileMenu = false
             questionEngine.resetProfile()
         }
     }

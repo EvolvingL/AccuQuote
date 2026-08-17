@@ -138,8 +138,8 @@ let foundationQuestions: [OnboardingQuestion] = [
     ),
     OnboardingQuestion(
         id: "what_included",
-        text: "What do you normally include in a quote — labour only, or labour and materials?",
-        hint: "e.g. Labour + materials, labour only (customer buys materials), depends on job…",
+        text: "What do you normally include in a quote?",
+        hint: "e.g. Labour only, labour and materials, depends on job…",
         category: "scope",
         quoteImpact: "Defines what the AI prices up by default"
     ),
