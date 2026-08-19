@@ -2013,7 +2013,7 @@ app.get('/favicon.ico', (req, res) => {
 });
 app.get('/prelaunch', (req, res) => res.sendFile(join(ROOT, 'prelaunch.html')));
 
-const pages = ['demo', 'blog', 'how-it-works', 'referral', 'quote-cost-calculator', 'privacy-policy'];
+const pages = ['demo', 'blog', 'how-it-works', 'referral', 'quote-cost-calculator', 'privacy-policy', 'terms-and-conditions'];
 pages.forEach(page => {
   const noCache = (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
