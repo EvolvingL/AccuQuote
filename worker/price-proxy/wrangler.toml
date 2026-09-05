@@ -9,7 +9,13 @@ command = ""
 # Cloudflare Worker runs at the edge — no server needed
 # Deploy: npx wrangler deploy
 # Test locally: npx wrangler dev
+# Local D1 migration: npx wrangler d1 execute accuquote-pricing --local --file=migrations/0001_init.sql
+# Remote D1 migration (after `wrangler d1 create`): npx wrangler d1 execute accuquote-pricing --remote --file=migrations/0001_init.sql
 
-[[routes]]
-pattern = "price-proxy.accuquote.workers.dev/*"
-zone_name = "workers.dev"
+[triggers]
+crons = ["0 3 * * *"]  # daily 03:00 UTC — see src/refresh.js
+
+[[d1_databases]]
+binding = "DB"
+database_name = "accuquote-pricing"
+database_id = "237f8976-fbe3-41e4-9cb2-9ff59aa26766"

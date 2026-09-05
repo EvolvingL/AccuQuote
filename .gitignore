@@ -8,6 +8,8 @@ iOS/AccuQuoteScan/AccuQuoteScan/APIKeys.swift
 .env
 .env.local
 .env.production
+.dev.vars
+.wrangler/
 .DS_Store
 *.log
 .vercel
