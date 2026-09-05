@@ -184,6 +184,9 @@
       color: #5EAEFF; margin-bottom: 28px; letter-spacing: 0.02em;
     }
     .hero__badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #5EAEFF; box-shadow: 0 0 8px rgba(0,122,255,0.8); flex-shrink: 0; }
+    .hero__retailers { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-bottom: 28px; }
+    .hero__retailers-label { font-size: 0.8125rem; font-weight: 600; letter-spacing: 0.02em; color: rgba(255,255,255,0.55); text-transform: uppercase; text-align: center; }
+    .hero__retailers-logos { display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; }
     .hero h1 { color: var(--white); max-width: 760px; }
     .hero__subheading { margin-top: 14px; font-size: clamp(1.1rem, 2.4vw, 1.4rem); font-weight: 600; color: #5EAEFF; max-width: 640px; }
     .hero__sub { margin-top: 24px; font-size: clamp(1rem, 2vw, 1.2rem); color: rgba(255,255,255,0.65); max-width: 600px; line-height: 1.65; }
@@ -206,16 +209,9 @@
       .hero__actions .btn { width: 100%; max-width: 340px; }
     }
 
-    /* RETAILER STRAP — live pricing partners */
-    .retailer-strap { background: var(--night); border-bottom: 1px solid rgba(255,255,255,0.08); padding: 28px 24px; }
-    .retailer-strap__inner { max-width: 1140px; margin: 0 auto; display: flex; align-items: center; justify-content: center; gap: 20px 40px; flex-wrap: wrap; }
-    .retailer-strap__label { font-size: 0.8125rem; font-weight: 600; letter-spacing: 0.02em; color: rgba(255,255,255,0.55); text-transform: uppercase; }
-    .retailer-strap__logos { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+    /* RETAILER LOGOS — live pricing partners (shown in hero) */
     .retailer-logo { display: flex; align-items: center; justify-content: center; background: #fff; border-radius: 10px; padding: 10px 18px; height: 44px; box-sizing: border-box; box-shadow: 0 1px 2px rgba(0,0,0,0.15); }
     .retailer-logo img { height: 100%; width: auto; display: block; }
-    @media (max-width: 640px) {
-      .retailer-strap__inner { flex-direction: column; gap: 14px; }
-    }
 
     /* TRADES STRAP — "tools already on the job" */
     .trades-strap { background: var(--surface); border-bottom: 1px solid var(--border); padding: 22px 24px; }
@@ -503,8 +499,13 @@
 <section class="hero" aria-labelledby="hero-heading">
   <div class="container">
     <div class="hero__inner">
-      <span class="hero__appicon" aria-hidden="true"><img src="./images/accuquote-logo.png" alt="AccuQuote app icon" width="92" height="92" /></span>
-      <div class="hero__badge">Quoting app built for the trades</div>
+      <div class="hero__retailers" aria-label="Live pricing from official retail partners">
+        <span class="hero__retailers-label">Official affiliate — live trade prices from</span>
+        <span class="hero__retailers-logos">
+          <span class="retailer-logo"><img src="./images/wickes-logo.svg" alt="Wickes" height="24" /></span>
+          <span class="retailer-logo"><img src="./images/travis-perkins-logo.png" alt="Travis Perkins" height="24" /></span>
+        </span>
+      </div>
       <h1 id="hero-heading">Time is Money</h1>
       <p class="hero__subheading">Quote the whole house before you leave the drive.</p>
       <p class="hero__sub">
@@ -524,17 +525,6 @@
     </div>
   </div>
 </section>
-
-<!-- RETAILER STRAP -->
-<div class="retailer-strap" aria-label="Live pricing from official retail partners">
-  <div class="retailer-strap__inner">
-    <span class="retailer-strap__label">Official affiliate — live trade prices from</span>
-    <div class="retailer-strap__logos">
-      <span class="retailer-logo"><img src="./images/wickes-logo.svg" alt="Wickes" height="24" /></span>
-      <span class="retailer-logo"><img src="./images/travis-perkins-logo.png" alt="Travis Perkins" height="24" /></span>
-    </div>
-  </div>
-</div>
 
 <!-- TRADES STRAP -->
 <div class="trades-strap" aria-label="Built for the trades">
