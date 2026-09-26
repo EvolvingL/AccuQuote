@@ -30,7 +30,6 @@ final class ScanResultCodableTests: XCTestCase {
         XCTAssertTrue(decoded.dimensionSchedule.isEmpty)
         XCTAssertEqual(decoded.confidence.overallScore, 1.0)
         XCTAssertTrue(decoded.confidence.isPassing)
-        XCTAssertTrue(decoded.floorPlan2D.walls.isEmpty)
     }
 
     func testScanResultDecodeThrowsOnMissingRequiredFields() {
@@ -58,30 +57,6 @@ final class ScanResultCodableTests: XCTestCase {
     func testScanConfidenceIsPassingFailsBelowThresholdEvenWithNoIssues() {
         let confidence = ScanConfidence(overallScore: 0.5, issues: [])
         XCTAssertFalse(confidence.isPassing)
-    }
-
-    func testFloorPlan2DBackwardsCompatibleDecodeFromEmptyJSON() throws {
-        let decoded = try JSONDecoder().decode(FloorPlan2D.self, from: "{}".data(using: .utf8)!)
-        XCTAssertTrue(decoded.walls.isEmpty)
-        XCTAssertTrue(decoded.doors.isEmpty)
-        XCTAssertEqual(decoded.scaleBarMetres, 1.0)
-        XCTAssertNil(decoded.northAngleRadians)
-    }
-
-    func testFloorPlan2DRoundTrip() throws {
-        let plan = FloorPlan2D(
-            walls: [PlanWall(start: SIMD2(0, 0), end: SIMD2(4, 0))],
-            doors: [PlanDoor(hingePoint: SIMD2(1, 0), openEndPoint: SIMD2(2, 0), wallID: "w0")],
-            windows: [],
-            dimensionStrings: [PlanDimensionString(start: .zero, end: SIMD2(4, 0), valueMetres: 4.0)],
-            roomLabels: [PlanRoomLabel(name: "Kitchen", floorAreaSqMetres: 12, centre: SIMD2(2, 1.5))],
-            symbols: []
-        )
-        let data = try JSONEncoder().encode(plan)
-        let decoded = try JSONDecoder().decode(FloorPlan2D.self, from: data)
-        XCTAssertEqual(decoded.walls.count, 1)
-        XCTAssertEqual(decoded.doors.first?.wallID, "w0")
-        XCTAssertEqual(decoded.roomLabels.first?.name, "Kitchen")
     }
 
     // MARK: - SavedQuote / QuoteHistory model
@@ -118,10 +93,14 @@ final class ScanResultCodableTests: XCTestCase {
                        floorArea: 1, labourDays: 0, labourRate: 0, labourTotal: 0, items: [],
                        subtotal: 0, vatRate: 20, vatAmount: 0, grandTotal: 0, notes: "", scanMode: scanMode)
         }
-        XCTAssertEqual(quote(scanMode: "room").scanModeDisplayLabel, "Room")
+        // Room mode intentionally renders no chip — the room-type label right
+        // after it already says what it is (see scanModeDisplayLabel's own
+        // comment at its call site in QuoteHistory.swift) — so "room" and any
+        // unrecognised value both safely default to "", not a crash.
+        XCTAssertEqual(quote(scanMode: "room").scanModeDisplayLabel, "")
         XCTAssertEqual(quote(scanMode: "space").scanModeDisplayLabel, "Space")
-        XCTAssertEqual(quote(scanMode: "fullWorks").scanModeDisplayLabel, "Full Works")
-        XCTAssertEqual(quote(scanMode: "unknown-future-mode").scanModeDisplayLabel, "Room", "unrecognised scanMode should default safely, not crash")
+        XCTAssertEqual(quote(scanMode: "fullWorks").scanModeDisplayLabel, "Full Works", "old saved quotes from before Full Works was descoped must still show a sane label")
+        XCTAssertEqual(quote(scanMode: "unknown-future-mode").scanModeDisplayLabel, "", "unrecognised scanMode should default safely, not crash")
     }
 
     func testSavedQuoteItemDecodesOldJSONWithoutSectionKey() throws {
@@ -131,6 +110,20 @@ final class ScanResultCodableTests: XCTestCase {
         let decoded = try JSONDecoder().decode(SavedQuoteItem.self, from: json)
         XCTAssertEqual(decoded.sectionKey, "")
         XCTAssertEqual(decoded.total, 31.0, accuracy: 0.001)
+        // Old saved quotes predate real Awin-sourced pricing entirely — must
+        // default to "estimated", never be mistaken for a verified real
+        // price. See PricingIntegration-TechnicalPlan.md §1.7.
+        XCTAssertEqual(decoded.priceSource, "estimated")
+        XCTAssertEqual(decoded.isRealPrice, false)
+    }
+
+    func testSavedQuoteItemDecodesRealPriceSource() throws {
+        let json = """
+        {"id":"i1","description":"Cable","qty":1,"unit":"m","unitPrice":84.99,"sku":"123456","supplier":"travisperkins","priceSource":"real"}
+        """.data(using: .utf8)!
+        let decoded = try JSONDecoder().decode(SavedQuoteItem.self, from: json)
+        XCTAssertEqual(decoded.priceSource, "real")
+        XCTAssertEqual(decoded.isRealPrice, true)
     }
 
     func testSavedQuoteRoundTrip() throws {

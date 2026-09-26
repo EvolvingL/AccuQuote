@@ -3,9 +3,8 @@ import Foundation
 // MARK: - ScanStorageManager (Tri-Mode Scanning build spec §7)
 //
 // Manages Documents/aq_scans/ — the folder every scan mode's mesh/USDZ/
-// thumbnail/CSV/PDF artifacts live under (SpaceMeshExport.scanFolder,
-// FloorPlan2DExport.persistToScanFolder, FullWorksOutput.generate, and the
-// Room-mode USDZ export in QuoteView.swift's startGeneration all write here).
+// thumbnail artifacts live under (SpaceMeshExport.scanFolder and the
+// Room-mode USDZ export in QuoteView.swift's startGeneration both write here).
 //
 // "Remove 3D models older than 90 days" deletes only the artifact FILES —
 // dimensions themselves live in SavedQuote/QuoteHistoryStore, a completely
@@ -21,8 +20,8 @@ enum ScanStorageManager {
 
     // MARK: - Scan-in-progress guard
     //
-    // Set true by whichever coordinator (ScanCoordinator/SpaceCaptureCoordinator/
-    // FullWorksSession) is actively capturing, false again the moment that
+    // Set true by whichever coordinator (ScanCoordinator/SpaceCaptureCoordinator)
+    // is actively capturing, false again the moment that
     // capture ends (success, error, or reset) — see each coordinator's
     // start/terminal-state call sites. autoCleanupIfDue() checks this before
     // touching aq_scans/ so an automatic cleanup pass can never race a live

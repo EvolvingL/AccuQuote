@@ -45,6 +45,16 @@ struct QuoteLineItemRow: View {
                     .padding(.horizontal, 7).padding(.vertical, 3)
                     .background(AQ.blue.opacity(0.07)).cornerRadius(5)
                 }
+                // Only real (Awin-sourced) prices get a badge — estimated is
+                // the default expectation, not a flaw to flag loudly, per
+                // PricingIntegration-TechnicalPlan.md §1.7.
+                if item.isRealPrice {
+                    Text("Real price")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(.green)
+                        .padding(.horizontal, 7).padding(.vertical, 3)
+                        .background(Color.green.opacity(0.12)).cornerRadius(5)
+                }
             }
             .padding(.horizontal, 24).padding(.bottom, 12)
         }

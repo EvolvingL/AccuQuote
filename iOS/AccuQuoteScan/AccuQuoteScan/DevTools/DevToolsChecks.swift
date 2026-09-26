@@ -35,9 +35,9 @@ enum DevToolsChecks {
 
     static func scanResultBackwardsCompatibleDecode() -> DevCheckResult {
         // Simulates a ScanResult saved by an older build, before confidence/
-        // floorPlan2D/dimensionSchedule existed — only the fields present at
-        // Room-mode launch. Decoding this must not throw, and must fall back
-        // to the safe defaults each type's custom init(from:) declares.
+        // dimensionSchedule existed — only the fields present at Room-mode
+        // launch. Decoding this must not throw, and must fall back to the
+        // safe defaults each type's custom init(from:) declares.
         let oldShapeJSON = """
         {"id":"abc-123","mode":"room","capturedAt":\(Date().timeIntervalSinceReferenceDate)}
         """.data(using: .utf8)!
@@ -48,7 +48,6 @@ enum DevToolsChecks {
                 && decoded.dimensionSchedule.isEmpty
                 && decoded.confidence.overallScore == 1.0
                 && decoded.confidence.isPassing
-                && decoded.floorPlan2D.walls.isEmpty
             return DevCheckResult(passed: ok, detail: ok ? "Old-shape JSON decoded with safe defaults" : "Defaults didn't match expectations")
         } catch {
             return DevCheckResult(passed: false, detail: "Threw on old-shape JSON: \(error)")
@@ -299,114 +298,6 @@ enum DevToolsChecks {
             passed: ok,
             detail: ok ? "2.0x→visible, 2.5x→hidden, 3.0x→hidden (correct fade threshold)"
                        : "closeIn(2.0x)=\(closeIn) atEdge(2.5x)=\(atEdge) farOut(3.0x)=\(farOut) — expected true/false/false"
-        )
-    }
-
-    // MARK: Phase 6 — Full Works / floor plan renderer (§4, §5.2)
-
-    /// A simple 4×3m rectangular room fixture — used both by the Dev Tools
-    /// "preview renderer" row and reused below by the projection-math checks
-    /// so there's one canonical fixture room, not several slightly different
-    /// ones drifting apart over time.
-    static func fixtureWalls() -> [PlanWallSample] {
-        [
-            PlanWallSample(id: "north", start: SIMD2(0, 0), end: SIMD2(4, 0)),
-            PlanWallSample(id: "east",  start: SIMD2(4, 0), end: SIMD2(4, 3)),
-            PlanWallSample(id: "south", start: SIMD2(4, 3), end: SIMD2(0, 3)),
-            PlanWallSample(id: "west",  start: SIMD2(0, 3), end: SIMD2(0, 0)),
-        ]
-    }
-
-    static func fixtureFloorPlan() -> FloorPlan2D {
-        let door = PlanOpeningSample(position: SIMD2(2, 0), widthMetres: 0.9)
-        let window = PlanOpeningSample(position: SIMD2(4, 1.5), widthMetres: 1.2)
-        return FloorPlan2DBuilder.build(
-            walls: fixtureWalls(), doors: [door], windows: [window], roomName: "Kitchen"
-        )
-    }
-
-    static func floorPlanBuilderProjectsRectangularRoom() -> DevCheckResult {
-        let plan = fixtureFloorPlan()
-        let ok = plan.walls.count == 4
-            && plan.dimensionStrings.filter { !$0.isOverall }.count == 4
-            && plan.dimensionStrings.filter { $0.isOverall }.count == 2
-            && plan.roomLabels.count == 1
-            && abs(plan.roomLabels[0].floorAreaSqMetres - 12.0) < 0.1
-        return DevCheckResult(
-            passed: ok,
-            detail: ok ? "4×3m fixture → 4 walls, 6 dimension strings, area \(String(format: "%.1f", plan.roomLabels.first?.floorAreaSqMetres ?? 0))m²"
-                       : "Got \(plan.walls.count) walls, \(plan.dimensionStrings.count) dims, area \(plan.roomLabels.first?.floorAreaSqMetres ?? -1)m² — expected 4 walls, 6 dims, ~12m²"
-        )
-    }
-
-    static func floorPlanBuilderAssociatesOpeningsToNearestWall() -> DevCheckResult {
-        let walls = fixtureWalls()
-        // A point at (2, 0) sits exactly on the "north" wall (0,0)→(4,0) —
-        // nearestWall must resolve to that wall, not any other.
-        guard let nearest = FloorPlan2DBuilder.nearestWall(to: SIMD2(2, 0), in: walls) else {
-            return DevCheckResult(passed: false, detail: "nearestWall returned nil")
-        }
-        let ok = nearest.id == "north"
-        return DevCheckResult(
-            passed: ok,
-            detail: ok ? "Point (2,0) correctly associated with the north wall"
-                       : "Point (2,0) associated with '\(nearest.id)', expected 'north'"
-        )
-    }
-
-    static func floorPlanOverallDimensionsMatchBoundingBox() -> DevCheckResult {
-        let walls = fixtureWalls()
-        let overall = FloorPlan2DBuilder.overallBoundingDimensions(walls: walls)
-        let ok = overall.count == 2
-            && overall.contains { abs($0.valueMetres - 4.0) < 0.01 }
-            && overall.contains { abs($0.valueMetres - 3.0) < 0.01 }
-        return DevCheckResult(
-            passed: ok,
-            detail: ok ? "4×3m room → overall dimensions 4.0m and 3.0m"
-                       : "Got \(overall.map { $0.valueMetres }) — expected [4.0, 3.0]"
-        )
-    }
-
-    static func fullWorksCSVEscapesSpecialCharacters() -> DevCheckResult {
-        guard #available(iOS 17.0, *) else {
-            return DevCheckResult(passed: true, detail: "Skipped — FullWorksOutput requires iOS 17+ (not available on this OS)")
-        }
-        // A room name containing a comma is exactly the input that would
-        // silently corrupt the column count if csvField didn't quote it —
-        // "Kitchen, Utility" un-escaped would read as two CSV columns.
-        let plain = FullWorksOutput.csvField("Kitchen")
-        let withComma = FullWorksOutput.csvField("Kitchen, Utility")
-        let withQuote = FullWorksOutput.csvField("12\" void")
-        let ok = plain == "Kitchen"
-            && withComma == "\"Kitchen, Utility\""
-            && withQuote == "\"12\"\" void\""
-        return DevCheckResult(
-            passed: ok,
-            detail: ok ? "Comma/quote fields correctly quoted and escaped"
-                       : "plain=\(plain) withComma=\(withComma) withQuote=\(withQuote)"
-        )
-    }
-
-    static func fullWorksCSVRoundTripsDimensionSchedule() -> DevCheckResult {
-        guard #available(iOS 17.0, *) else {
-            return DevCheckResult(passed: true, detail: "Skipped — FullWorksOutput requires iOS 17+ (not available on this OS)")
-        }
-        let schedule = [
-            RoomDimensionRecord(roomName: "Kitchen", length: 4.2, width: 3.1, height: 2.4,
-                                 floorArea: 13.02, wallArea: 35.04, doorCount: 1, windowCount: 2),
-            RoomDimensionRecord(roomName: "Lounge, Diner", length: 5.0, width: 4.0, height: 2.4,
-                                 floorArea: 20.0, wallArea: 43.2, doorCount: 2, windowCount: 3),
-        ]
-        let csv = FullWorksOutput.csvString(for: schedule)
-        let lines = csv.components(separatedBy: "\n")
-        let ok = lines.count == 3   // header + 2 rows
-            && lines[0] == "Room,Length (m),Width (m),Height (m),Floor Area (m²),Wall Area (m²),Doors,Windows"
-            && lines[1] == "Kitchen,4.20,3.10,2.40,13.02,35.04,1,2"
-            && lines[2] == "\"Lounge, Diner\",5.00,4.00,2.40,20.00,43.20,2,3"
-        return DevCheckResult(
-            passed: ok,
-            detail: ok ? "2-room schedule → 3 CSV lines, comma-containing name correctly quoted"
-                       : "Got \(lines.count) lines: \(lines)"
         )
     }
 

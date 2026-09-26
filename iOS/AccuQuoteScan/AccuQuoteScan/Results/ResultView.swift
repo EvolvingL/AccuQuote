@@ -9,7 +9,6 @@ struct ResultView: View {
     @State private var showJobDescription = false
     @State private var roomTypeOverride = ""
     @State private var show3DViewer = false
-    @State private var showFloorPlan = false
 
     private func isSelected(_ type: String) -> Bool {
         if roomTypeOverride.isEmpty {
@@ -131,28 +130,6 @@ struct ResultView: View {
                         .padding(.horizontal, 20)
                         .padding(.vertical, 14)
                     }
-
-                    // §5.2 — 2D floor plan entry point. Same CapturedRoom
-                    // availability gate as "View in 3D": poseFusion/manual/
-                    // custom-shape completions have no CapturedRoom to
-                    // project a plan from (FloorPlan2DBuilder.build(from:)
-                    // needs real wall/door/window/object geometry, not just
-                    // the extracted RoomDimensions numbers).
-                    Divider().background(AQ.rule).padding(.horizontal, 20)
-                    Button { showFloorPlan = true } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: "doc.plaintext")
-                                .font(.system(size: 13, weight: .medium))
-                            Text("Floor Plan")
-                                .font(.system(size: 13, weight: .medium))
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 11, weight: .semibold))
-                        }
-                        .foregroundColor(AQ.blue)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 14)
-                    }
                 }
             }
             .background(Color.white)
@@ -207,64 +184,6 @@ struct ResultView: View {
                         }
                 }
             }
-        }
-        .fullScreenCover(isPresented: $showFloorPlan) {
-            if let room = coordinator.lastCapturedRoom {
-                RoomFloorPlanScreen(room: room, roomName: effectiveRoomType.capitalized, onDone: { showFloorPlan = false })
-            }
-        }
-    }
-}
-
-// MARK: - Room mode floor plan screen (§5.2)
-//
-// Single-room equivalent of what FullWorksOutput already does per-room for
-// Full Works — same FloorPlan2DBuilder.build(from:roomName:) projection and
-// FloorPlan2DExport.exportPDF/exportPNG renderers, just reached from
-// ResultView's own "Floor Plan" row instead of the Full Works completion
-// screen. One source of truth (§5.1): both call sites project from the same
-// CapturedRoom through the same builder/renderer, so a single-room plan and
-// a Full Works per-floor plan can never disagree in style or content.
-struct RoomFloorPlanScreen: View {
-    let room: CapturedRoom
-    let roomName: String
-    var onDone: () -> Void = {}
-
-    @State private var plan: FloorPlan2D?
-    @State private var shareURL: URL?
-
-    var body: some View {
-        NavigationStack {
-            Group {
-                if let plan {
-                    FloorPlan2DView(plan: plan)
-                } else {
-                    ProgressView()
-                }
-            }
-            .navigationTitle("Floor Plan")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Done", action: onDone)
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        guard let plan else { return }
-                        shareURL = FloorPlan2DExport.exportPDF(plan: plan, title: roomName)
-                    } label: {
-                        Image(systemName: "square.and.arrow.up")
-                    }
-                    .disabled(plan == nil)
-                }
-            }
-        }
-        .onAppear {
-            guard plan == nil else { return }
-            plan = FloorPlan2DBuilder.build(from: room, roomName: roomName)
-        }
-        .sheet(item: $shareURL) { url in
-            ShareSheet(url: url)
         }
     }
 }

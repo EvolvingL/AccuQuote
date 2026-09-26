@@ -2,16 +2,15 @@ import SwiftUI
 
 // MARK: - ModePickerView (Tri-Mode Scanning build spec §1)
 //
-// Three-card mode picker replacing the old single "Start Scan" CTA — the
-// real entry point that makes Space mode and Full Works reachable without
-// going through Dev Tools. AccuQuoteScan has no lock badge on Full Works
-// (§4.3: included in all AccuQuoteScan tiers) — that variant is AccuScan-
-// only and belongs in AccuScan's own port of this screen.
+// Two-card mode picker replacing the old single "Start Scan" CTA — the
+// real entry point that makes Space mode reachable without going through
+// Dev Tools. Full Works (multi-room property mapping) is deferred past MVP
+// pending dedicated dev resource — see the MVP descope plan — and its card
+// removed here; ScanMode itself no longer has a .fullWorks case.
 
 struct ModePickerView: View {
     var onSelectRoom: () -> Void
     var onSelectSpace: () -> Void
-    var onSelectFullWorks: () -> Void
 
     @State private var selected: ScanMode?
 
@@ -38,17 +37,6 @@ struct ModePickerView: View {
                 accuracyHex: "#3B82F6",
                 isSelected: selected == .space,
                 action: { select(.space, action: onSelectSpace) }
-            )
-            ModeCard(
-                mode: .fullWorks,
-                glyph: "building.2",
-                title: "Full Works",
-                subtitle: "Map an entire property, floor by floor",
-                estimatedTime: "10–25 min",
-                accuracyLabel: "±2–5cm",
-                accuracyHex: "#F59E0B",
-                isSelected: selected == .fullWorks,
-                action: { select(.fullWorks, action: onSelectFullWorks) }
             )
         }
         .padding(.horizontal, 24)

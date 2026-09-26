@@ -72,7 +72,6 @@ struct QuoteView: View {
         // have no mesh, matching the same gap ScanViewer3D's own "View in
         // 3D" entry point in ResultView already has.
         let room = coordinator.lastCapturedRoom
-        let roomName = result.roomType.capitalized
         Task.detached(priority: .userInitiated) {
             let artifactURL = room.flatMap { Self.exportRoomUSDZ($0) }
             // §7: thumbnail rendered once at save time, cached as JPEG next
@@ -80,20 +79,6 @@ struct QuoteView: View {
             // re-render on every scroll.
             if let artifactURL {
                 _ = HistoryThumbnailRenderer.renderThumbnail(usdzURL: artifactURL)
-            }
-            // §5.2/§5.5 — persist the same floor plan RoomFloorPlanScreen
-            // would render, alongside the USDZ, so a plan.pdf exists in
-            // aq_scans/<id>/ even if the user never opened the Floor Plan
-            // row before generating the quote. Best-effort: a failed plan
-            // render must never block quote generation.
-            if let room, let artifactURL {
-                let plan = FloorPlan2DBuilder.build(from: room, roomName: roomName)
-                await MainActor.run {
-                    let planURL = artifactURL.deletingLastPathComponent().appendingPathComponent("plan.pdf")
-                    let tempPDF = FloorPlan2DExport.exportPDF(plan: plan, title: roomName)
-                    try? FileManager.default.removeItem(at: planURL)
-                    try? FileManager.default.copyItem(at: tempPDF, to: planURL)
-                }
             }
             await service.generate(
                 jobDescription: job,
@@ -109,8 +94,8 @@ struct QuoteView: View {
     }
 
     /// Exports to Documents/aq_scans/<uuid>.usdz per §2 step 3 / §5.5's
-    /// persistence convention (same folder SpaceMeshExport/FloorPlan2DExport
-    /// already write into).
+    /// persistence convention (same folder SpaceMeshExport already writes
+    /// into).
     private static func exportRoomUSDZ(_ room: CapturedRoom) -> URL? {
         let folder = SpaceMeshExport.scanFolder(id: UUID().uuidString)
         guard (try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)) != nil else { return nil }

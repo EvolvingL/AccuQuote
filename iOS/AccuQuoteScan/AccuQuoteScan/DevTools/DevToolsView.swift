@@ -24,8 +24,6 @@ struct DevToolsView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var results: [String: DevCheckResult] = [:]
     @State private var showSpaceScan = false
-    @State private var showFloorPlanPreview = false
-    @State private var showFullWorks = false
 
     private var checks: [DevCheck] {
         [
@@ -83,25 +81,6 @@ struct DevToolsView: View {
                 DevToolsChecks.dimensionLabelsFadeAtCorrectDistance()
             },
 
-            // Phase 6 — Full Works / floor plan renderer (§4, §5.2). Actual
-            // Canvas drawing needs eyeballing (see "Preview floor plan
-            // renderer" button below); this covers the projection math.
-            DevCheck(id: "phase6.floorplan.rectangularRoom", label: "Phase 6: floor plan builder projects a rectangular room correctly") {
-                DevToolsChecks.floorPlanBuilderProjectsRectangularRoom()
-            },
-            DevCheck(id: "phase6.floorplan.nearestWall", label: "Phase 6: openings associate with the nearest wall") {
-                DevToolsChecks.floorPlanBuilderAssociatesOpeningsToNearestWall()
-            },
-            DevCheck(id: "phase6.floorplan.overallDims", label: "Phase 6: overall bounding dimensions match the room's bounding box") {
-                DevToolsChecks.floorPlanOverallDimensionsMatchBoundingBox()
-            },
-            DevCheck(id: "phase6.csv.escaping", label: "Phase 6: dimension schedule CSV escapes commas/quotes") {
-                DevToolsChecks.fullWorksCSVEscapesSpecialCharacters()
-            },
-            DevCheck(id: "phase6.csv.roundTrip", label: "Phase 6: dimension schedule CSV round-trips correctly") {
-                DevToolsChecks.fullWorksCSVRoundTripsDimensionSchedule()
-            },
-
             // Phase 7 — mode picker, persistence & history (§1, §7)
             DevCheck(id: "phase7.savedQuote.backcompat", label: "Phase 7: old-shape SavedQuote JSON decodes with safe defaults") {
                 DevToolsChecks.savedQuoteDecodesOldJSONWithSafeDefaults()
@@ -141,18 +120,6 @@ struct DevToolsView: View {
                 } footer: {
                     Text("Launches the real ARKit capture flow — needs a LiDAR device to place a capture volume; falls back to manual entry otherwise. Not gated by the mode picker yet (Phase 7).")
                 }
-
-                Section {
-                    Button("Preview floor plan renderer (fixture room)") { showFloorPlanPreview = true }
-                } footer: {
-                    Text("Renders a synthetic 4-wall room fixture through FloorPlan2DRenderer — CapturedRoom has no public initializer, so this is the only way to eyeball the renderer without a real LiDAR scan.")
-                }
-
-                Section {
-                    Button("Try Full Works (live multi-room capture)") { showFullWorks = true }
-                } footer: {
-                    Text("Launches the real multi-room capture + StructureBuilder merge flow — needs a LiDAR device and iOS 17+. Not gated by the mode picker yet (Phase 7); no paywall (§4.3 — included in all AccuQuoteScan tiers).")
-                }
             }
             .navigationTitle("Dev Tools")
             .navigationBarTitleDisplayMode(.inline)
@@ -163,21 +130,6 @@ struct DevToolsView: View {
             }
             .fullScreenCover(isPresented: $showSpaceScan) {
                 SpaceScanFlowView(onDone: { showSpaceScan = false })
-            }
-            .fullScreenCover(isPresented: $showFloorPlanPreview) {
-                NavigationStack {
-                    FloorPlan2DView(plan: DevToolsChecks.fixtureFloorPlan())
-                        .navigationTitle("Floor Plan Preview")
-                        .navigationBarTitleDisplayMode(.inline)
-                        .toolbar {
-                            ToolbarItem(placement: .navigationBarTrailing) {
-                                Button("Done") { showFloorPlanPreview = false }
-                            }
-                        }
-                }
-            }
-            .fullScreenCover(isPresented: $showFullWorks) {
-                FullWorksFlowView(onDone: { showFullWorks = false })
             }
         }
     }

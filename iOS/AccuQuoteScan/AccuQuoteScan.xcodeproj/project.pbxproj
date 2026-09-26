@@ -38,7 +38,6 @@
 		A136 /* StoreKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A036 /* StoreKitManager.swift */; };
 		A138 /* ScanResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = A038 /* ScanResult.swift */; };
 		A139 /* ScanConfidence.swift in Sources */ = {isa = PBXBuildFile; fileRef = A039 /* ScanConfidence.swift */; };
-		A140 /* FloorPlan2D.swift in Sources */ = {isa = PBXBuildFile; fileRef = A040 /* FloorPlan2D.swift */; };
 		A142 /* DevToolsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A041 /* DevToolsView.swift */; };
 		A143 /* DevToolsChecks.swift in Sources */ = {isa = PBXBuildFile; fileRef = A042 /* DevToolsChecks.swift */; };
 		A145 /* ScanQualityGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A044 /* ScanQualityGate.swift */; };
@@ -52,13 +51,6 @@
 		A160 /* SpaceResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A059 /* SpaceResultView.swift */; };
 		A162 /* SpaceScanFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A061 /* SpaceScanFlowView.swift */; };
 		A164 /* SpaceMeshExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A063 /* SpaceMeshExport.swift */; };
-		A166 /* FloorPlan2DBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A065 /* FloorPlan2DBuilder.swift */; };
-		A168 /* FloorPlan2DView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A067 /* FloorPlan2DView.swift */; };
-		A170 /* FloorPlan2DExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A069 /* FloorPlan2DExport.swift */; };
-		A172 /* FullWorksSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A071 /* FullWorksSession.swift */; };
-		A174 /* FullWorksFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A073 /* FullWorksFlowView.swift */; };
-		A176 /* FullWorksOutput.swift in Sources */ = {isa = PBXBuildFile; fileRef = A075 /* FullWorksOutput.swift */; };
-		A178 /* FullWorksCompleteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A077 /* FullWorksCompleteView.swift */; };
 		A180 /* ModePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A079 /* ModePickerView.swift */; };
 		A182 /* ModeLandingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A081 /* ModeLandingView.swift */; };
 		A184 /* HistoryThumbnailRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A083 /* HistoryThumbnailRenderer.swift */; };
@@ -66,14 +58,11 @@
 		T101 /* ScanQualityGateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T001 /* ScanQualityGateTests.swift */; };
 		T102 /* SpaceMeasurementTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T002 /* SpaceMeasurementTests.swift */; };
 		T103 /* SpaceCoverageTrackerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T003 /* SpaceCoverageTrackerTests.swift */; };
-		T104 /* FloorPlan2DBuilderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T004 /* FloorPlan2DBuilderTests.swift */; };
-		T105 /* FullWorksOutputTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T005 /* FullWorksOutputTests.swift */; };
 		T106 /* ScanResultCodableTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T006 /* ScanResultCodableTests.swift */; };
 		T107 /* QuoteHistoryStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T007 /* QuoteHistoryStoreTests.swift */; };
 		T108 /* ScanStorageManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T008 /* ScanStorageManagerTests.swift */; };
 		T109 /* ScanCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T009 /* ScanCoordinatorTests.swift */; };
 		T110 /* QuoteGenerationServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T010 /* QuoteGenerationServiceTests.swift */; };
-		T111 /* FullWorksSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T011 /* FullWorksSessionTests.swift */; };
 		T112 /* MoneyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T012 /* MoneyTests.swift */; };
 		A300 /* ColorExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200 /* ColorExtensions.swift */; };
 		A301 /* AQTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = A201 /* AQTokens.swift */; };
@@ -134,7 +123,6 @@
 		A037 /* Products.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Products.storekit; sourceTree = "<group>"; };
 		A038 /* ScanResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Quote/ScanResult.swift; sourceTree = "<group>"; };
 		A039 /* ScanConfidence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scanning/ScanConfidence.swift; sourceTree = "<group>"; };
-		A040 /* FloorPlan2D.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Results/FloorPlan2D.swift; sourceTree = "<group>"; };
 		A041 /* DevToolsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevTools/DevToolsView.swift; sourceTree = "<group>"; };
 		A042 /* DevToolsChecks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevTools/DevToolsChecks.swift; sourceTree = "<group>"; };
 		A044 /* ScanQualityGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scanning/ScanQualityGate.swift; sourceTree = "<group>"; };
@@ -148,13 +136,6 @@
 		A059 /* SpaceResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Space/SpaceResultView.swift; sourceTree = "<group>"; };
 		A061 /* SpaceScanFlowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Space/SpaceScanFlowView.swift; sourceTree = "<group>"; };
 		A063 /* SpaceMeshExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Space/SpaceMeshExport.swift; sourceTree = "<group>"; };
-		A065 /* FloorPlan2DBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Results/FloorPlan2DBuilder.swift; sourceTree = "<group>"; };
-		A067 /* FloorPlan2DView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Results/FloorPlan2DView.swift; sourceTree = "<group>"; };
-		A069 /* FloorPlan2DExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Results/FloorPlan2DExport.swift; sourceTree = "<group>"; };
-		A071 /* FullWorksSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullWorks/FullWorksSession.swift; sourceTree = "<group>"; };
-		A073 /* FullWorksFlowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullWorks/FullWorksFlowView.swift; sourceTree = "<group>"; };
-		A075 /* FullWorksOutput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullWorks/FullWorksOutput.swift; sourceTree = "<group>"; };
-		A077 /* FullWorksCompleteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullWorks/FullWorksCompleteView.swift; sourceTree = "<group>"; };
 		A079 /* ModePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModePicker/ModePickerView.swift; sourceTree = "<group>"; };
 		A081 /* ModeLandingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModePicker/ModeLandingView.swift; sourceTree = "<group>"; };
 		A083 /* HistoryThumbnailRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Results/HistoryThumbnailRenderer.swift; sourceTree = "<group>"; };
@@ -163,14 +144,11 @@
 		T001 /* ScanQualityGateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanQualityGateTests.swift; sourceTree = "<group>"; };
 		T002 /* SpaceMeasurementTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpaceMeasurementTests.swift; sourceTree = "<group>"; };
 		T003 /* SpaceCoverageTrackerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpaceCoverageTrackerTests.swift; sourceTree = "<group>"; };
-		T004 /* FloorPlan2DBuilderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloorPlan2DBuilderTests.swift; sourceTree = "<group>"; };
-		T005 /* FullWorksOutputTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullWorksOutputTests.swift; sourceTree = "<group>"; };
 		T006 /* ScanResultCodableTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanResultCodableTests.swift; sourceTree = "<group>"; };
 		T007 /* QuoteHistoryStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuoteHistoryStoreTests.swift; sourceTree = "<group>"; };
 		T008 /* ScanStorageManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanStorageManagerTests.swift; sourceTree = "<group>"; };
 		T009 /* ScanCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanCoordinatorTests.swift; sourceTree = "<group>"; };
 		T010 /* QuoteGenerationServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuoteGenerationServiceTests.swift; sourceTree = "<group>"; };
-		T011 /* FullWorksSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullWorksSessionTests.swift; sourceTree = "<group>"; };
 		T012 /* MoneyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoneyTests.swift; sourceTree = "<group>"; };
 		T013 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		T014 /* AccuQuoteScanTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AccuQuoteScanTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -276,7 +254,6 @@
 				A037 /* Products.storekit */,
 				A038 /* ScanResult.swift */,
 				A039 /* ScanConfidence.swift */,
-				A040 /* FloorPlan2D.swift */,
 				A041 /* DevToolsView.swift */,
 				A042 /* DevToolsChecks.swift */,
 				A044 /* ScanQualityGate.swift */,
@@ -290,13 +267,6 @@
 				A059 /* SpaceResultView.swift */,
 				A061 /* SpaceScanFlowView.swift */,
 				A063 /* SpaceMeshExport.swift */,
-				A065 /* FloorPlan2DBuilder.swift */,
-				A067 /* FloorPlan2DView.swift */,
-				A069 /* FloorPlan2DExport.swift */,
-				A071 /* FullWorksSession.swift */,
-				A073 /* FullWorksFlowView.swift */,
-				A075 /* FullWorksOutput.swift */,
-				A077 /* FullWorksCompleteView.swift */,
 				A079 /* ModePickerView.swift */,
 				A081 /* ModeLandingView.swift */,
 				A083 /* HistoryThumbnailRenderer.swift */,
@@ -332,14 +302,11 @@
 				T001 /* ScanQualityGateTests.swift */,
 				T002 /* SpaceMeasurementTests.swift */,
 				T003 /* SpaceCoverageTrackerTests.swift */,
-				T004 /* FloorPlan2DBuilderTests.swift */,
-				T005 /* FullWorksOutputTests.swift */,
 				T006 /* ScanResultCodableTests.swift */,
 				T007 /* QuoteHistoryStoreTests.swift */,
 				T008 /* ScanStorageManagerTests.swift */,
 				T009 /* ScanCoordinatorTests.swift */,
 				T010 /* QuoteGenerationServiceTests.swift */,
-				T011 /* FullWorksSessionTests.swift */,
 				T012 /* MoneyTests.swift */,
 				T013 /* Info.plist */,
 			);
@@ -501,7 +468,6 @@
 				A136 /* StoreKitManager.swift in Sources */,
 				A138 /* ScanResult.swift in Sources */,
 				A139 /* ScanConfidence.swift in Sources */,
-				A140 /* FloorPlan2D.swift in Sources */,
 				A142 /* DevToolsView.swift in Sources */,
 				A143 /* DevToolsChecks.swift in Sources */,
 				A145 /* ScanQualityGate.swift in Sources */,
@@ -515,13 +481,6 @@
 				A160 /* SpaceResultView.swift in Sources */,
 				A162 /* SpaceScanFlowView.swift in Sources */,
 				A164 /* SpaceMeshExport.swift in Sources */,
-				A166 /* FloorPlan2DBuilder.swift in Sources */,
-				A168 /* FloorPlan2DView.swift in Sources */,
-				A170 /* FloorPlan2DExport.swift in Sources */,
-				A172 /* FullWorksSession.swift in Sources */,
-				A174 /* FullWorksFlowView.swift in Sources */,
-				A176 /* FullWorksOutput.swift in Sources */,
-				A178 /* FullWorksCompleteView.swift in Sources */,
 				A180 /* ModePickerView.swift in Sources */,
 				A182 /* ModeLandingView.swift in Sources */,
 				A184 /* HistoryThumbnailRenderer.swift in Sources */,
@@ -536,14 +495,11 @@
 				T101 /* ScanQualityGateTests.swift in Sources */,
 				T102 /* SpaceMeasurementTests.swift in Sources */,
 				T103 /* SpaceCoverageTrackerTests.swift in Sources */,
-				T104 /* FloorPlan2DBuilderTests.swift in Sources */,
-				T105 /* FullWorksOutputTests.swift in Sources */,
 				T106 /* ScanResultCodableTests.swift in Sources */,
 				T107 /* QuoteHistoryStoreTests.swift in Sources */,
 				T108 /* ScanStorageManagerTests.swift in Sources */,
 				T109 /* ScanCoordinatorTests.swift in Sources */,
 				T110 /* QuoteGenerationServiceTests.swift in Sources */,
-				T111 /* FullWorksSessionTests.swift in Sources */,
 				T112 /* MoneyTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

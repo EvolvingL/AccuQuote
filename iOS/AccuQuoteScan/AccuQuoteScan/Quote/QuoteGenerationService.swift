@@ -232,7 +232,8 @@ final class QuoteGenerationService: ObservableObject {
                     SavedQuoteItem(
                         id: $0.id.uuidString, description: $0.description,
                         qty: $0.qty, unit: $0.unit, unitPrice: $0.unitPrice,
-                        sku: $0.sku, supplier: $0.supplier, sectionKey: $0.sectionKey
+                        sku: $0.sku, supplier: $0.supplier, sectionKey: $0.sectionKey,
+                        priceSource: $0.priceSource
                     )
                 }
             )
@@ -505,10 +506,16 @@ final class QuoteGenerationService: ObservableObject {
                 let price    = san(raw["unitPrice"] as? Double, min: 0, max: 1_000_000, default: 0)
                 let sku      = (raw["sku"]          as? String) ?? ""
                 let supplier = (raw["supplier"]     as? String) ?? ""
+                // Only "real" is ever treated as real — anything else the AI
+                // returns (missing key, "estimated", or an unrecognised
+                // value) falls back to "estimated" via QuoteLineItem's own
+                // default, so a malformed value never gets mistaken for a
+                // verified Awin-sourced price.
+                let priceSource = (raw["priceSource"] as? String) == "real" ? "real" : "estimated"
                 items.append(QuoteLineItem(
                     description: desc, qty: qty, unit: unit,
                     unitPrice: price, sku: sku, supplier: supplier,
-                    sectionKey: descriptor.sectionKey
+                    sectionKey: descriptor.sectionKey, priceSource: priceSource
                 ))
             }
         }

@@ -3,9 +3,9 @@ import simd
 
 // MARK: - ScanResult (canonical multi-mode geometry model)
 //
-// Tri-Mode Scanning build spec §5.1. Every scan mode (Room/Space/Full Works),
+// Tri-Mode Scanning build spec §5.1. Every scan mode (Room/Space),
 // on completion, produces exactly one ScanResult — the single object every
-// output (2D plan, 3D model, dimension CSV) derives from. One source of truth,
+// output (3D model, dimension CSV) derives from. One source of truth,
 // many renderers: a value changed on one output must appear identically on
 // the others because they all read from this, never from independent
 // per-renderer calculations.
@@ -14,7 +14,8 @@ import simd
 // ScanState/ScanMethod types in ScanCoordinator.swift — it does not replace
 // them. Room mode keeps producing RoomDimensions for the existing UI in
 // parallel with a ScanResult for the new pipeline until the phased rollout
-// (see build plan) retires the old path.
+// (see build plan) retires the old path. Not yet wired into any live decode/
+// persist path — see DevToolsChecks' self-checks for its only current use.
 //
 // Field names/shapes here are kept identical to the sibling type in AccuScan's
 // Models/ so a scan taken in either app is structurally interchangeable JSON.
@@ -33,7 +34,6 @@ struct ScanResult: Codable, Identifiable {
     // Derived + cached at save time (never recomputed at display time)
     var dimensionSchedule: [RoomDimensionRecord]
     var confidence: ScanConfidence
-    var floorPlan2D: FloorPlan2D
     var thumbnailURL: URL?     // pre-rendered 3D snapshot JPEG
 
     init(
@@ -46,7 +46,6 @@ struct ScanResult: Codable, Identifiable {
         pointCloudURL: URL? = nil,
         dimensionSchedule: [RoomDimensionRecord] = [],
         confidence: ScanConfidence = ScanConfidence(overallScore: 1.0, issues: []),
-        floorPlan2D: FloorPlan2D = FloorPlan2D(walls: [], doors: [], windows: [], dimensionStrings: [], roomLabels: [], symbols: []),
         thumbnailURL: URL? = nil
     ) {
         self.id = id
@@ -58,7 +57,6 @@ struct ScanResult: Codable, Identifiable {
         self.pointCloudURL = pointCloudURL
         self.dimensionSchedule = dimensionSchedule
         self.confidence = confidence
-        self.floorPlan2D = floorPlan2D
         self.thumbnailURL = thumbnailURL
     }
 
@@ -77,8 +75,6 @@ struct ScanResult: Codable, Identifiable {
         pointCloudURL = try? c.decode(URL.self, forKey: .pointCloudURL)
         dimensionSchedule = (try? c.decode([RoomDimensionRecord].self, forKey: .dimensionSchedule)) ?? []
         confidence = (try? c.decode(ScanConfidence.self, forKey: .confidence)) ?? ScanConfidence(overallScore: 1.0, issues: [])
-        floorPlan2D = (try? c.decode(FloorPlan2D.self, forKey: .floorPlan2D))
-            ?? FloorPlan2D(walls: [], doors: [], windows: [], dimensionStrings: [], roomLabels: [], symbols: [])
         thumbnailURL = try? c.decode(URL.self, forKey: .thumbnailURL)
     }
 }
@@ -91,7 +87,6 @@ struct ScanResult: Codable, Identifiable {
 enum ScanMode: String, Codable {
     case room
     case space
-    case fullWorks
 }
 
 // MARK: - Surface
@@ -153,9 +148,8 @@ struct DetectedObject: Codable, Identifiable {
 
 // MARK: - RoomDimensionRecord
 //
-// One row of the Full Works dimension schedule (§4.2) / dimension CSV (§5.5).
-// A ScanResult with mode == .room has exactly one record; .fullWorks has one
-// per room.
+// One row of the dimension schedule (§4.2) / dimension CSV (§5.5). A
+// ScanResult with mode == .room has exactly one record.
 
 struct RoomDimensionRecord: Codable, Identifiable {
     let id: String

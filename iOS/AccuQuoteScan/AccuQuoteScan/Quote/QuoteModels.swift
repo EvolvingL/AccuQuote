@@ -12,10 +12,16 @@ struct QuoteLineItem: Identifiable, Codable {
     let sku: String
     let supplier: String
     let sectionKey: String   // which section this item belongs to
+    /// "real" (matched a live Awin-sourced product — see
+    /// PricingIntegration-TechnicalPlan.md §1) or "estimated" (AI-priced,
+    /// the default). Anything else the server/AI might send back (missing,
+    /// unrecognised) is also treated as "estimated" — see isRealPrice.
+    let priceSource: String
     var total: Double { qty * unitPrice }
+    var isRealPrice: Bool { priceSource == "real" }
 
     init(description: String, qty: Double, unit: String, unitPrice: Double,
-         sku: String, supplier: String, sectionKey: String = "") {
+         sku: String, supplier: String, sectionKey: String = "", priceSource: String = "estimated") {
         self.id = UUID()
         self.description = description
         self.qty = qty
@@ -24,6 +30,7 @@ struct QuoteLineItem: Identifiable, Codable {
         self.sku = sku
         self.supplier = supplier
         self.sectionKey = sectionKey
+        self.priceSource = priceSource
     }
 }
 

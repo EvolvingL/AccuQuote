@@ -115,9 +115,22 @@ struct SavedQuoteDetailView: View {
                         ForEach(group.items) { item in
                             HStack(alignment: .top) {
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text(item.description)
-                                        .font(.system(size: 14))
-                                        .foregroundColor(AQ.ink)
+                                    HStack(spacing: 6) {
+                                        Text(item.description)
+                                            .font(.system(size: 14))
+                                            .foregroundColor(AQ.ink)
+                                        // Only real (Awin-sourced) prices get
+                                        // a badge — estimated is the default
+                                        // expectation, not a flaw to flag —
+                                        // see PricingIntegration-TechnicalPlan.md §1.7.
+                                        if item.isRealPrice {
+                                            Text("Real price")
+                                                .font(.system(size: 10, weight: .semibold))
+                                                .foregroundColor(.green)
+                                                .padding(.horizontal, 6).padding(.vertical, 2)
+                                                .background(Color.green.opacity(0.12)).cornerRadius(4)
+                                        }
+                                    }
                                     Text("\(formatQty(item.qty)) \(item.unit) × \(Money.gbp(item.unitPrice))")
                                         .font(.system(size: 12))
                                         .foregroundColor(AQ.secondary)

@@ -12,11 +12,16 @@ struct SavedQuoteItem: Identifiable, Codable {
     let sku: String
     let supplier: String
     var sectionKey: String   // "" for old records — default handled by CodingKeys
+    // "estimated" for old records (they predate real Awin-sourced pricing —
+    // see PricingIntegration-TechnicalPlan.md §1.7) — default handled below,
+    // same pattern as sectionKey.
+    var priceSource: String
     var total: Double { qty * unitPrice }
+    var isRealPrice: Bool { priceSource == "real" }
 
-    // Backwards-compatible decode: sectionKey defaults to ""
+    // Backwards-compatible decode: sectionKey/priceSource default for old records
     enum CodingKeys: String, CodingKey {
-        case id, description, qty, unit, unitPrice, sku, supplier, sectionKey
+        case id, description, qty, unit, unitPrice, sku, supplier, sectionKey, priceSource
     }
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -28,12 +33,15 @@ struct SavedQuoteItem: Identifiable, Codable {
         sku         = try c.decode(String.self,   forKey: .sku)
         supplier    = try c.decode(String.self,   forKey: .supplier)
         sectionKey  = (try? c.decode(String.self, forKey: .sectionKey)) ?? ""
+        priceSource = (try? c.decode(String.self, forKey: .priceSource)) ?? "estimated"
     }
     init(id: String, description: String, qty: Double, unit: String,
-         unitPrice: Double, sku: String, supplier: String, sectionKey: String = "") {
+         unitPrice: Double, sku: String, supplier: String, sectionKey: String = "",
+         priceSource: String = "estimated") {
         self.id = id; self.description = description; self.qty = qty
         self.unit = unit; self.unitPrice = unitPrice; self.sku = sku
         self.supplier = supplier; self.sectionKey = sectionKey
+        self.priceSource = priceSource
     }
 }
 

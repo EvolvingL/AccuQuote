@@ -12,6 +12,15 @@ command = ""
 # Local D1 migration: npx wrangler d1 execute accuquote-pricing --local --file=migrations/0001_init.sql
 # Remote D1 migration (after `wrangler d1 create`): npx wrangler d1 execute accuquote-pricing --remote --file=migrations/0001_init.sql
 
+# Requires the Workers Paid plan ($5/month, upgraded 2026-09-22) — a full
+# Awin catalog feed (tens of thousands of rows) can't be parsed+upserted
+# within the free plan's fixed 10ms CPU cap per invocation. This raises the
+# ceiling well above what a daily single-pass feed ingest actually needs
+# (typically low seconds) while staying far under the plan's 30s default /
+# 30M CPU-ms per month included allowance.
+[limits]
+cpu_ms = 30000
+
 [triggers]
 crons = ["0 3 * * *"]  # daily 03:00 UTC — see src/refresh.js
 

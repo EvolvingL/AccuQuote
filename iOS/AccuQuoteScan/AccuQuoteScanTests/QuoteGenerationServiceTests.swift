@@ -129,6 +129,44 @@ final class QuoteGenerationServiceTests: XCTestCase {
         XCTAssertEqual(section?.vatRate, 5)
     }
 
+    // MARK: - priceSource parsing (PricingIntegration-TechnicalPlan.md §1.7)
+
+    func testParseSectionMarksRealPriceSourceFromResponse() {
+        let service = QuoteGenerationService()
+        let descriptor = QuoteSectionDescriptor(sectionKey: "electrical", sectionLabel: "Electrical", tradeScope: "wiring")
+        let json = """
+        {"items": [{"description": "Cable", "qty": 1, "unit": "m", "unitPrice": 84.99, "sku": "123456", "supplier": "travisperkins", "priceSource": "real"}]}
+        """
+        let section = service.parseSection(descriptor: descriptor, text: json)
+        XCTAssertEqual(section?.items.first?.priceSource, "real")
+        XCTAssertEqual(section?.items.first?.isRealPrice, true)
+    }
+
+    func testParseSectionDefaultsMissingPriceSourceToEstimated() {
+        let service = QuoteGenerationService()
+        let descriptor = QuoteSectionDescriptor(sectionKey: "electrical", sectionLabel: "Electrical", tradeScope: "wiring")
+        let json = """
+        {"items": [{"description": "Cable", "qty": 1, "unit": "m", "unitPrice": 5, "sku": "", "supplier": ""}]}
+        """
+        let section = service.parseSection(descriptor: descriptor, text: json)
+        XCTAssertEqual(section?.items.first?.priceSource, "estimated")
+        XCTAssertEqual(section?.items.first?.isRealPrice, false)
+    }
+
+    func testParseSectionTreatsUnrecognisedPriceSourceValueAsEstimated() {
+        // A hostile or malformed AI response must never be mistaken for a
+        // verified real price — anything other than the literal "real"
+        // falls back to "estimated".
+        let service = QuoteGenerationService()
+        let descriptor = QuoteSectionDescriptor(sectionKey: "electrical", sectionLabel: "Electrical", tradeScope: "wiring")
+        let json = """
+        {"items": [{"description": "Cable", "qty": 1, "unit": "m", "unitPrice": 5, "sku": "", "supplier": "", "priceSource": "definitely-real-trust-me"}]}
+        """
+        let section = service.parseSection(descriptor: descriptor, text: json)
+        XCTAssertEqual(section?.items.first?.priceSource, "estimated")
+        XCTAssertEqual(section?.items.first?.isRealPrice, false)
+    }
+
     // MARK: - Computed totals
 
     func testComputedTotalsAggregateAcrossSections() {

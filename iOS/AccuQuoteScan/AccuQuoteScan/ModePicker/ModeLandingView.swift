@@ -7,23 +7,24 @@ import SwiftUI
 // flow. Room mode routes into the existing ReadyView/ScanCoordinator flow
 // completely unchanged (lowest-risk integration — see the Phase 7 planning
 // discussion: ReadyView has real polish/edge cases not worth touching).
-// Space and Full Works route into their existing flow views, which were
-// previously only reachable from Dev Tools.
+// Space routes into its own existing flow view, previously only reachable
+// from Dev Tools. Full Works (multi-room property mapping) is deferred past
+// MVP pending dedicated dev resource, so ScanMode has only .room and .space.
 
 struct ModeLandingView: View {
     @ObservedObject var coordinator: ScanCoordinator
     var onGuestTap: (() -> Void)? = nil
-    /// Set to true while Space/Full Works are showing so ContentView can
-    /// suppress the light-themed SlickFooter over their dark/AR chrome —
-    /// see ContentView's isInFullScreenScanMode doc comment.
+    /// Set to true while Space is showing so ContentView can suppress the
+    /// light-themed SlickFooter over its dark/AR chrome — see ContentView's
+    /// isInFullScreenScanMode doc comment.
     @Binding var isInFullScreenScanMode: Bool
 
     @State private var selectedMode: ScanMode?
     // Fix #8 — one-time camera-access priming sheet, shown before the very
-    // first scan of any mode. All three modes eventually trigger RoomPlan/
-    // ARKit's own permission prompt from inside their own flow views, several
+    // first scan of any mode. Both modes eventually trigger RoomPlan/ARKit's
+    // own permission prompt from inside their own flow views, several
     // navigation levels deep — gating here, at the single hub all modes route
-    // through, is simpler than duplicating the same one-time check three times.
+    // through, is simpler than duplicating the same one-time check twice.
     @State private var showCameraPrimer = false
     @State private var pendingMode: ScanMode?
 
@@ -50,7 +51,7 @@ struct ModeLandingView: View {
                 selectedMode = remembered
             }
             .onChange(of: selectedMode) { mode in
-                isInFullScreenScanMode = (mode == .space || mode == .fullWorks)
+                isInFullScreenScanMode = (mode == .space)
                 if let mode { lastScanModeRaw = mode.rawValue }
             }
             .sheet(isPresented: $showCameraPrimer) {
@@ -90,8 +91,6 @@ struct ModeLandingView: View {
             roomContent
         case .space:
             spaceContent
-        case .fullWorks:
-            fullWorksContent
         }
     }
 
@@ -101,10 +100,6 @@ struct ModeLandingView: View {
 
     private var spaceContent: some View {
         SpaceScanFlowView(onDone: { selectedMode = nil })
-    }
-
-    private var fullWorksContent: some View {
-        FullWorksFlowView(onDone: { selectedMode = nil })
     }
 
     private var pickerScreen: some View {
@@ -124,8 +119,7 @@ struct ModeLandingView: View {
 
             ModePickerView(
                 onSelectRoom: { selectMode(.room) },
-                onSelectSpace: { selectMode(.space) },
-                onSelectFullWorks: { selectMode(.fullWorks) }
+                onSelectSpace: { selectMode(.space) }
             )
 
             Spacer()
