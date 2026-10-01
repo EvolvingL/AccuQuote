@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name='impact-site-verification' value='c65e7b00-f599-4c68-9520-f94b07e3d8fe'>
+  <title>AccuQuote Pilot — Free for life if you help us test it</title>
+  <meta name="description" content="Join the AccuQuote pilot. Scan the room, describe the job and get a full itemised quote priced from live Travis Perkins trade prices. Everyone who helps us test gets AccuQuote free for life." />
+  <link rel="canonical" href="https://accuquote.uk/" />
+  <link rel="icon" type="image/png" sizes="32x32" href="./images/accuquote-logo.png" />
+  <link rel="apple-touch-icon" href="./images/accuquote-logo.png" />
+  <link rel="shortcut icon" href="./favicon.ico" />
+
+  <meta property="og:title" content="Help us test AccuQuote. Keep it free for life." />
+  <meta property="og:description" content="Quote the job before you leave the drive, priced from live Travis Perkins trade prices. Join the free pilot with just your email." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://accuquote.uk/" />
+  <meta property="og:image" content="https://accuquote.uk/images/accuquote-logo.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <style>
+    :root {
+      --blue: #007AFF;
+      --blue-hover: #0060d6;
+      --green: #21B86E;
+      --ink: #121217;
+      --secondary: #6E6E78;
+      --border: #E0E0E8;
+      --surface: #F5F5F7;
+      --white: #FFFFFF;
+      --night: #0B0B0F;
+      --night-mid: #16161D;
+      --night-line: rgba(255,255,255,0.12);
+      --night-text: rgba(255,255,255,0.72);
+      --error: #E5484D;
+      --radius: 16px;
+      --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, 'Helvetica Neue', Arial, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; font-size: 16px; }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+    body { font-family: var(--font); color: var(--ink); background: var(--white); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+    img { display: block; max-width: 100%; height: auto; }
+    a { color: inherit; }
+    h1, h2, h3 { text-wrap: balance; }
+    h1 { font-size: clamp(2.3rem, 5.2vw, 3.9rem); font-weight: 750; line-height: 1.05; letter-spacing: -0.035em; }
+    h2 { font-size: clamp(1.75rem, 3.4vw, 2.5rem); font-weight: 700; line-height: 1.12; letter-spacing: -0.03em; }
+    h3 { font-size: 1.15rem; font-weight: 650; line-height: 1.3; letter-spacing: -0.015em; }
+    p { line-height: 1.65; }
+
+    .container { width: 100%; max-width: 1100px; margin: 0 auto; padding-inline: 24px; }
+    .section { padding-block: 88px; }
+    .section--surface { background: var(--surface); }
+    .label { font-size: 0.75rem; font-weight: 650; letter-spacing: 0.12em; text-transform: uppercase; color: var(--blue); margin-bottom: 12px; }
+    .section-head { max-width: 640px; margin-bottom: 48px; }
+    .section-head p { margin-top: 14px; color: var(--secondary); font-size: 1.08rem; }
+
+    /* Top bar — logo + one action, nothing else to click away to */
+    .bar { position: sticky; top: 0; z-index: 50; background: rgba(11,11,15,0.82); backdrop-filter: saturate(160%) blur(14px); -webkit-backdrop-filter: saturate(160%) blur(14px); border-bottom: 1px solid var(--night-line); }
+    .bar__inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 60px; }
+    .bar__logo { display: flex; align-items: center; gap: 10px; color: #fff; font-weight: 700; font-size: 1.05rem; text-decoration: none; letter-spacing: -0.02em; }
+    .bar__logo img { width: 28px; height: 28px; border-radius: 7px; }
+    .bar__cta { font-size: 0.875rem; font-weight: 600; color: #fff; background: var(--blue); padding: 9px 18px; border-radius: 100px; text-decoration: none; white-space: nowrap; }
+    .bar__cta:hover { background: var(--blue-hover); }
+
+    /* Hero */
+    .hero { background: radial-gradient(ellipse 70% 60% at 75% 30%, rgba(0,122,255,0.22), transparent 70%), var(--night); color: #fff; padding-block: 72px 88px; }
+    .hero__grid { display: grid; grid-template-columns: 1.25fr 0.75fr; gap: 56px; align-items: center; }
+    .hero__grid > *, .prices > * { min-width: 0; }
+    .pilot-tag { display: inline-flex; align-items: center; gap: 8px; font-size: 0.8125rem; font-weight: 600; color: #fff; border: 1px solid var(--night-line); background: rgba(255,255,255,0.06); padding: 6px 12px 6px 10px; border-radius: 100px; margin-bottom: 22px; }
+    .pilot-tag__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 4px rgba(33,184,110,0.22); }
+    .hero h1 .free { color: var(--blue); }
+    .hero__sub { margin-top: 20px; font-size: 1.15rem; color: var(--night-text); max-width: 34em; }
+    .hero__phone { justify-self: center; width: min(280px, 100%); border-radius: 34px; border: 8px solid #24242c; box-shadow: 0 30px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06); overflow: hidden; background: #fff; }
+
+    /* Sign-up form (used in hero and final CTA) */
+    .signup { margin-top: 30px; max-width: 520px; }
+    .signup__row { display: flex; gap: 10px; }
+    .signup__input { flex: 1; min-width: 0; font: inherit; font-size: 1rem; padding: 15px 18px; border-radius: 12px; border: 1.5px solid transparent; background: #fff; color: var(--ink); outline: none; }
+    .signup__input:focus { border-color: var(--blue); box-shadow: 0 0 0 4px rgba(0,122,255,0.25); }
+    .signup__input[aria-invalid="true"] { border-color: var(--error); }
+    .signup__btn { font: inherit; font-size: 1rem; font-weight: 650; padding: 15px 22px; border: none; border-radius: 12px; background: var(--blue); color: #fff; cursor: pointer; white-space: nowrap; transition: background .15s, transform .15s; }
+    .signup__btn:hover { background: var(--blue-hover); }
+    .signup__btn:active { transform: scale(0.98); }
+    .signup__btn:disabled { opacity: 0.7; cursor: progress; }
+    .signup__btn:focus-visible, .bar__cta:focus-visible, .faq summary:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+    .signup__fine { margin-top: 12px; font-size: 0.8125rem; color: var(--night-text); }
+    .signup__fine a { color: inherit; }
+    .signup__error { margin-top: 10px; font-size: 0.875rem; color: #ff8a8e; font-weight: 500; }
+    .signup__done { margin-top: 30px; max-width: 520px; padding: 20px 22px; border-radius: 14px; background: rgba(33,184,110,0.12); border: 1px solid rgba(33,184,110,0.45); }
+    .signup__done h3 { color: #fff; font-size: 1.2rem; }
+    .signup__done p { margin-top: 6px; color: var(--night-text); font-size: 0.95rem; }
+
+    .hero__checks { margin-top: 26px; display: flex; flex-wrap: wrap; gap: 10px 22px; list-style: none; font-size: 0.9rem; color: var(--night-text); }
+    .hero__checks li { display: flex; align-items: center; gap: 8px; }
+    .hero__checks svg { flex: none; }
+
+    /* Price feed strip */
+    .feed { background: var(--white); border-bottom: 1px solid var(--border); }
+    .feed__inner { display: flex; align-items: center; justify-content: center; gap: 14px 24px; flex-wrap: wrap; padding-block: 22px; text-align: center; }
+    .feed__label { font-size: 0.9rem; color: var(--secondary); font-weight: 500; }
+    .feed__label strong { color: var(--ink); }
+    .feed img { height: 34px; width: auto; }
+    .live { display: inline-flex; align-items: center; gap: 6px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--green); }
+    .live::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+    /* Steps — this is a real sequence, so it's numbered */
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; list-style: none; counter-reset: step; }
+    .step { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 26px 24px; display: grid; gap: 10px; align-content: start; counter-increment: step; }
+    .step::before { content: counter(step); width: 34px; height: 34px; border-radius: 50%; background: var(--blue); color: #fff; font-weight: 700; display: grid; place-items: center; font-size: 0.95rem; }
+    .step p { color: var(--secondary); font-size: 0.975rem; }
+    .step--you { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,122,255,0.1); }
+    .step__you { font-size: 0.75rem; font-weight: 700; color: var(--blue); letter-spacing: 0.06em; text-transform: uppercase; }
+
+    /* Live prices */
+    .prices { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; }
+    .prices__list { list-style: none; display: grid; gap: 18px; margin-top: 28px; }
+    .prices__list li { display: grid; grid-template-columns: 26px 1fr; gap: 12px; }
+    .prices__list p { color: var(--secondary); font-size: 0.975rem; }
+    .prices__list h3 { font-size: 1.02rem; margin-bottom: 2px; }
+    .prices__shot { justify-self: center; width: min(280px, 100%); border-radius: 30px; border: 7px solid #1d1d24; box-shadow: 0 24px 60px rgba(18,18,23,0.18); overflow: hidden; }
+
+    /* Deal */
+    .deal { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .deal__col { border-radius: var(--radius); padding: 30px 28px; display: grid; gap: 16px; align-content: start; }
+    .deal__col--get { background: var(--night); color: #fff; }
+    .deal__col--ask { background: var(--white); border: 1px solid var(--border); }
+    .deal__col ul { list-style: none; display: grid; gap: 12px; }
+    .deal__col li { display: grid; grid-template-columns: 22px 1fr; gap: 10px; line-height: 1.5; }
+    .deal__col--get li { color: var(--night-text); }
+    .deal__col--get li strong { color: #fff; }
+    .deal__col--ask li { color: var(--secondary); }
+    .deal__col--ask li strong { color: var(--ink); }
+    .deal__big { font-size: 2.6rem; font-weight: 750; letter-spacing: -0.04em; line-height: 1; }
+    .deal__big small { font-size: 1rem; font-weight: 500; color: var(--night-text); letter-spacing: 0; }
+
+    /* Founder */
+    .founder { display: grid; grid-template-columns: 200px 1fr; gap: 40px; align-items: center; max-width: 860px; }
+    .founder img { border-radius: var(--radius); aspect-ratio: 3 / 4; object-fit: cover; width: 100%; max-width: 200px; }
+    .founder blockquote { font-size: 1.2rem; line-height: 1.6; letter-spacing: -0.01em; }
+    .founder cite { display: block; margin-top: 16px; font-style: normal; color: var(--secondary); font-size: 0.95rem; }
+
+    /* FAQ */
+    .faq { max-width: 760px; display: grid; gap: 10px; }
+    .faq details { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 0 22px; }
+    .faq summary { cursor: pointer; list-style: none; padding: 18px 0; font-weight: 600; display: flex; justify-content: space-between; gap: 16px; }
+    .faq summary::-webkit-details-marker { display: none; }
+    .faq summary::after { content: "+"; font-size: 1.3rem; line-height: 1; color: var(--blue); flex: none; }
+    .faq details[open] summary::after { content: "–"; }
+    .faq details p { padding-bottom: 18px; color: var(--secondary); }
+
+    /* Final CTA */
+    .final { background: var(--night); color: #fff; text-align: center; }
+    .final h2 { max-width: 18em; margin-inline: auto; }
+    .final p.lead { margin: 14px auto 0; color: var(--night-text); max-width: 34em; font-size: 1.08rem; }
+    .final .signup, .final .signup__done { margin-inline: auto; text-align: left; }
+
+    .foot { background: var(--night); border-top: 1px solid var(--night-line); color: var(--night-text); font-size: 0.85rem; padding-block: 28px; }
+    .foot__inner { display: flex; justify-content: space-between; gap: 12px 24px; flex-wrap: wrap; }
+    .foot a { text-decoration: none; }
+    .foot a:hover { color: #fff; }
+    .foot nav { display: flex; gap: 20px; flex-wrap: wrap; }
+
+    @media (max-width: 880px) {
+      .hero__grid, .prices { grid-template-columns: 1fr; gap: 44px; }
+      .hero__phone { width: min(240px, 70%); }
+      .steps, .deal { grid-template-columns: 1fr; }
+      .founder { grid-template-columns: 1fr; gap: 24px; }
+      .section { padding-block: 64px; }
+    }
+    @media (max-width: 520px) {
+      .container { padding-inline: 18px; }
+      .hero { padding-block: 48px 64px; }
+      .signup__row { flex-direction: column; }
+      .bar__cta { padding: 8px 14px; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="container bar__inner">
+    <a href="/" class="bar__logo" aria-label="AccuQuote home"><img src="./images/accuquote-logo.png" alt="" width="28" height="28" />AccuQuote</a>
+    <a href="#join" class="bar__cta" data-focus-email="hero">Join the free pilot</a>
+  </div>
+</header>
+
+<main>
+  <!-- 1 · Hero: the offer and the form, above the fold -->
+  <section class="hero" aria-labelledby="hero-heading">
+    <div class="container hero__grid">
+      <div>
+        <span class="pilot-tag"><span class="pilot-tag__dot" aria-hidden="true"></span>Pilot open now · iPhone</span>
+        <h1 id="hero-heading">Quote the job before you leave the drive. <span class="free">Help us test it and it’s free for life.</span></h1>
+        <p class="hero__sub">Scan the room, say what needs doing, and AccuQuote builds a full itemised quote priced from live Travis Perkins trade prices. We’re opening a pilot for UK tradespeople. Everyone who helps us test it keeps it free, for good.</p>
+
+        <form class="signup" id="join" data-form="hero" novalidate>
+          <div class="signup__row">
+            <label for="email-hero" class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Email address</label>
+            <input class="signup__input" id="email-hero" name="email" type="email" inputmode="email" autocomplete="email" placeholder="Your email address" required />
+            <button class="signup__btn" type="submit">Get free lifetime access</button>
+          </div>
+          <p class="signup__error" role="alert" hidden></p>
+          <p class="signup__fine">Just your email. We’ll send the download link and how to scan your first project. No card, no sales call. <a href="/privacy-policy">Privacy</a></p>
+        </form>
+        <div class="signup__done" data-done="hero" role="status" hidden tabindex="-1">
+          <h3>You’re in. Check your inbox.</h3>
+          <p>Your download link and first-scan instructions are on the way. If you can’t see the email in 5 minutes, check your spam or promotions folder.</p>
+        </div>
+
+        <ul class="hero__checks">
+          <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5 6.5 12 13 4.5" stroke="#21B86E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Every feature, free for life</li>
+          <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5 6.5 12 13 4.5" stroke="#21B86E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Live Travis Perkins prices</li>
+          <li><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8.5 6.5 12 13 4.5" stroke="#21B86E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>No card needed</li>
+        </ul>
+      </div>
+      <img class="hero__phone" src="./images/app-screen-2322.jpg" alt="AccuQuote on iPhone: the Measure the room screen, ready to scan" width="277" height="600" />
+    </div>
+  </section>
+
+  <!-- 2 · Proof of the price source -->
+  <div class="feed">
+    <div class="container feed__inner">
+      <span class="live">Live</span>
+      <span class="feed__label">Material prices come from <strong>our approved Travis Perkins data feed</strong>, refreshed daily</span>
+      <img src="./images/travis-perkins-logo.png" alt="Travis Perkins" width="184" height="34" />
+    </div>
+  </div>
+
+  <!-- 3 · How the pilot works -->
+  <section class="section section--surface" aria-labelledby="how-heading">
+    <div class="container">
+      <div class="section-head">
+        <p class="label">How the pilot works</p>
+        <h2 id="how-heading">Three steps from this page to your first priced quote.</h2>
+        <p>It takes about ten minutes, and you can do it on a real job.</p>
+      </div>
+      <ol class="steps">
+        <li class="step step--you">
+          <span class="step__you">You are here</span>
+          <h3>Tell us your email</h3>
+          <p>That’s all we need. Your place in the pilot, and free lifetime access, are confirmed right away.</p>
+        </li>
+        <li class="step">
+          <h3>Get the app and instructions</h3>
+          <p>We email you the download link and a short guide to scanning your first project. You don’t need training. If you can use WhatsApp, you can use this.</p>
+        </li>
+        <li class="step">
+          <h3>Scan a job and get it priced</h3>
+          <p>Walk the room with your phone, describe the work, and get a full itemised quote: labour, materials and live trade prices. Then tell us what worked and what didn’t.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 4 · Live prices -->
+  <section class="section" aria-labelledby="prices-heading">
+    <div class="container prices">
+      <div>
+        <p class="label">Real prices, not guesses</p>
+        <h2 id="prices-heading">Every material priced at what it costs at Travis Perkins today.</h2>
+        <ul class="prices__list">
+          <li>
+            <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true"><circle cx="13" cy="13" r="10" stroke="#007AFF" stroke-width="1.8"/><path d="M13 7.5V13l3.5 2" stroke="#007AFF" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <div><h3>Refreshed daily</h3><p>Prices come in through our approved Travis Perkins data feed every day, so you’re never quoting off last year’s catalogue.</p></div>
+          </li>
+          <li>
+            <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true"><rect x="4" y="4" width="18" height="18" rx="3" stroke="#007AFF" stroke-width="1.8"/><path d="M4 10h18M10 4v18" stroke="#007AFF" stroke-width="1.4" stroke-dasharray="3 2"/></svg>
+            <div><h3>Quantities from the scan</h3><p>Wall area, ceiling area and runs come straight from the scan, so the materials list matches the room you’re actually standing in.</p></div>
+          </li>
+          <li>
+            <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true"><path d="M5 20 11 14l4 4 6-8" stroke="#007AFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div><h3>Margin you can see</h3><p>Labour and materials are itemised separately, so you know exactly what you’re making before the customer says yes.</p></div>
+          </li>
+        </ul>
+      </div>
+      <img class="prices__shot" src="./images/app-screen-2324.jpg" alt="AccuQuote job details screen with a spoken job description for a full rewire of a 3-bed semi" width="277" height="600" loading="lazy" />
+    </div>
+  </section>
+
+  <!-- 5 · The deal -->
+  <section class="section section--surface" aria-labelledby="deal-heading">
+    <div class="container">
+      <div class="section-head">
+        <p class="label">The deal</p>
+        <h2 id="deal-heading">You help us get it right. You never pay for it.</h2>
+      </div>
+      <div class="deal">
+        <div class="deal__col deal__col--get">
+          <div class="deal__big">£0 <small>a month, for life</small></div>
+          <ul>
+            <li><svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><path d="M5 11.5 9 15.5 17 6.5" stroke="#21B86E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span><strong>Free lifetime access</strong> for everyone who helps us test</span></li>
+            <li><svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><path d="M5 11.5 9 15.5 17 6.5" stroke="#21B86E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span><strong>Room and Space scanning</strong>, accurate to the centimetre</span></li>
+            <li><svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><path d="M5 11.5 9 15.5 17 6.5" stroke="#21B86E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span><strong>Live Travis Perkins trade prices</strong> on every quote</span></li>
+            <li><svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><path d="M5 11.5 9 15.5 17 6.5" stroke="#21B86E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span><strong>Branded PDF quotes</strong> and deposit collection</span></li>
+            <li><svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><path d="M5 11.5 9 15.5 17 6.5" stroke="#21B86E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span><strong>A direct line to the founder</strong>, so your feedback shapes what gets built</span></li>
+          </ul>
+        </div>
+        <div class="deal__col deal__col--ask">
+          <h3>What we ask in return</h3>
+          <ul>
+            <li><svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="3" fill="#007AFF"/></svg><span><strong>Use it on real jobs.</strong> Scan a room, price a quote, send it if you’re happy with it.</span></li>
+            <li><svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="3" fill="#007AFF"/></svg><span><strong>Tell us what’s wrong.</strong> Wrong quantity, odd price, confusing screen: we want to hear about all of it.</span></li>
+            <li><svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="3" fill="#007AFF"/></svg><span><strong>Answer the odd quick question</strong> by email or WhatsApp as we improve it.</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 · Founder -->
+  <section class="section" aria-label="From the founder">
+    <div class="container founder">
+      <img src="./images/luke-watford.jpg" alt="Luke, founder of AccuQuote" width="600" height="800" loading="lazy" />
+      <div>
+        <blockquote>“I built AccuQuote after watching a decorator use three different apps to scan, cost and quote a job, and still finish at 2pm every day. I want every tradesperson to get those afternoons back. The pilot is how we make sure it works on your jobs, not just in theory.”</blockquote>
+        <cite>Luke, founder of AccuQuote</cite>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 · Objections -->
+  <section class="section section--surface" aria-labelledby="faq-heading">
+    <div class="container">
+      <div class="section-head">
+        <p class="label">Questions</p>
+        <h2 id="faq-heading">Before you sign up.</h2>
+      </div>
+      <div class="faq">
+        <details>
+          <summary>Is it really free for life?</summary>
+          <p>Yes. Everyone who joins the pilot and helps us test keeps free access to AccuQuote for life. You won’t be asked for a card, and nothing turns into a paid plan without you choosing it.</p>
+        </details>
+        <details>
+          <summary>What’s the catch?</summary>
+          <p>We need tradespeople using it on real jobs and telling us where it falls short. That feedback is worth more to us right now than a subscription fee.</p>
+        </details>
+        <details>
+          <summary>Which phone do I need?</summary>
+          <p>An iPhone. Room scanning works on any iPhone running iOS 15 or later. iPhone 12 Pro and later Pro models have LiDAR, which gives faster and more accurate scans and unlocks Space mode for tight spots like under-sink voids. On other iPhones you can sweep the camera or type in tape-measure readings.</p>
+        </details>
+        <details>
+          <summary>Where do the prices come from?</summary>
+          <p>From our approved Travis Perkins data feed, refreshed daily. Every material on your quote is priced at what it costs at Travis Perkins now.</p>
+        </details>
+        <details>
+          <summary>What will you do with my email?</summary>
+          <p>We’ll send your download link, the first-scan guide and occasional pilot updates. We never sell or share it, and you can unsubscribe from any email in one click. See our <a href="/privacy-policy">privacy policy</a>.</p>
+        </details>
+        <details>
+          <summary>When do I get the instructions?</summary>
+          <p>Straight away. The email usually arrives within a couple of minutes. If it hasn’t, check your spam or promotions folder.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 · Final ask -->
+  <section class="section final" aria-labelledby="final-heading">
+    <div class="container">
+      <h2 id="final-heading">Price your next job from live trade prices, and keep AccuQuote free for life.</h2>
+      <p class="lead">Enter your email and we’ll send the app and your first-scan guide.</p>
+      <form class="signup" data-form="final" novalidate>
+        <div class="signup__row">
+          <label for="email-final" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Email address</label>
+          <input class="signup__input" id="email-final" name="email" type="email" inputmode="email" autocomplete="email" placeholder="Your email address" required />
+          <button class="signup__btn" type="submit">Get free lifetime access</button>
+        </div>
+        <p class="signup__error" role="alert" hidden></p>
+        <p class="signup__fine">No card, no sales call. Unsubscribe any time.</p>
+      </form>
+      <div class="signup__done" data-done="final" role="status" hidden tabindex="-1">
+        <h3>You’re in. Check your inbox.</h3>
+        <p>Your download link and first-scan instructions are on the way. If you can’t see the email in 5 minutes, check your spam or promotions folder.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="container foot__inner">
+    <span>© AccuQuote · Built for UK trades</span>
+    <nav aria-label="Footer">
+      <a href="/website">About the app</a>
+      <a href="/privacy-policy">Privacy</a>
+      <a href="/terms-and-conditions">Terms</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+  // ── Ad attribution ─────────────────────────────────────────────────────────
+  // Capture UTM / click IDs from the ad's landing URL once, and keep them for
+  // the session so they still attach if the visitor scrolls or reloads.
+  const ATTR_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'fbclid', 'gclid'];
+  const attribution = (() => {
+    let saved = {};
+    try { saved = JSON.parse(sessionStorage.getItem('aq_attr') || '{}'); } catch {}
+    const params = new URLSearchParams(location.search);
+    const fresh = {};
+    ATTR_KEYS.forEach(k => { const v = params.get(k); if (v) fresh[k] = v; });
+    const merged = Object.keys(fresh).length ? fresh : saved;
+    try { sessionStorage.setItem('aq_attr', JSON.stringify(merged)); } catch {}
+    return merged;
+  })();
+  const firstReferrer = (() => {
+    try {
+      const r = sessionStorage.getItem('aq_ref');
+      if (r !== null) return r;
+      sessionStorage.setItem('aq_ref', document.referrer || '');
+    } catch {}
+    return document.referrer || '';
+  })();
+
+  // ── Sign-up forms ──────────────────────────────────────────────────────────
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  function showDone(which) {
+    document.querySelectorAll('form.signup').forEach(f => { f.hidden = true; });
+    document.querySelectorAll('.signup__done').forEach(d => { d.hidden = false; });
+    const done = document.querySelector(`[data-done="${which}"]`);
+    if (done) done.focus({ preventScroll: true });
+    // Conversion events for whichever ad pixels are installed.
+    try { if (window.fbq) fbq('track', 'Lead'); } catch {}
+    try { if (window.gtag) gtag('event', 'generate_lead', { method: 'pilot_landing' }); } catch {}
+  }
+
+  document.querySelectorAll('form.signup').forEach(form => {
+    const input = form.querySelector('input[type="email"]');
+    const btn = form.querySelector('button');
+    const err = form.querySelector('.signup__error');
+    const label = btn.textContent;
+
+    function fail(msg) {
+      err.textContent = msg;
+      err.hidden = false;
+      input.setAttribute('aria-invalid', 'true');
+      btn.disabled = false;
+      btn.textContent = label;
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      err.hidden = true;
+      input.removeAttribute('aria-invalid');
+      const email = input.value.trim();
+      if (!EMAIL_RE.test(email)) { fail('Enter an email address like name@example.com.'); input.focus(); return; }
+
+      btn.disabled = true;
+      btn.textContent = 'Sending…';
+      try {
+        const res = await fetch('/api/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email,
+            source: 'pilot_landing',
+            page: location.pathname,
+            referrer: firstReferrer,
+            attribution,
+          }),
+        });
+        if (res.ok || res.status === 409) { showDone(form.dataset.form); return; }
+        if (res.status === 400) { fail('That email address doesn’t look right. Check it and try again.'); return; }
+        if (res.status === 429) { fail('Too many attempts from this connection. Wait a few minutes and try again.'); return; }
+        fail('We couldn’t save your email just now. Try again in a moment.');
+      } catch {
+        fail('No connection. Check your signal and try again.');
+      }
+    });
+  });
+
+  // Top-bar button scrolls to the hero form and puts the cursor in it.
+  document.querySelector('[data-focus-email]').addEventListener('click', (e) => {
+    const input = document.getElementById('email-hero');
+    if (!input || input.closest('form').hidden) return;
+    e.preventDefault();
+    input.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+    input.focus({ preventScroll: true });
+  });
+</script>
+</body>
+</html>

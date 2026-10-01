@@ -1539,7 +1539,8 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             email: emailEl.value.trim(),
-            trade: tradeEl.value
+            trade: tradeEl.value,
+            source: 'prelaunch'
           })
         })
         .then(function (r) { return r.json().then(function (d) { return { status: r.status, data: d }; }); })

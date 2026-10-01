@@ -45,7 +45,7 @@
  */
 
 import express from 'express';
-import { randomUUID } from 'crypto';
+import { randomUUID, createHash } from 'crypto';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { createRequire } from 'module';
@@ -1382,41 +1382,111 @@ app.post('/api/stripe/payment-link', requireAuth, requirePaidTier, stripeLimiter
   }
 });
 
-// ── Beehiiv subscribe proxy ───────────────────────────────────────────────────
-app.post('/api/subscribe', subscribeLimiter, async (req, res) => {
-  const apiKey = process.env.BEEHIIV_API_KEY;
-  const pubId  = process.env.BEEHIIV_PUBLICATION_ID;
-  if (!apiKey || !pubId) return res.status(500).json({ error: 'Beehiiv credentials not configured' });
+// ── Pilot sign-ups (Firestore record of truth + Beehiiv email) ───────────────
+// Every sign-up is written to Firestore `pilot_signups/{sha256(email)}` FIRST,
+// so the list we own never depends on Beehiiv being up. Beehiiv is then asked
+// to subscribe the address (its welcome email carries the download + first-scan
+// instructions) and the outcome is stamped back onto the same doc, so any
+// address that never reached Beehiiv shows up in /admin as "Beehiiv failed".
+const ATTRIBUTION_FIELDS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'fbclid', 'gclid'];
 
-  const { email, trade } = req.body || {};
+function cleanAttribution(raw) {
+  const out = {};
+  for (const k of ATTRIBUTION_FIELDS) {
+    const v = raw && typeof raw[k] === 'string' ? raw[k].trim().slice(0, 200) : '';
+    if (v) out[k] = v;
+  }
+  return out;
+}
+
+app.post('/api/subscribe', subscribeLimiter, async (req, res) => {
+  const { email, trade, source, page, referrer, attribution } = req.body || {};
   if (!email || typeof email !== 'string' || email.length > 254 ||
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
     return res.status(400).json({ error: 'Invalid email' });
   }
-  // Bound the free-text trade before passing it upstream to Beehiiv.
-  const safeTrade = String(trade || '').slice(0, 50);
+  const emailLower = email.trim().toLowerCase();
+  // Bound every free-text field before storing it or passing it upstream.
+  const safeTrade    = String(trade || '').slice(0, 50);
+  const safeSource   = String(source || 'unknown').slice(0, 40);
+  const safePage     = String(page || '').slice(0, 300);
+  const safeReferrer = String(referrer || '').slice(0, 300);
+  const attr         = cleanAttribution(attribution);
 
-  try {
-    const response = await fetch(`https://api.beehiiv.com/v2/publications/${pubId}/subscriptions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        email, utm_source: 'prelaunch', utm_medium: 'organic',
-        custom_fields: safeTrade ? [{ name: 'trade', value: safeTrade }] : [],
-        send_welcome_email: true, reactivate_existing: false,
-      }),
-    });
+  await firebaseReady;
+  const admin = require('firebase-admin');
+  const docRef = adminFirestore
+    ? adminFirestore.collection('pilot_signups').doc(createHash('sha256').update(emailLower).digest('hex'))
+    : null;
 
-    const data = await response.json();
-    if (response.status === 201 || response.status === 200) return res.json({ ok: true });
-    if (response.status === 409 || data?.errors?.find?.(e => e.includes('already'))) {
-      return res.status(409).json({ error: 'already_subscribed' });
+  let stored = false;
+  let duplicate = false;
+  if (docRef) {
+    try {
+      duplicate = await adminFirestore.runTransaction(async (tx) => {
+        const snap = await tx.get(docRef);
+        const now = admin.firestore.FieldValue.serverTimestamp();
+        if (snap.exists) {
+          tx.update(docRef, { lastSubmittedAt: now, submitCount: admin.firestore.FieldValue.increment(1) });
+          return true;
+        }
+        tx.set(docRef, {
+          email: emailLower, trade: safeTrade, source: safeSource, page: safePage,
+          referrer: safeReferrer, ...attr,
+          createdAt: now, lastSubmittedAt: now, submitCount: 1,
+          beehiivStatus: 'pending',
+        });
+        return false;
+      });
+      stored = true;
+    } catch (err) {
+      log.error('pilot signup: firestore write failed', { requestId: req.id, err });
     }
-    return res.status(response.status).json({ error: data?.message || 'Beehiiv error' });
-  } catch (err) {
-    log.error('unhandled route error', { requestId: req.id, path: req.path, err });
-    res.status(500).json({ error: "Internal server error." });
+  } else {
+    log.error('pilot signup: firestore unavailable', { requestId: req.id });
   }
+
+  let beehiivStatus = 'not_configured';
+  const apiKey = process.env.BEEHIIV_API_KEY;
+  const pubId  = process.env.BEEHIIV_PUBLICATION_ID;
+  if (apiKey && pubId) {
+    try {
+      const response = await fetch(`https://api.beehiiv.com/v2/publications/${pubId}/subscriptions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          email: emailLower,
+          utm_source:   attr.utm_source   || safeSource,
+          utm_medium:   attr.utm_medium   || 'organic',
+          utm_campaign: attr.utm_campaign || 'pilot',
+          referring_site: safeReferrer || undefined,
+          custom_fields: safeTrade ? [{ name: 'trade', value: safeTrade }] : [],
+          send_welcome_email: true, reactivate_existing: false,
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (response.status === 200 || response.status === 201) beehiivStatus = 'subscribed';
+      else if (response.status === 409 || data?.errors?.find?.(e => String(e).includes('already'))) beehiivStatus = 'already_subscribed';
+      else beehiivStatus = `error_${response.status}`;
+    } catch (err) {
+      beehiivStatus = 'error_network';
+      log.error('pilot signup: beehiiv call failed', { requestId: req.id, err });
+    }
+  } else {
+    log.error('pilot signup: Beehiiv credentials not configured', { requestId: req.id });
+  }
+
+  if (docRef && stored) {
+    docRef.set({ beehiivStatus, beehiivAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true })
+      .catch(err => log.error('pilot signup: beehiiv status write failed', { requestId: req.id, err }));
+  }
+
+  const reachedBeehiiv = beehiivStatus === 'subscribed' || beehiivStatus === 'already_subscribed';
+  log.info('pilot signup', { requestId: req.id, stored, duplicate, beehiivStatus, source: safeSource, utm_source: attr.utm_source || '' });
+
+  if (!stored && !reachedBeehiiv) return res.status(500).json({ error: 'Internal server error.' });
+  if (duplicate || beehiivStatus === 'already_subscribed') return res.status(409).json({ error: 'already_subscribed' });
+  return res.json({ ok: true });
 });
 
 // ── Admin dashboard ───────────────────────────────────────────────────────────
@@ -1513,6 +1583,32 @@ app.get('/api/admin/users', requireAdmin, adminLimiter, async (req, res) => {
 // docs are ever held in memory at once, regardless of how many users exist —
 // this replaces the old hard `.limit(500)` that silently truncated the export
 // past 500 users with no indication anything was missing.
+// GET /api/admin/pilot-signups — every pilot sign-up, newest first. Capped at
+// 10,000 rows (the pilot goal) so one dashboard load stays bounded.
+app.get('/api/admin/pilot-signups', requireAdmin, adminLimiter, async (req, res) => {
+  if (!adminFirestore) return res.status(503).json({ error: 'Firestore not available' });
+  try {
+    const snap = await adminFirestore.collection('pilot_signups')
+      .orderBy('createdAt', 'desc').limit(10000).get();
+    const iso = (t) => (t && typeof t.toDate === 'function' ? t.toDate().toISOString() : '');
+    const signups = snap.docs.map(d => {
+      const v = d.data() || {};
+      return {
+        email: v.email || '', trade: v.trade || '', source: v.source || '',
+        utm_source: v.utm_source || '', utm_medium: v.utm_medium || '',
+        utm_campaign: v.utm_campaign || '', utm_content: v.utm_content || '',
+        fbclid: v.fbclid ? 'yes' : '', gclid: v.gclid ? 'yes' : '',
+        beehiivStatus: v.beehiivStatus || '', submitCount: v.submitCount || 1,
+        createdAt: iso(v.createdAt),
+      };
+    });
+    res.json({ total: signups.length, signups });
+  } catch (err) {
+    log.error('unhandled route error', { requestId: req.id, path: req.path, err });
+    res.status(500).json({ error: "Internal server error." });
+  }
+});
+
 app.get('/api/admin/users.csv', requireAdmin, adminLimiter, async (req, res) => {
   if (!adminFirestore) {
     return res.status(503).json({ error: 'Firestore not available' });
@@ -2113,7 +2209,13 @@ app.get('/sw.js', (req, res) => {
 // ── Static files ──────────────────────────────────────────────────────────────
 const ROOT = join(__dirname, '..');
 
-app.get('/', (req, res) => res.sendFile(join(ROOT, 'website.html')));
+// Homepage is the pilot sign-up funnel (landing.html). The full product site
+// stays live at /website for anyone who wants the detail.
+const sendNoCache = (file) => (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.sendFile(join(ROOT, file));
+};
+app.get('/', sendNoCache('landing.html'));
 app.get('/favicon.ico', (req, res) => {
   res.setHeader('Content-Type', 'image/x-icon');
   res.setHeader('Cache-Control', 'public, max-age=86400');
@@ -2121,7 +2223,7 @@ app.get('/favicon.ico', (req, res) => {
 });
 app.get('/prelaunch', (req, res) => res.sendFile(join(ROOT, 'prelaunch.html')));
 
-const pages = ['demo', 'blog', 'how-it-works', 'referral', 'quote-cost-calculator', 'privacy-policy', 'terms-and-conditions'];
+const pages = ['website', 'demo', 'blog', 'how-it-works', 'referral', 'quote-cost-calculator', 'privacy-policy', 'terms-and-conditions'];
 pages.forEach(page => {
   const noCache = (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -2146,7 +2248,7 @@ app.use(express.static(ROOT, {
   },
 }));
 
-app.get('*', (req, res) => res.sendFile(join(ROOT, 'website.html')));
+app.get('*', sendNoCache('landing.html'));
 
 app.listen(PORT, () => {
   log.info('server started', { port: PORT });

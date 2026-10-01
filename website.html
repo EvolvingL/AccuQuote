@@ -1225,7 +1225,7 @@
       const res = await fetch('/api/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, trade })
+        body: JSON.stringify({ email, trade, source: 'website' })
       });
       if (res.ok || res.status === 409) {
         document.getElementById('wl-form-state').style.display = 'none';
